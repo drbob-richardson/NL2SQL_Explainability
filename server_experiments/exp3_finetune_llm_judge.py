@@ -96,6 +96,7 @@ def main():
     ap.add_argument("--lora-r", type=int, default=16)
     ap.add_argument("--max-dbs", type=int, default=99)
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--no-zero-shot", action="store_true", help="skip the un-fine-tuned baseline")
     args = ap.parse_args()
 
     os.makedirs(RESULTS, exist_ok=True)
@@ -132,6 +133,20 @@ def main():
                           lora_dropout=0.05, target_modules="all-linear")
         return get_peft_model(m, lora)
 
+    def eval_model(model, test_rows):
+        model.eval()
+        scores, ys = [], []
+        with torch.no_grad():
+            for r in test_rows:
+                pids, _ = build_ids(tok, r, args.max_len, None)
+                inp = torch.tensor([pids]).to(dev)
+                logits = model(input_ids=inp).logits[0, -1]
+                ly, ln = logits[yes_id].float().item(), logits[no_id].float().item()
+                m = max(ly, ln)
+                p = np.exp(ly - m) / (np.exp(ly - m) + np.exp(ln - m))
+                scores.append(float(p)); ys.append(r["label"])
+        return auroc(scores, ys)
+
     def train_eval(train_rows, test_rows, tagx):
         model = fresh_model()
         model.train()
@@ -164,48 +179,63 @@ def main():
             print(f"    [{tagx}] epoch {ep+1}/{args.epochs} done ({steps} steps)")
         opt.step(); opt.zero_grad()
 
-        model.eval()
-        scores, ys = [], []
-        with torch.no_grad():
-            for r in test_rows:
-                pids, _ = build_ids(tok, r, args.max_len, None)
-                inp = torch.tensor([pids]).to(dev)
-                logits = model(input_ids=inp).logits[0, -1]
-                ly, ln = logits[yes_id].float().item(), logits[no_id].float().item()
-                m = max(ly, ln)
-                p = np.exp(ly - m) / (np.exp(ly - m) + np.exp(ln - m))
-                scores.append(p); ys.append(r["label"])
+        au = eval_model(model, test_rows)
         del model
         if dev == "cuda":
             torch.cuda.empty_cache()
-        return auroc(scores, ys)
+        return au
 
     result = {"model": args.model, "epochs": args.epochs, "n_rows": len(rows),
               "baselines": {"frozen_verifier_gpt4o": 0.770, "encoder_indist": 0.785,
                             "encoder_lodo": 0.670}}
 
-    if args.mode in ("indist", "both"):
+    do_indist = args.mode in ("indist", "both")
+    do_lodo = args.mode in ("lodo", "both")
+    # in-distribution split (shared by zero-shot and fine-tuned)
+    if do_indist:
         qids = sorted({(r["db_id"], r["question_id"]) for r in rows})
         rng = np.random.RandomState(0); rng.shuffle(qids)
         test_q = set(qids[:len(qids) // 5])
-        tr = [r for r in rows if (r["db_id"], r["question_id"]) not in test_q]
-        te = [r for r in rows if (r["db_id"], r["question_id"]) in test_q]
-        t0 = time.time()
-        result["indist_auroc"] = train_eval(tr, te, "indist")
-        print(f"\n  IN-DISTRIBUTION AUROC = {result['indist_auroc']:.3f}   ({time.time()-t0:.0f}s)")
+        tr_id = [r for r in rows if (r["db_id"], r["question_id"]) not in test_q]
+        te_id = [r for r in rows if (r["db_id"], r["question_id"]) in test_q]
+    lodo_dbs = [d for d in dbs[:args.max_dbs]
+                if len(set(r["label"] for r in rows if r["db_id"] == d)) >= 2]
 
-    if args.mode in ("lodo", "both"):
+    # ZERO-SHOT baseline: the un-fine-tuned model judging via the same Yes/No logits.
+    # Tells us whether LoRA fine-tuning helps at all, vs. the base model's reasoning.
+    if not args.no_zero_shot:
+        base = AutoModelForCausalLM.from_pretrained(args.model).to(dev)
+        if dev == "cuda":
+            base = base.to(torch.bfloat16)
+        if do_indist:
+            result["zeroshot_indist_auroc"] = eval_model(base, te_id)
+            print(f"  ZERO-SHOT in-distribution AUROC = {result['zeroshot_indist_auroc']:.3f}")
+        if do_lodo:
+            zper = {d: eval_model(base, [r for r in rows if r["db_id"] == d]) for d in lodo_dbs}
+            result["zeroshot_lodo_per_db"] = zper
+            result["zeroshot_lodo_mean_auroc"] = float(np.mean(list(zper.values())))
+            print(f"  ZERO-SHOT per-DB mean AUROC = {result['zeroshot_lodo_mean_auroc']:.3f}")
+        del base
+        if dev == "cuda":
+            torch.cuda.empty_cache()
+
+    # FINE-TUNED (LoRA)
+    if do_indist:
+        t0 = time.time()
+        result["indist_auroc"] = train_eval(tr_id, te_id, "indist")
+        print(f"\n  FINE-TUNED IN-DISTRIBUTION AUROC = {result['indist_auroc']:.3f}   "
+              f"({time.time()-t0:.0f}s)")
+
+    if do_lodo:
         per = {}
-        for held in dbs[:args.max_dbs]:
+        for held in lodo_dbs:
             tr = [r for r in rows if r["db_id"] != held]
             te = [r for r in rows if r["db_id"] == held]
-            if not te or len(set(r["label"] for r in te)) < 2:
-                continue
             per[held] = train_eval(tr, te, f"lodo:{held}")
             print(f"    LODO held-out {held}: AUROC {per[held]:.3f}")
         result["lodo_per_db"] = per
         result["lodo_mean_auroc"] = float(np.mean(list(per.values()))) if per else None
-        print(f"\n  LEAVE-ONE-DB-OUT (transfer) mean AUROC = {result['lodo_mean_auroc']}")
+        print(f"\n  FINE-TUNED LEAVE-ONE-DB-OUT (transfer) mean AUROC = {result['lodo_mean_auroc']}")
 
     print("\n  VERDICT: universal-verifier bet wins if LODO > 0.77 (beats frozen gpt-4o judge AND")
     print("  the fine-tuned encoder's 0.67 transfer). If LODO ~ 0.67 too, generative judges also")
