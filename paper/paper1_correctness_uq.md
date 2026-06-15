@@ -13,11 +13,13 @@ When should we trust an LLM's SQL? We study, on equal footing and with bootstrap
 intervals, which signals predict whether a generated query is *execution-correct* on hard
 multi-table text-to-SQL (BIRD). We find a sharp dichotomy. **Black-box statistical signals plateau:**
 sampling self-consistency, execution self-consistency, structural priors, and semantic
-schema-linking confidence all sit at AUROC ≈ 0.62 and add nothing to one another. **Logic-aware
-signals break the ceiling:** an LLM verifier (0.72; an independent stronger judge 0.77) and
-white-box sequence log-probabilities (0.67) carry complementary information, combine to AUROC 0.76,
-and enable risk-controlled abstention that self-consistency structurally cannot offer (e.g., 27%
-coverage at 24% selective risk where the baseline yields no valid low-risk subset). We further ask
+schema-linking confidence all sit at AUROC ≈ 0.62, with only marginal gains from combining them.
+**Logic-aware signals break the ceiling:** an LLM verifier (0.72; an independent stronger judge 0.77)
+and white-box sequence log-probabilities (0.67) carry complementary information, combine to AUROC
+0.76 and a well-calibrated correctness probability (ECE 0.05), and support useful abstention
+frontiers (e.g., 27% coverage at 24% selective risk) where self-consistency yields no valid low-risk
+subset — though distribution-free certificates remain conservative under the regime's low base
+accuracy. We further ask
 whether the verifier can be *trained*: fine-tuned verifiers — encoder and generative alike — reach
 in-distribution AUROC ≈ 0.77–0.79 (matching the frozen GPT-4o judge) but **do not transfer**,
 dropping to ≈ 0.66 across unseen schemas, even though fine-tuning clearly helps (it lifts a small
@@ -93,10 +95,11 @@ black-box baselines, and we test whether judging can be *trained* and whether it
 | schema-linking graph confidence | 0.553 |
 | *"does it execute / return rows"* | 0.500 (chance) |
 
-Every black-box statistical signal plateaus at ≈ 0.62, and they do not complement each other
-(self-consistency + execution self-consistency adds only +0.020, CI [+0.005, +0.035]). Wrong queries
-execute and return rows just fine, so executability is uninformative. This ceiling is a property of
-the regime, not of sample size (it is stable from n = 200 to n = 800).
+Every black-box statistical signal plateaus at ≈ 0.62, and combining them yields only marginal gains
+that stay near the same ceiling (self-consistency + execution self-consistency: +0.020, CI
+[+0.005, +0.035]). Wrong queries execute and return rows just fine, so executability is
+uninformative. This ceiling is a property of the regime, not of sample size (it is stable from
+n = 200 to n = 800).
 
 ### 4.2 Logic-aware signals break the ceiling
 
@@ -148,15 +151,32 @@ the small base model's near-chance zero-shot transfer (0.553) shows why: transfe
 of **model scale / reasoning**, not of fine-tuning. A small model fine-tuned overfits; a large model
 reasons.
 
+Per database (Figure `paper1_lodo_perdb.png`), the frozen GPT-4o judge leads on *every* held-out
+schema (per-DB mean 0.710) above both fine-tuned verifiers (encoder 0.670, Qwen-1.5B 0.659),
+making the "reasoning transfers, fitting does not" pattern visible schema by schema.
+
 **Consequence.** Two distinct problems. A **per-deployment** verifier (trained on a database's own
 schemas) is an excellent, near-zero-inference-cost option at ≈ 0.77–0.79. A **universal** verifier,
 on this evidence, is a *large frozen reasoning model*: no small fine-tuned verifier (≤ 1.5B, encoder
 or generative) beats GPT-4o's 0.77 on transfer. Whether fine-tuning a *large* (7B+) generative judge
 transfers is the open question this leaves.
 
-### 4.5 Selective prediction: abstention the baseline cannot do
+### 4.5 Calibration and selective prediction
 
-Empirical risk–coverage (combined score), threshold calibrated on a held-out half:
+**Calibration.** The combined score (cross-fit logistic over all signals) is well-calibrated and can
+be used directly as P(correct); the raw individual signals are not (Figure `paper1_reliability.png`):
+
+| score | AUROC | ECE |
+|---|---|---|
+| self-consistency (`top_prob`) | 0.619 | 0.365 |
+| verifier (GPT-4o, raw P) | 0.770 | 0.319 |
+| **combined (cross-fit logistic)** | 0.763 | **0.046** |
+
+Self-consistency and the raw verifier probability are badly over-confident (ECE > 0.3); the combined
+logistic is calibrated (ECE 0.046).
+
+**Selective prediction.** Empirical risk–coverage (combined score, threshold calibrated on a
+held-out half; full curves in Figure `paper1_risk_coverage.png`):
 
 | target risk | self-consistency | all signals |
 |---|---|---|
@@ -164,10 +184,12 @@ Empirical risk–coverage (combined score), threshold calibrated on a held-out h
 | 0.30 | — | 27% coverage @ 24% risk |
 | 0.40 | — | 58% coverage @ 38% risk |
 
-Self-consistency cannot form a low-risk subset at any threshold; the logic-aware combination can.
-The distribution-free PAC certificate is conservative under the regime's low base accuracy
-(0.45) — only "all signals at α = 0.40" certifies (16% coverage / 22% risk) — so tighter guarantees
-require a stronger generator (higher base accuracy) or more calibration data, not a better signal.
+Self-consistency cannot form a low-risk subset at any threshold; the logic-aware combination yields
+useful empirical abstention frontiers. We are explicit that the *distribution-free* (PAC) certificate
+is conservative under the regime's low base accuracy (0.45) — only "all signals at α = 0.40"
+certifies (16% coverage / 22% risk) — so a tight guarantee needs a stronger generator (higher base
+accuracy) or more calibration data, not a better signal. We therefore report the empirical frontier
+as the practical result and the certificate as a conservative lower bound.
 
 ### 4.6 Reranking headroom (accuracy, not just abstention)
 
@@ -185,13 +207,22 @@ feature classifier) delivers ≈ 0.78 at negligible inference cost; (ii) for an 
 use a reasoning judge — the frozen LLM already transfers at 0.77, and the open question is whether
 fine-tuning a generative judge beats it.
 
-## 6. Limitations and ongoing work
+## 6. Limitations and planned strengthening runs
 
-- **One generator family** (`gpt-4o-mini`/`gpt-4o`) and an 800-question BIRD slice; broader
-  generators and benchmarks (Spider, Spider 2.0) would test breadth.
-- **Frozen verifiers are within one provider**; a cross-*provider* judge is untested.
+Current limitations, each with the run that addresses it:
+
+- **One generator family** (`gpt-4o-mini`/`gpt-4o`) and an 800-question BIRD slice. *Planned:* repeat
+  the ceiling/verifier comparison on a second generator (an open-weight model) and a Spider slice,
+  even at n ≈ 200–300, to show the dichotomy is not unique to GPT-4o-mini.
+- **Frozen verifiers are within one provider.** *Planned (high priority):* a cross-provider judge
+  (e.g., Claude / Gemini) on the same questions; the target result is that an independent-provider
+  judge also beats self-consistency and that the two judges' errors are not identical.
+- **The "memorizes schema surface form" claim (§4.4) is currently inferential.** *Planned:* a
+  diagnostic — verifier-input ablation (question+SQL vs +schema vs +evidence+schema), per-DB
+  performance vs schema/domain uniqueness, and retraining with column names normalized/removed — to
+  show directly what the fine-tuned verifier relies on.
 - **PAC certificates are loose** because base accuracy is 0.45; a stronger generator should make them
-  fire at useful coverage.
+  fire at useful coverage (§4.5 reports the empirical frontier as the practical result).
 - **Universal trained verifier — scale is the open variable:** a fine-tuned small generative judge
   (Qwen2.5-1.5B, LoRA) plateaus at the same transfer wall as the encoder (§4.4, LODO 0.659); the
   remaining test is whether a *large* (7B+) fine-tuned generative judge transfers, since the only
@@ -213,6 +244,7 @@ reasoning. The map is the contribution: it tells practitioners which signal to p
 Scripts: `bird_generate.py` (generation + execution + logprobs), `bird_verify.py` (LLM verifier,
 `--model`), `bird_correctness_uq.py` (unified comparison + bootstrap), `bird_exec_uq.py`,
 `bird_abstention.py` (risk–coverage + certificate), `verifier_probe.py` (cheap classifier),
-`server_experiments/exp1_finetune_verifier.py` (trained encoder verifier, in-dist + LODO),
-`server_experiments/exp3_finetune_llm_judge.py` (generative judge, ongoing). Cached generations,
-verifier scores, and trained-verifier results are in `data/` and `server_experiments/results/`.
+`paper1_figures.py` (figures + ECE table), `server_experiments/exp1_finetune_verifier.py`
+(trained encoder verifier, in-dist + LODO), `server_experiments/exp3_finetune_llm_judge.py`
+(generative judge, zero-shot + LoRA). Cached generations, verifier scores, and trained-verifier
+results are in `data/` and `server_experiments/results/`; figures in `paper/figures/`.
