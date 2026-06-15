@@ -1,0 +1,14 @@
+BIRD rerank (n=800, K=8):
+  first sample            : 0.448
+  modal (self-consistency): 0.451
+  best logprob (rerank)   : 0.446
+  ORACLE best-of-N (ceil) : 0.506
+
+  logprob-rerank lift over self-consistency: -0.005
+  oracle headroom (max possible from rerank): +0.055
+
+Reading: headroom>0 means a perfect reranker would raise accuracy by that much; if even
+logprob captures part of it, a trained verifier reranker (Exp 1 / verifier-guided gen)
+is the lever to close the rest -- the accuracy payoff top venues reward.
+
+  wrote results/exp2_rerank.json

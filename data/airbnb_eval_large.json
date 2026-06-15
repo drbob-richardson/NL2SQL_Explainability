@@ -1,0 +1,435 @@
+{
+  "schema": {
+    "table": "airbnb_listings",
+    "columns": [
+      {
+        "name": "id",
+        "type": "num"
+      },
+      {
+        "name": "city",
+        "type": "text"
+      },
+      {
+        "name": "country",
+        "type": "text"
+      },
+      {
+        "name": "number_of_rooms",
+        "type": "num"
+      },
+      {
+        "name": "year_listed",
+        "type": "num"
+      }
+    ]
+  },
+  "source": "DataCamp 'SQL for Data Science' basics cheat sheet (transcribed) + templated generator",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Get all the listings where number_of_rooms is greater than or equal to 3",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms >= 3"
+    },
+    {
+      "id": 2,
+      "question": "Get all the listings where number_of_rooms is more than 3",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms > 3"
+    },
+    {
+      "id": 3,
+      "question": "Get all the listings where number_of_rooms is exactly equal to 3",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms = 3"
+    },
+    {
+      "id": 4,
+      "question": "Get all the listings where number_of_rooms is lower than or equal to 3",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms <= 3"
+    },
+    {
+      "id": 5,
+      "question": "Get all the listings with 3 to 6 rooms",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms BETWEEN 3 AND 6"
+    },
+    {
+      "id": 6,
+      "question": "Get all the columns from the listings table",
+      "gold": "SELECT * FROM airbnb_listings"
+    },
+    {
+      "id": 7,
+      "question": "Get the city column from the table",
+      "gold": "SELECT city FROM airbnb_listings"
+    },
+    {
+      "id": 8,
+      "question": "Get the city and year_listed columns from the table",
+      "gold": "SELECT city, year_listed FROM airbnb_listings"
+    },
+    {
+      "id": 9,
+      "question": "Get the listing id and city, ordered by the number_of_rooms in ascending order",
+      "gold": "SELECT id, city FROM airbnb_listings ORDER BY number_of_rooms ASC"
+    },
+    {
+      "id": 10,
+      "question": "Get the listing id and city, ordered by the number_of_rooms in descending order",
+      "gold": "SELECT id, city FROM airbnb_listings ORDER BY number_of_rooms DESC"
+    },
+    {
+      "id": 11,
+      "question": "Get the first 5 rows from the airbnb_listings table",
+      "gold": "SELECT * FROM airbnb_listings LIMIT 5"
+    },
+    {
+      "id": 12,
+      "question": "Get a unique list of cities where there are listings",
+      "gold": "SELECT DISTINCT city FROM airbnb_listings"
+    },
+    {
+      "id": 13,
+      "question": "Get all the listings that are based in 'Paris'",
+      "gold": "SELECT * FROM airbnb_listings WHERE city = 'Paris'"
+    },
+    {
+      "id": 14,
+      "question": "Get the listings based in the 'USA' and 'France'",
+      "gold": "SELECT * FROM airbnb_listings WHERE country IN ('USA', 'France')"
+    },
+    {
+      "id": 15,
+      "question": "Get all the listings where the city starts with 'j' and where the city does not end in 't'",
+      "gold": "SELECT * FROM airbnb_listings WHERE city LIKE 'j%' AND city NOT LIKE '%t'"
+    },
+    {
+      "id": 16,
+      "question": "Get all the listings in 'Paris' where number_of_rooms is bigger than 3",
+      "gold": "SELECT * FROM airbnb_listings WHERE city = 'Paris' AND number_of_rooms > 3"
+    },
+    {
+      "id": 17,
+      "question": "Get all the listings in 'Paris' or the ones that were listed after 2012",
+      "gold": "SELECT * FROM airbnb_listings WHERE city = 'Paris' OR year_listed > 2012"
+    },
+    {
+      "id": 18,
+      "question": "Return the listings where number_of_rooms is missing",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms IS NULL"
+    },
+    {
+      "id": 19,
+      "question": "Return the listings where number_of_rooms is not missing",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms IS NOT NULL"
+    },
+    {
+      "id": 20,
+      "question": "Get the total number of rooms available across all listings",
+      "gold": "SELECT SUM(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 21,
+      "question": "Get the average number of rooms per listing across all listings",
+      "gold": "SELECT AVG(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 22,
+      "question": "Get the listing with the highest number of rooms across all listings",
+      "gold": "SELECT MAX(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 23,
+      "question": "Get the listing with the lowest number of rooms across all listings",
+      "gold": "SELECT MIN(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 24,
+      "question": "Get the total number of rooms for each country",
+      "gold": "SELECT country, SUM(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 25,
+      "question": "Get the average number of rooms for each country",
+      "gold": "SELECT country, AVG(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 26,
+      "question": "Get the maximum number of rooms per country",
+      "gold": "SELECT country, MAX(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 27,
+      "question": "Get the lowest amount of rooms per country",
+      "gold": "SELECT country, MIN(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 28,
+      "question": "For each country, get the average number of rooms per listing, sorted in ascending order",
+      "gold": "SELECT country, AVG(number_of_rooms) AS avg_rooms FROM airbnb_listings GROUP BY country ORDER BY avg_rooms ASC"
+    },
+    {
+      "id": 29,
+      "question": "For Japan and the USA, get the average number of rooms per listing in each country",
+      "gold": "SELECT country, AVG(number_of_rooms) FROM airbnb_listings WHERE country IN ('USA', 'Japan') GROUP BY country"
+    },
+    {
+      "id": 30,
+      "question": "Get the number of cities per country where there are listings",
+      "gold": "SELECT country, COUNT(city) AS number_of_cities FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 31,
+      "question": "Get all the years where there were more than 100 listings per year",
+      "gold": "SELECT year_listed FROM airbnb_listings GROUP BY year_listed HAVING COUNT(id) > 100"
+    },
+    {
+      "id": 100,
+      "question": "What is the average number_of_rooms across all listings?",
+      "gold": "SELECT AVG(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 101,
+      "question": "What is the average year_listed across all listings?",
+      "gold": "SELECT AVG(year_listed) FROM airbnb_listings"
+    },
+    {
+      "id": 102,
+      "question": "What is the total number_of_rooms across all listings?",
+      "gold": "SELECT SUM(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 103,
+      "question": "What is the total year_listed across all listings?",
+      "gold": "SELECT SUM(year_listed) FROM airbnb_listings"
+    },
+    {
+      "id": 104,
+      "question": "What is the maximum number_of_rooms across all listings?",
+      "gold": "SELECT MAX(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 105,
+      "question": "What is the maximum year_listed across all listings?",
+      "gold": "SELECT MAX(year_listed) FROM airbnb_listings"
+    },
+    {
+      "id": 106,
+      "question": "What is the minimum number_of_rooms across all listings?",
+      "gold": "SELECT MIN(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 107,
+      "question": "What is the minimum year_listed across all listings?",
+      "gold": "SELECT MIN(year_listed) FROM airbnb_listings"
+    },
+    {
+      "id": 108,
+      "question": "What is the average number_of_rooms for each city?",
+      "gold": "SELECT city, AVG(number_of_rooms) FROM airbnb_listings GROUP BY city"
+    },
+    {
+      "id": 109,
+      "question": "What is the average number_of_rooms for each country?",
+      "gold": "SELECT country, AVG(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 110,
+      "question": "What is the total number_of_rooms for each city?",
+      "gold": "SELECT city, SUM(number_of_rooms) FROM airbnb_listings GROUP BY city"
+    },
+    {
+      "id": 111,
+      "question": "What is the total number_of_rooms for each country?",
+      "gold": "SELECT country, SUM(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 112,
+      "question": "What is the maximum number_of_rooms for each city?",
+      "gold": "SELECT city, MAX(number_of_rooms) FROM airbnb_listings GROUP BY city"
+    },
+    {
+      "id": 113,
+      "question": "What is the maximum number_of_rooms for each country?",
+      "gold": "SELECT country, MAX(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 114,
+      "question": "What is the minimum number_of_rooms for each city?",
+      "gold": "SELECT city, MIN(number_of_rooms) FROM airbnb_listings GROUP BY city"
+    },
+    {
+      "id": 115,
+      "question": "What is the minimum number_of_rooms for each country?",
+      "gold": "SELECT country, MIN(number_of_rooms) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 116,
+      "question": "Get all listings where number_of_rooms is greater than 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms > 4"
+    },
+    {
+      "id": 117,
+      "question": "Get all listings where number_of_rooms is less than 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms < 4"
+    },
+    {
+      "id": 118,
+      "question": "Get all listings where number_of_rooms is at least 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms >= 4"
+    },
+    {
+      "id": 119,
+      "question": "Get all listings where number_of_rooms is at most 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms <= 4"
+    },
+    {
+      "id": 120,
+      "question": "Get all listings where number_of_rooms is equal to 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms = 4"
+    },
+    {
+      "id": 121,
+      "question": "Get all listings where year_listed is greater than 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE year_listed > 4"
+    },
+    {
+      "id": 122,
+      "question": "Get all listings where year_listed is less than 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE year_listed < 4"
+    },
+    {
+      "id": 123,
+      "question": "Get all listings where year_listed is at least 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE year_listed >= 4"
+    },
+    {
+      "id": 124,
+      "question": "Get all listings where year_listed is at most 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE year_listed <= 4"
+    },
+    {
+      "id": 125,
+      "question": "Get all listings where year_listed is equal to 4",
+      "gold": "SELECT * FROM airbnb_listings WHERE year_listed = 4"
+    },
+    {
+      "id": 126,
+      "question": "Get all listings in France",
+      "gold": "SELECT * FROM airbnb_listings WHERE country = 'France'"
+    },
+    {
+      "id": 127,
+      "question": "Get all listings in Japan",
+      "gold": "SELECT * FROM airbnb_listings WHERE country = 'Japan'"
+    },
+    {
+      "id": 128,
+      "question": "Get all listings in USA",
+      "gold": "SELECT * FROM airbnb_listings WHERE country = 'USA'"
+    },
+    {
+      "id": 129,
+      "question": "Get all listings in France or Japan",
+      "gold": "SELECT * FROM airbnb_listings WHERE country IN ('France', 'Japan')"
+    },
+    {
+      "id": 130,
+      "question": "List all listings ordered from highest number_of_rooms to the other",
+      "gold": "SELECT * FROM airbnb_listings ORDER BY number_of_rooms DESC"
+    },
+    {
+      "id": 131,
+      "question": "List all listings ordered from lowest number_of_rooms to the other",
+      "gold": "SELECT * FROM airbnb_listings ORDER BY number_of_rooms ASC"
+    },
+    {
+      "id": 132,
+      "question": "List all listings ordered from highest year_listed to the other",
+      "gold": "SELECT * FROM airbnb_listings ORDER BY year_listed DESC"
+    },
+    {
+      "id": 133,
+      "question": "List all listings ordered from lowest year_listed to the other",
+      "gold": "SELECT * FROM airbnb_listings ORDER BY year_listed ASC"
+    },
+    {
+      "id": 134,
+      "question": "Get the first 3 listings",
+      "gold": "SELECT * FROM airbnb_listings LIMIT 3"
+    },
+    {
+      "id": 135,
+      "question": "Get the first 10 listings",
+      "gold": "SELECT * FROM airbnb_listings LIMIT 10"
+    },
+    {
+      "id": 136,
+      "question": "Get the distinct city values among listings",
+      "gold": "SELECT DISTINCT city FROM airbnb_listings"
+    },
+    {
+      "id": 137,
+      "question": "Get the distinct country values among listings",
+      "gold": "SELECT DISTINCT country FROM airbnb_listings"
+    },
+    {
+      "id": 138,
+      "question": "Get listings with number_of_rooms between 2 and 5",
+      "gold": "SELECT * FROM airbnb_listings WHERE number_of_rooms BETWEEN 2 AND 5"
+    },
+    {
+      "id": 139,
+      "question": "Get listings listed between 2015 and 2020",
+      "gold": "SELECT * FROM airbnb_listings WHERE year_listed BETWEEN 2015 AND 2020"
+    },
+    {
+      "id": 140,
+      "question": "Which countries have more than 5 listings?",
+      "gold": "SELECT country FROM airbnb_listings GROUP BY country HAVING COUNT(id) > 5"
+    },
+    {
+      "id": 141,
+      "question": "Which years had more than 3 listings?",
+      "gold": "SELECT year_listed FROM airbnb_listings GROUP BY year_listed HAVING COUNT(id) > 3"
+    },
+    {
+      "id": 142,
+      "question": "How many listings are there per country?",
+      "gold": "SELECT country, COUNT(*) FROM airbnb_listings GROUP BY country"
+    },
+    {
+      "id": 143,
+      "question": "How many listings are there per city?",
+      "gold": "SELECT city, COUNT(*) FROM airbnb_listings GROUP BY city"
+    },
+    {
+      "id": 144,
+      "question": "Get listings in France with number_of_rooms greater than 3",
+      "gold": "SELECT * FROM airbnb_listings WHERE country = 'France' AND number_of_rooms > 3"
+    },
+    {
+      "id": 145,
+      "question": "Get listings in Japan or listed after 2018",
+      "gold": "SELECT * FROM airbnb_listings WHERE country = 'Japan' OR year_listed > 2018"
+    },
+    {
+      "id": 146,
+      "question": "Show me the busiest country by listings",
+      "gold": "SELECT country FROM airbnb_listings GROUP BY country ORDER BY COUNT(*) DESC LIMIT 1"
+    },
+    {
+      "id": 147,
+      "question": "What's a typical number of rooms?",
+      "gold": "SELECT AVG(number_of_rooms) FROM airbnb_listings"
+    },
+    {
+      "id": 148,
+      "question": "Find recent listings",
+      "gold": "SELECT * FROM airbnb_listings WHERE year_listed >= 2020"
+    },
+    {
+      "id": 149,
+      "question": "Which cities are popular?",
+      "gold": "SELECT city FROM airbnb_listings GROUP BY city ORDER BY COUNT(*) DESC LIMIT 3"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# Core (installed in .venv)
+sqlglot>=30,<31      # SQL parsing -> AST -> query graph
+networkx>=3.3        # graph representation + (later) edit-distance metrics
+numpy>=1.26          # numerics
+
+# Used later, install when needed:
+# datasets>=2.19     # HuggingFace loaders for Spider / BIRD
+# scipy              # special functions for BNP priors (gamma, beta, stick-breaking)
+# pytest             # test runner (tests also run standalone via __main__)

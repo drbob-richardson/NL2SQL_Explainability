@@ -1,0 +1,6 @@
+# Core (exp1 GPU fine-tune). exp2_rerank.py and prepare_data.py need only the Python stdlib + numpy.
+numpy>=1.24
+torch>=2.0
+transformers>=4.30
+sentencepiece>=0.1.99   # needed by some tokenizers (e.g. deberta); harmless otherwise
+# Optional long-context verifier model: answerdotai/ModernBERT-base needs transformers>=4.48

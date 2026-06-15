@@ -1,0 +1,902 @@
+{
+  "concert_singer||How many singers do we have?": {
+    "db_id": "concert_singer",
+    "question": "How many singers do we have?",
+    "gold": "SELECT count(*) FROM singer",
+    "samples": [
+      "SELECT COUNT(Singer_ID) FROM singer;",
+      "SELECT COUNT(*) FROM singer;",
+      "SELECT COUNT(*) FROM singer;",
+      "SELECT COUNT(*) FROM singer;",
+      "SELECT COUNT(Singer_ID) FROM singer;",
+      "SELECT COUNT(Singer_ID) FROM singer;",
+      "SELECT COUNT(Singer_ID) FROM singer;",
+      "SELECT COUNT(Singer_ID) FROM singer;"
+    ]
+  },
+  "concert_singer||What is the total number of singers?": {
+    "db_id": "concert_singer",
+    "question": "What is the total number of singers?",
+    "gold": "SELECT count(*) FROM singer",
+    "samples": [
+      "SELECT COUNT(Singer_ID) FROM singer;",
+      "SELECT COUNT(*) FROM singer;",
+      "SELECT COUNT(*) FROM singer;",
+      "SELECT COUNT(Singer_ID) FROM singer;",
+      "SELECT COUNT(Singer_ID) FROM singer;",
+      "SELECT COUNT(*) FROM singer;",
+      "SELECT COUNT(Singer_ID) FROM singer",
+      "SELECT COUNT(*) FROM singer"
+    ]
+  },
+  "concert_singer||Show name, country, age for all singers ordered by age from the oldest to the youngest.": {
+    "db_id": "concert_singer",
+    "question": "Show name, country, age for all singers ordered by age from the oldest to the youngest.",
+    "gold": "SELECT name ,  country ,  age FROM singer ORDER BY age DESC",
+    "samples": [
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age\nFROM singer\nORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age \nFROM singer \nORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;"
+    ]
+  },
+  "concert_singer||What are the names, countries, and ages for every singer in descending order of age?": {
+    "db_id": "concert_singer",
+    "question": "What are the names, countries, and ages for every singer in descending order of age?",
+    "gold": "SELECT name ,  country ,  age FROM singer ORDER BY age DESC",
+    "samples": [
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age\nFROM singer\nORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age\nFROM singer\nORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;",
+      "SELECT Name, Country, Age FROM singer ORDER BY Age DESC;"
+    ]
+  },
+  "concert_singer||What is the average, minimum, and maximum age of all singers from France?": {
+    "db_id": "concert_singer",
+    "question": "What is the average, minimum, and maximum age of all singers from France?",
+    "gold": "SELECT avg(age) ,  min(age) ,  max(age) FROM singer WHERE country  =  'France'",
+    "samples": [
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France'",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France'",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France'",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France';",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France';",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France'",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France'",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France'"
+    ]
+  },
+  "concert_singer||What is the average, minimum, and maximum age for all French singers?": {
+    "db_id": "concert_singer",
+    "question": "What is the average, minimum, and maximum age for all French singers?",
+    "gold": "SELECT avg(age) ,  min(age) ,  max(age) FROM singer WHERE country  =  'France'",
+    "samples": [
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France' AND Is_male = 1;",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France' AND Is_male = 1;",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France' AND Is_male = 1;",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France' AND Is_male = 1;",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France'",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France';",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France' AND Is_male = 1;",
+      "SELECT AVG(Age), MIN(Age), MAX(Age) FROM singer WHERE Country = 'France' AND Is_male = 1;"
+    ]
+  },
+  "concert_singer||Show the name and the release year of the song by the youngest singer.": {
+    "db_id": "concert_singer",
+    "question": "Show the name and the release year of the song by the youngest singer.",
+    "gold": "SELECT song_name ,  song_release_year FROM singer ORDER BY age LIMIT 1",
+    "samples": [
+      "SELECT Name, Song_release_year\nFROM singer\nORDER BY Age ASC\nLIMIT 1;",
+      "SELECT Name, Song_release_year\nFROM singer\nWHERE Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Name, Song_release_year\nFROM singer\nWHERE Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Name, Song_release_year\nFROM singer\nWHERE Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT s.Name, s.Song_release_year\nFROM singer s\nORDER BY s.Age ASC\nLIMIT 1;",
+      "SELECT s.Name, s.Song_release_year\nFROM singer s\nWHERE s.Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Name, Song_release_year\nFROM singer\nORDER BY Age ASC\nLIMIT 1;",
+      "SELECT s.Name, s.Song_release_year \nFROM singer s \nWHERE s.Age = (SELECT MIN(Age) FROM singer);"
+    ]
+  },
+  "concert_singer||What are the names and release years for all the songs of the youngest singer?": {
+    "db_id": "concert_singer",
+    "question": "What are the names and release years for all the songs of the youngest singer?",
+    "gold": "SELECT song_name ,  song_release_year FROM singer ORDER BY age LIMIT 1",
+    "samples": [
+      "SELECT Name, Song_release_year \nFROM singer \nWHERE Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Name, Song_release_year FROM singer\nWHERE Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Name, Song_release_year FROM singer\nWHERE Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Name, Song_release_year \nFROM singer \nWHERE Age = (SELECT MIN(Age) FROM singer);",
+      "SELECT s.Name, s.Song_release_year \nFROM singer s \nWHERE s.Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Song_Name, Song_release_year\nFROM singer\nWHERE Age = (SELECT MIN(Age) FROM singer);",
+      "SELECT Name, Song_release_year \nFROM singer \nWHERE Age = (SELECT MIN(Age) FROM singer)",
+      "SELECT Name, Song_release_year FROM singer\nWHERE Age = (SELECT MIN(Age) FROM singer)"
+    ]
+  },
+  "concert_singer||What are all distinct countries where singers above age 20 are from?": {
+    "db_id": "concert_singer",
+    "question": "What are all distinct countries where singers above age 20 are from?",
+    "gold": "SELECT DISTINCT country FROM singer WHERE age  >  20",
+    "samples": [
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country \nFROM singer \nWHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;"
+    ]
+  },
+  "concert_singer||What are  the different countries with singers above age 20?": {
+    "db_id": "concert_singer",
+    "question": "What are  the different countries with singers above age 20?",
+    "gold": "SELECT DISTINCT country FROM singer WHERE age  >  20",
+    "samples": [
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country\nFROM singer\nWHERE Age > 20;",
+      "SELECT DISTINCT Country\nFROM singer\nWHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country\nFROM singer\nWHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;",
+      "SELECT DISTINCT Country\nFROM singer\nWHERE Age > 20;",
+      "SELECT DISTINCT Country FROM singer WHERE Age > 20;"
+    ]
+  },
+  "concert_singer||Show all countries and the number of singers in each country.": {
+    "db_id": "concert_singer",
+    "question": "Show all countries and the number of singers in each country.",
+    "gold": "SELECT country ,  count(*) FROM singer GROUP BY country",
+    "samples": [
+      "SELECT Country, COUNT(Singer_ID) FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) AS num_singers FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) \nFROM singer \nGROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) AS Number_of_singers FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID)\nFROM singer\nGROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) \nFROM singer \nGROUP BY Country;"
+    ]
+  },
+  "concert_singer||How many singers are from each country?": {
+    "db_id": "concert_singer",
+    "question": "How many singers are from each country?",
+    "gold": "SELECT country ,  count(*) FROM singer GROUP BY country",
+    "samples": [
+      "SELECT Country, COUNT(Singer_ID) \nFROM singer \nGROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) \nFROM singer \nGROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) AS Num_Singers FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) AS number_of_singers\nFROM singer\nGROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) \nFROM singer \nGROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) AS Num_Singers FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(*) AS Singer_Count FROM singer GROUP BY Country;",
+      "SELECT Country, COUNT(Singer_ID) AS Num_of_Singers FROM singer GROUP BY Country;"
+    ]
+  },
+  "concert_singer||Show location and name for all stadiums with a capacity between 5000 and 10000.": {
+    "db_id": "concert_singer",
+    "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+    "gold": "SELECT LOCATION ,  name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+    "samples": [
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name\nFROM stadium\nWHERE Capacity BETWEEN 5000 AND 10000;"
+    ]
+  },
+  "concert_singer||What are the locations and names of all stations with capacity between 5000 and 10000?": {
+    "db_id": "concert_singer",
+    "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
+    "gold": "SELECT LOCATION ,  name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+    "samples": [
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;",
+      "SELECT Location, Name FROM stadium WHERE Capacity BETWEEN 5000 AND 10000;"
+    ]
+  },
+  "concert_singer||What is the maximum capacity and the average of all stadiums ?": {
+    "db_id": "concert_singer",
+    "question": "What is the maximum capacity and the average of all stadiums ?",
+    "gold": "select max(capacity), average from stadium",
+    "samples": [
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;",
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;",
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;",
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;",
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;",
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;",
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;",
+      "SELECT MAX(Capacity), AVG(Capacity) FROM stadium;"
+    ]
+  },
+  "concert_singer||What is the average and maximum capacities for all stadiums ?": {
+    "db_id": "concert_singer",
+    "question": "What is the average and maximum capacities for all stadiums ?",
+    "gold": "select avg(capacity) ,  max(capacity) from stadium",
+    "samples": [
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;",
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;",
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;",
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;",
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;",
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;",
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;",
+      "SELECT AVG(Capacity), MAX(Capacity) FROM stadium;"
+    ]
+  },
+  "concert_singer||What is the name and capacity for the stadium with highest average attendance?": {
+    "db_id": "concert_singer",
+    "question": "What is the name and capacity for the stadium with highest average attendance?",
+    "gold": "SELECT name ,  capacity FROM stadium ORDER BY average DESC LIMIT 1",
+    "samples": [
+      "SELECT Name, Capacity\nFROM stadium\nWHERE Average = (SELECT MAX(Average) FROM stadium);",
+      "SELECT Name, Capacity\nFROM stadium\nORDER BY Average DESC\nLIMIT 1;",
+      "SELECT Name, Capacity\nFROM stadium\nWHERE Average = (SELECT MAX(Average) FROM stadium);",
+      "SELECT Name, Capacity\nFROM stadium\nWHERE Average = (SELECT MAX(Average) FROM stadium);",
+      "SELECT Name, Capacity \nFROM stadium \nORDER BY Average DESC \nLIMIT 1",
+      "SELECT Name, Capacity\nFROM stadium\nORDER BY Average DESC\nLIMIT 1;",
+      "SELECT Name, Capacity\nFROM stadium\nORDER BY Average DESC\nLIMIT 1;",
+      "SELECT Name, Capacity\nFROM stadium\nWHERE Average = (SELECT MAX(Average) FROM stadium);"
+    ]
+  },
+  "concert_singer||What is the name and capacity for the stadium with the highest average attendance?": {
+    "db_id": "concert_singer",
+    "question": "What is the name and capacity for the stadium with the highest average attendance?",
+    "gold": "SELECT name ,  capacity FROM stadium ORDER BY average DESC LIMIT 1",
+    "samples": [
+      "SELECT Name, Capacity\nFROM stadium\nORDER BY Average DESC\nLIMIT 1;",
+      "SELECT Name, Capacity\nFROM stadium\nORDER BY Average DESC\nLIMIT 1;",
+      "SELECT Name, Capacity FROM stadium WHERE Average = (SELECT MAX(Average) FROM stadium)",
+      "SELECT Name, Capacity FROM stadium WHERE Average = (SELECT MAX(Average) FROM stadium);",
+      "SELECT Name, Capacity \nFROM stadium \nWHERE Average = (SELECT MAX(Average) FROM stadium);",
+      "SELECT Name, Capacity FROM stadium WHERE Average = (SELECT MAX(Average) FROM stadium)",
+      "SELECT Name, Capacity\nFROM stadium\nWHERE Average = (SELECT MAX(Average) FROM stadium);",
+      "SELECT Name, Capacity FROM stadium ORDER BY Average DESC LIMIT 1;"
+    ]
+  },
+  "concert_singer||How many concerts are there in year 2014 or 2015?": {
+    "db_id": "concert_singer",
+    "question": "How many concerts are there in year 2014 or 2015?",
+    "gold": "SELECT count(*) FROM concert WHERE YEAR  =  2014 OR YEAR  =  2015",
+    "samples": [
+      "SELECT COUNT(*) FROM concert WHERE Year = '2014' OR Year = '2015';",
+      "SELECT COUNT(*) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(*) FROM concert WHERE Year IN ('2014', '2015');",
+      "SELECT COUNT(*) FROM concert WHERE Year = '2014' OR Year = '2015';",
+      "SELECT COUNT(DISTINCT concert_ID) FROM concert WHERE Year = '2014' OR Year = '2015';",
+      "SELECT COUNT(*) FROM concert WHERE Year = '2014' OR Year = '2015';",
+      "SELECT COUNT(*) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(*) FROM concert WHERE Year = '2014' OR Year = '2015'"
+    ]
+  },
+  "concert_singer||How many concerts occurred in 2014 or 2015?": {
+    "db_id": "concert_singer",
+    "question": "How many concerts occurred in 2014 or 2015?",
+    "gold": "SELECT count(*) FROM concert WHERE YEAR  =  2014 OR YEAR  =  2015",
+    "samples": [
+      "SELECT COUNT(*) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(*) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(*) \nFROM concert \nWHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(*) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(DISTINCT concert_ID) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(DISTINCT concert_ID) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(DISTINCT concert_ID) FROM concert WHERE Year IN ('2014', '2015')",
+      "SELECT COUNT(DISTINCT concert_ID) FROM concert WHERE Year = '2014' OR Year = '2015';"
+    ]
+  },
+  "concert_singer||Which year has most number of concerts?": {
+    "db_id": "concert_singer",
+    "question": "Which year has most number of concerts?",
+    "gold": "SELECT YEAR FROM concert GROUP BY YEAR ORDER BY count(*) DESC LIMIT 1",
+    "samples": [
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year \nFROM concert \nGROUP BY Year \nORDER BY COUNT(*) DESC \nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;"
+    ]
+  },
+  "concert_singer||What is the year that had the most concerts?": {
+    "db_id": "concert_singer",
+    "question": "What is the year that had the most concerts?",
+    "gold": "SELECT YEAR FROM concert GROUP BY YEAR ORDER BY count(*) DESC LIMIT 1",
+    "samples": [
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(concert_ID) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "SELECT Year\nFROM concert\nGROUP BY Year\nORDER BY COUNT(concert_ID) DESC\nLIMIT 1;"
+    ]
+  },
+  "concert_singer||what is the name and nation of the singer who have a song having 'Hey' in its name?": {
+    "db_id": "concert_singer",
+    "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+    "gold": "SELECT name ,  country FROM singer WHERE song_name LIKE '%Hey%'",
+    "samples": [
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country from singer where Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';"
+    ]
+  },
+  "concert_singer||What is the name and country of origin of every singer who has a song with the word 'Hey' in its title?": {
+    "db_id": "concert_singer",
+    "question": "What is the name and country of origin of every singer who has a song with the word 'Hey' in its title?",
+    "gold": "SELECT name ,  country FROM singer WHERE song_name LIKE '%Hey%'",
+    "samples": [
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Singer_ID IN (SELECT Singer_ID FROM singer WHERE Song_Name LIKE '%Hey%')",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country \nFROM singer \nWHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country\nFROM singer\nWHERE Song_Name LIKE '%Hey%';",
+      "SELECT Name, Country FROM singer WHERE Song_Name LIKE '%Hey%';"
+    ]
+  },
+  "pets_1||Find the number of pets whose weight is heavier than 10.": {
+    "db_id": "pets_1",
+    "question": "Find the number of pets whose weight is heavier than 10.",
+    "gold": "SELECT count(*) FROM pets WHERE weight  >  10",
+    "samples": [
+      "SELECT COUNT(*)\nFROM Pets\nWHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) \nFROM Pets \nWHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) \nFROM Pets \nWHERE weight > 10;"
+    ]
+  },
+  "pets_1||How many pets have a greater weight than 10?": {
+    "db_id": "pets_1",
+    "question": "How many pets have a greater weight than 10?",
+    "gold": "SELECT count(*) FROM pets WHERE weight  >  10",
+    "samples": [
+      "SELECT COUNT(*) \nFROM Pets \nWHERE weight > 10;",
+      "SELECT COUNT(*) \nFROM Pets \nWHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) \nFROM Pets \nWHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*) FROM Pets WHERE weight > 10;",
+      "SELECT COUNT(*)\nFROM Pets\nWHERE weight > 10;"
+    ]
+  },
+  "pets_1||Find the weight of the youngest dog.": {
+    "db_id": "pets_1",
+    "question": "Find the weight of the youngest dog.",
+    "gold": "SELECT weight FROM pets ORDER BY pet_age LIMIT 1",
+    "samples": [
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog';",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog'",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog' ORDER BY pet_age ASC LIMIT 1;",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog'",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog';",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog'",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog'",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog'"
+    ]
+  },
+  "pets_1||How much does the youngest dog weigh?": {
+    "db_id": "pets_1",
+    "question": "How much does the youngest dog weigh?",
+    "gold": "SELECT weight FROM pets ORDER BY pet_age LIMIT 1",
+    "samples": [
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog');",
+      "SELECT MIN(weight) \nFROM Pets \nWHERE PetType = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog');",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog';",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog')",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog')",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog');",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog')",
+      "SELECT MIN(weight) FROM Pets WHERE PetType = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM Pets WHERE PetType = 'dog')"
+    ]
+  },
+  "pets_1||Find the maximum weight for each type of pet. List the maximum weight and pet type.": {
+    "db_id": "pets_1",
+    "question": "Find the maximum weight for each type of pet. List the maximum weight and pet type.",
+    "gold": "SELECT max(weight) ,  petType FROM pets GROUP BY petType",
+    "samples": [
+      "SELECT PetType, MAX(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) FROM Pets GROUP BY PetType;",
+      "SELECT MAX(weight) AS max_weight, PetType\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, MAX(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) FROM Pets GROUP BY PetType;"
+    ]
+  },
+  "pets_1||List the maximum weight and type for each type of pet.": {
+    "db_id": "pets_1",
+    "question": "List the maximum weight and type for each type of pet.",
+    "gold": "SELECT max(weight) ,  petType FROM pets GROUP BY petType",
+    "samples": [
+      "SELECT PetType, MAX(weight) AS max_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) AS max_weight FROM Pets GROUP BY PetType",
+      "SELECT PetType, MAX(weight) AS max_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) AS max_weight\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, MAX(weight) AS max_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) AS max_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) AS max_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, MAX(weight) AS max_weight FROM Pets GROUP BY PetType;"
+    ]
+  },
+  "pets_1||Find the number of distinct type of pets.": {
+    "db_id": "pets_1",
+    "question": "Find the number of distinct type of pets.",
+    "gold": "SELECT count(DISTINCT pettype) FROM pets",
+    "samples": [
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) AS num_distinct_pet_types FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) AS num_distinct_pet_types FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;"
+    ]
+  },
+  "pets_1||How many different types of pet are there?": {
+    "db_id": "pets_1",
+    "question": "How many different types of pet are there?",
+    "gold": "SELECT count(DISTINCT pettype) FROM pets",
+    "samples": [
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;",
+      "SELECT COUNT(DISTINCT PetType) FROM Pets;"
+    ]
+  },
+  "pets_1||Find the type and weight of the youngest pet.": {
+    "db_id": "pets_1",
+    "question": "Find the type and weight of the youngest pet.",
+    "gold": "SELECT pettype ,  weight FROM pets ORDER BY pet_age LIMIT 1",
+    "samples": [
+      "SELECT PetType, weight \nFROM Pets \nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets)",
+      "SELECT PetType, weight\nFROM Pets\nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets);",
+      "SELECT PetType, weight\nFROM Pets\nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets);",
+      "SELECT PetType, weight \nFROM Pets \nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets)",
+      "SELECT PetType, weight\nFROM Pets\nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets);",
+      "SELECT PetType, weight\nFROM Pets\nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets)",
+      "SELECT PetType, weight\nFROM Pets\nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets)",
+      "SELECT PetType, weight\nFROM Pets\nORDER BY pet_age ASC\nLIMIT 1;"
+    ]
+  },
+  "pets_1||What type of pet is the youngest animal, and how much does it weigh?": {
+    "db_id": "pets_1",
+    "question": "What type of pet is the youngest animal, and how much does it weigh?",
+    "gold": "SELECT pettype ,  weight FROM pets ORDER BY pet_age LIMIT 1",
+    "samples": [
+      "SELECT PetType, weight\nFROM Pets\nORDER BY pet_age ASC\nLIMIT 1;",
+      "SELECT PetType, weight\nFROM Pets\nORDER BY pet_age ASC\nLIMIT 1;",
+      "SELECT PetType, weight\nFROM Pets\nORDER BY pet_age ASC\nLIMIT 1;",
+      "SELECT PetType, weight FROM Pets ORDER BY pet_age ASC LIMIT 1;",
+      "SELECT PetType, weight\nFROM Pets\nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets)",
+      "SELECT PetType, weight\nFROM Pets\nWHERE pet_age = (SELECT MIN(pet_age) FROM Pets)",
+      "SELECT PetType, weight FROM Pets WHERE pet_age = (SELECT MIN(pet_age) FROM Pets)",
+      "SELECT PetType, weight\nFROM Pets\nORDER BY pet_age ASC\nLIMIT 1;"
+    ]
+  },
+  "pets_1||Find the id and weight of all pets whose age is older than 1.": {
+    "db_id": "pets_1",
+    "question": "Find the id and weight of all pets whose age is older than 1.",
+    "gold": "SELECT petid ,  weight FROM pets WHERE pet_age  >  1",
+    "samples": [
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight\nFROM Pets\nWHERE pet_age > 1;",
+      "SELECT Pets.PetID, Pets.weight FROM Pets WHERE Pets.pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;"
+    ]
+  },
+  "pets_1||What is the id and weight of every pet who is older than 1?": {
+    "db_id": "pets_1",
+    "question": "What is the id and weight of every pet who is older than 1?",
+    "gold": "SELECT petid ,  weight FROM pets WHERE pet_age  >  1",
+    "samples": [
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;",
+      "SELECT PetID, weight FROM Pets WHERE pet_age > 1;"
+    ]
+  },
+  "pets_1||Find the average and maximum age for each type of pet.": {
+    "db_id": "pets_1",
+    "question": "Find the average and maximum age for each type of pet.",
+    "gold": "SELECT avg(pet_age) ,  max(pet_age) ,  pettype FROM pets GROUP BY pettype",
+    "samples": [
+      "SELECT PetType, AVG(pet_age) AS AverageAge, MAX(pet_age) AS MaxAge FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age), MAX(pet_age) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS average_age, MAX(pet_age) AS maximum_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age \nFROM Pets \nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;"
+    ]
+  },
+  "pets_1||What is the average and maximum age for each pet type?": {
+    "db_id": "pets_1",
+    "question": "What is the average and maximum age for each pet type?",
+    "gold": "SELECT avg(pet_age) ,  max(pet_age) ,  pettype FROM pets GROUP BY pettype",
+    "samples": [
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS average_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS average_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS average_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(pet_age) AS avg_age, MAX(pet_age) AS max_age\nFROM Pets\nGROUP BY PetType;"
+    ]
+  },
+  "pets_1||Find the average weight for each pet type.": {
+    "db_id": "pets_1",
+    "question": "Find the average weight for each pet type.",
+    "gold": "SELECT avg(weight) ,  pettype FROM pets GROUP BY pettype",
+    "samples": [
+      "SELECT PetType, AVG(weight) AS avg_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS average_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS average_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS average_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS avg_weight FROM Pets GROUP BY PetType;"
+    ]
+  },
+  "pets_1||What is the average weight for each type of pet?": {
+    "db_id": "pets_1",
+    "question": "What is the average weight for each type of pet?",
+    "gold": "SELECT avg(weight) ,  pettype FROM pets GROUP BY pettype",
+    "samples": [
+      "SELECT PetType, AVG(weight) AS average_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS avg_weight FROM Pets GROUP BY PetType",
+      "SELECT PetType, AVG(weight) AS avg_weight\nFROM Pets\nGROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS average_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS avg_weight FROM Pets GROUP BY PetType;",
+      "SELECT PetType, AVG(weight) \nFROM Pets \nGROUP BY PetType;",
+      "SELECT PetType, AVG(weight) \nFROM Pets \nGROUP BY PetType;",
+      "SELECT PetType, AVG(weight) AS average_weight FROM Pets GROUP BY PetType"
+    ]
+  },
+  "car_1||How many continents are there?": {
+    "db_id": "car_1",
+    "question": "How many continents are there?",
+    "gold": "SELECT count(*) FROM CONTINENTS;",
+    "samples": [
+      "SELECT COUNT(*) FROM continents;",
+      "SELECT COUNT(DISTINCT Continent) FROM continents;",
+      "SELECT COUNT(DISTINCT Continent) FROM continents;",
+      "SELECT COUNT(*) FROM continents;",
+      "SELECT COUNT(DISTINCT Continent) FROM continents;",
+      "SELECT COUNT(DISTINCT Continent) FROM continents;",
+      "SELECT COUNT(DISTINCT Continent) FROM continents;",
+      "SELECT COUNT(DISTINCT Continent) FROM continents;"
+    ]
+  },
+  "car_1||What is the number of continents?": {
+    "db_id": "car_1",
+    "question": "What is the number of continents?",
+    "gold": "SELECT count(*) FROM CONTINENTS;",
+    "samples": [
+      "SELECT COUNT(*) FROM continents;",
+      "SELECT COUNT(*) FROM continents;",
+      "SELECT COUNT(ContId) FROM continents;",
+      "SELECT COUNT(Continent) FROM continents;",
+      "SELECT COUNT(Continent) FROM continents;",
+      "SELECT COUNT(*) FROM continents;",
+      "SELECT COUNT(*) FROM continents;",
+      "SELECT COUNT(*) FROM continents;"
+    ]
+  },
+  "car_1||How many countries are listed?": {
+    "db_id": "car_1",
+    "question": "How many countries are listed?",
+    "gold": "SELECT count(*) FROM COUNTRIES;",
+    "samples": [
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;"
+    ]
+  },
+  "car_1||How many countries exist?": {
+    "db_id": "car_1",
+    "question": "How many countries exist?",
+    "gold": "SELECT count(*) FROM COUNTRIES;",
+    "samples": [
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(DISTINCT CountryId) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) FROM countries;",
+      "SELECT COUNT(*) AS TotalCountries FROM countries;",
+      "SELECT COUNT(*) FROM countries;"
+    ]
+  },
+  "car_1||What is the average miles per gallon(mpg) of the cars with 4 cylinders?": {
+    "db_id": "car_1",
+    "question": "What is the average miles per gallon(mpg) of the cars with 4 cylinders?",
+    "gold": "SELECT avg(mpg) FROM CARS_DATA WHERE Cylinders  =  4;",
+    "samples": [
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS INTEGER)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;"
+    ]
+  },
+  "car_1||What is the average miles per gallon of all the cards with 4 cylinders?": {
+    "db_id": "car_1",
+    "question": "What is the average miles per gallon of all the cards with 4 cylinders?",
+    "gold": "SELECT avg(mpg) FROM CARS_DATA WHERE Cylinders  =  4;",
+    "samples": [
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(Cars_data.MPG) FROM cars_data WHERE Cars_data.Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;",
+      "SELECT AVG(Cars_data.MPG) FROM cars_data WHERE cars_data.Cylinders = 4;",
+      "SELECT AVG(CAST(MPG AS REAL)) FROM cars_data WHERE Cylinders = 4;"
+    ]
+  },
+  "car_1||What is the smallest weight of the car produced with 8 cylinders on 1974 ?": {
+    "db_id": "car_1",
+    "question": "What is the smallest weight of the car produced with 8 cylinders on 1974 ?",
+    "gold": "select min(weight) from cars_data where cylinders  =  8 and year  =  1974",
+    "samples": [
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;"
+    ]
+  },
+  "car_1||What is the minimum weight of the car with 8 cylinders produced in 1974 ?": {
+    "db_id": "car_1",
+    "question": "What is the minimum weight of the car with 8 cylinders produced in 1974 ?",
+    "gold": "select min(weight) from cars_data where cylinders  =  8 and year  =  1974",
+    "samples": [
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;",
+      "SELECT MIN(Weight) FROM cars_data WHERE Cylinders = 8 AND Year = 1974;"
+    ]
+  },
+  "car_1||What are all the makers and models?": {
+    "db_id": "car_1",
+    "question": "What are all the makers and models?",
+    "gold": "SELECT Maker ,  Model FROM MODEL_LIST;",
+    "samples": [
+      "SELECT DISTINCT Maker, Model\nFROM car_makers\nJOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT car_makers.Maker, model_list.Model\nFROM car_makers\nJOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT car_makers.Maker, model_list.Model\nFROM car_makers\nJOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT car_makers.Maker, model_list.Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model\nFROM car_makers\nJOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model \nFROM car_makers \nJOIN model_list ON car_makers.Id = model_list.Maker;"
+    ]
+  },
+  "car_1||What are the makers and models?": {
+    "db_id": "car_1",
+    "question": "What are the makers and models?",
+    "gold": "SELECT Maker ,  Model FROM MODEL_LIST;",
+    "samples": [
+      "SELECT DISTINCT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model \nFROM car_makers \nJOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model FROM car_makers JOIN model_list ON car_makers.Id = model_list.Maker;",
+      "SELECT DISTINCT Maker, Model \nFROM car_makers \nJOIN model_list ON car_makers.Id = model_list.Maker;"
+    ]
+  },
+  "car_1||What is the number of the cars with horsepower more than 150?": {
+    "db_id": "car_1",
+    "question": "What is the number of the cars with horsepower more than 150?",
+    "gold": "SELECT count(*) FROM CARS_DATA WHERE horsepower  >  150;",
+    "samples": [
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT Count(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;"
+    ]
+  },
+  "car_1||What is the number of cars with a horsepower greater than 150?": {
+    "db_id": "car_1",
+    "question": "What is the number of cars with a horsepower greater than 150?",
+    "gold": "SELECT count(*) FROM CARS_DATA WHERE horsepower  >  150;",
+    "samples": [
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;",
+      "SELECT COUNT(*) FROM cars_data WHERE CAST(Horsepower AS INTEGER) > 150;"
+    ]
+  },
+  "car_1||What is the average weight of cars each year?": {
+    "db_id": "car_1",
+    "question": "What is the average weight of cars each year?",
+    "gold": "SELECT avg(Weight) ,  YEAR FROM CARS_DATA GROUP BY YEAR;",
+    "samples": [
+      "SELECT Year, AVG(Weight) AS AverageWeight FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) AS Avg_Weight FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) AS Average_Weight FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) AS Average_Weight FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) AS AverageWeight FROM cars_data GROUP BY Year;"
+    ]
+  },
+  "car_1||What is the average weight and year for each year?": {
+    "db_id": "car_1",
+    "question": "What is the average weight and year for each year?",
+    "gold": "SELECT avg(Weight) ,  YEAR FROM CARS_DATA GROUP BY YEAR;",
+    "samples": [
+      "SELECT AVG(Weight), Year FROM cars_data GROUP BY Year;",
+      "SELECT AVG(Weight), Year\nFROM cars_data\nGROUP BY Year;",
+      "SELECT AVG(Weight), Year\nFROM cars_data\nGROUP BY Year;",
+      "SELECT Year, AVG(Weight), AVG(Year) FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight), AVG(Year) FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight) AS avg_weight, AVG(Year) AS avg_year FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight), AVG(Year) FROM cars_data GROUP BY Year;",
+      "SELECT Year, AVG(Weight), AVG(Year) FROM cars_data GROUP BY Year;"
+    ]
+  },
+  "car_1||What is the average horsepower of the cars before 1980?": {
+    "db_id": "car_1",
+    "question": "What is the average horsepower of the cars before 1980?",
+    "gold": "SELECT avg(horsepower) FROM CARS_DATA WHERE YEAR  <  1980;",
+    "samples": [
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(Horsepower) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;"
+    ]
+  },
+  "car_1||What is the average horsepower for all cars produced before 1980 ?": {
+    "db_id": "car_1",
+    "question": "What is the average horsepower for all cars produced before 1980 ?",
+    "gold": "select avg(horsepower) from cars_data where year  <  1980;",
+    "samples": [
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(Horsepower) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(Horsepower) FROM cars_data WHERE Year < 1980;",
+      "SELECT AVG(CAST(Horsepower AS INTEGER)) FROM cars_data WHERE Year < 1980;"
+    ]
+  },
+  "car_1||What is the maximum accelerate for different number of cylinders?": {
+    "db_id": "car_1",
+    "question": "What is the maximum accelerate for different number of cylinders?",
+    "gold": "SELECT max(Accelerate) ,  Cylinders FROM CARS_DATA GROUP BY Cylinders;",
+    "samples": [
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;"
+    ]
+  },
+  "car_1||What is the maximum accelerate for all the different cylinders?": {
+    "db_id": "car_1",
+    "question": "What is the maximum accelerate for all the different cylinders?",
+    "gold": "SELECT max(Accelerate) ,  Cylinders FROM CARS_DATA GROUP BY Cylinders;",
+    "samples": [
+      "SELECT MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT MAX(Accelerate), Cylinders\nFROM cars_data\nGROUP BY Cylinders;",
+      "SELECT Cylinders, MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT MAX(Accelerate) FROM cars_data GROUP BY Cylinders;",
+      "SELECT MAX(Accelerate) FROM cars_data GROUP BY Cylinders;"
+    ]
+  },
+  "car_1||Which model has the most version(make) of cars?": {
+    "db_id": "car_1",
+    "question": "Which model has the most version(make) of cars?",
+    "gold": "SELECT Model FROM CAR_NAMES GROUP BY Model ORDER BY count(*) DESC LIMIT 1;",
+    "samples": [
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions \nFROM car_names \nGROUP BY Model \nORDER BY NumVersions DESC \nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions\nFROM model_list\nGROUP BY Model\nORDER BY NumVersions DESC\nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions FROM car_names GROUP BY Model ORDER BY NumVersions DESC LIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions\nFROM car_names\nGROUP BY Model\nORDER BY NumVersions DESC\nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumOfVersions\nFROM car_names\nGROUP BY Model\nORDER BY NumOfVersions DESC\nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumOfVersions\nFROM car_names\nGROUP BY Model\nORDER BY NumOfVersions DESC\nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS VersionCount\nFROM model_list\nGROUP BY Model\nORDER BY VersionCount DESC\nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions\nFROM model_list\nGROUP BY Model\nORDER BY NumVersions DESC\nLIMIT 1;"
+    ]
+  },
+  "car_1||What model has the most different versions?": {
+    "db_id": "car_1",
+    "question": "What model has the most different versions?",
+    "gold": "SELECT Model FROM CAR_NAMES GROUP BY Model ORDER BY count(*) DESC LIMIT 1;",
+    "samples": [
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions \nFROM model_list \nGROUP BY Model \nORDER BY NumVersions DESC \nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT MakeId) AS NumVersions FROM car_names GROUP BY Model ORDER BY NumVersions DESC LIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions FROM model_list GROUP BY Model ORDER BY NumVersions DESC LIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions\nFROM model_list\nGROUP BY Model\nORDER BY NumVersions DESC\nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions FROM model_list GROUP BY Model ORDER BY NumVersions DESC LIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions FROM model_list GROUP BY Model ORDER BY NumVersions DESC LIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions\nFROM model_list\nGROUP BY Model\nORDER BY NumVersions DESC\nLIMIT 1;",
+      "SELECT Model, COUNT(DISTINCT Make) AS NumVersions \nFROM car_names \nGROUP BY Model \nORDER BY NumVersions DESC \nLIMIT 1;"
+    ]
+  }
+}

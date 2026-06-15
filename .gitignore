@@ -1,0 +1,30 @@
+# Python env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+
+# Large / regenerable data: embeddings cache (~300MB) and databases (downloadable)
+data/embeddings.json
+data/spider_db/
+data/bird/db/
+**/*.sqlite
+*.db
+data/raw/
+data/*_backup.json
+
+# Third-party / copyrighted material (not ours to redistribute)
+*.pdf
+
+# LaTeX build artifacts
+paper/tex/*.aux
+paper/tex/*.log
+paper/tex/*.out
+paper/tex/*.toc
+paper/tex/*.fls
+paper/tex/*.fdb_latexmk
+paper/tex/*.synctex.gz
+paper/tex/*.bbl
+paper/tex/*.blg

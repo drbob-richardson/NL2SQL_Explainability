@@ -1,0 +1,7 @@
+{
+  "n": 800,
+  "first": 0.4475,
+  "modal_self_consistency": 0.45125,
+  "best_logprob": 0.44625,
+  "oracle_best_of_N": 0.50625
+}
