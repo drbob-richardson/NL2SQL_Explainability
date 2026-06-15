@@ -1,0 +1,24 @@
+{
+  "model": "answerdotai/ModernBERT-base",
+  "epochs": 3,
+  "n_rows": 6400,
+  "baselines": {
+    "frozen_verifier_mini": 0.724,
+    "frozen_verifier_gpt4o": 0.77,
+    "self_consistency": 0.616,
+    "cheap_clf_indist": 0.768,
+    "cheap_clf_lodo": 0.661
+  },
+  "indist_auroc": 0.7845897040812295,
+  "lodo_per_db": {
+    "california_schools": 0.6489808153477218,
+    "debit_card_specializing": 0.7358186439627203,
+    "financial": 0.6673099547380195,
+    "formula_1": 0.7235941618125844,
+    "student_club": 0.6826968436401064,
+    "superhero": 0.6271704192281097,
+    "thrombosis_prediction": 0.6314634724857685,
+    "toxicology": 0.6436960615906786
+  },
+  "lodo_mean_auroc": 0.6700912966007136
+}

@@ -1,0 +1,12 @@
+torch 2.12.0+cu130  cuda=True
+loaded 400 rows across 1 dbs; model=roberta-base epochs=3
+
+  IN-DISTRIBUTION AUROC = 0.036   (15s)
+    LODO held-out california_schools: AUROC 0.491
+
+  LEAVE-ONE-DB-OUT (transfer) mean AUROC = 0.4907645287030475
+
+  VERDICT: bet succeeds if LODO mean AUROC > 0.77 (beats frozen gpt-4o verifier on
+  transfer). If LODO << indist, the fine-tune overfits schemas like the cheap classifier.
+
+  wrote results/exp1_verifier_roberta-base_smoke.json

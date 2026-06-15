@@ -1,0 +1,12 @@
+torch 2.12.0+cu130  cuda=True
+loaded 6400 rows across 8 dbs; model=roberta-base epochs=3
+    [indist] epoch 1/3 done (320 steps)
+    [indist] epoch 2/3 done (640 steps)
+    [indist] epoch 3/3 done (960 steps)
+
+  IN-DISTRIBUTION AUROC = 0.778   (394s)
+
+  VERDICT: bet succeeds if LODO mean AUROC > 0.77 (beats frozen gpt-4o verifier on
+  transfer). If LODO << indist, the fine-tune overfits schemas like the cheap classifier.
+
+  wrote results/exp1_verifier_roberta-base.json
