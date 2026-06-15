@@ -1,0 +1,20 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "epochs": 2,
+  "n_rows": 200,
+  "baselines": {
+    "frozen_verifier_gpt4o": 0.77,
+    "encoder_indist": 0.785,
+    "encoder_lodo": 0.67
+  },
+  "zeroshot_indist_auroc": 0.47962382445141066,
+  "zeroshot_lodo_per_db": {
+    "california_schools": 0.5206473214285714
+  },
+  "zeroshot_lodo_mean_auroc": 0.5206473214285714,
+  "indist_auroc": 0.33699059561128525,
+  "lodo_per_db": {
+    "california_schools": 0.5206473214285714
+  },
+  "lodo_mean_auroc": 0.5206473214285714
+}

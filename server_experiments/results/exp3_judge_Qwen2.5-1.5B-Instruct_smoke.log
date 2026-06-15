@@ -1,0 +1,15 @@
+torch 2.12.0+cu130  cuda=True  model=Qwen/Qwen2.5-1.5B-Instruct
+loaded 200 rows across 1 dbs; yes_id=7414 no_id=2308
+  ZERO-SHOT in-distribution AUROC = 0.480
+  ZERO-SHOT per-DB mean AUROC = 0.521
+
+  FINE-TUNED IN-DISTRIBUTION AUROC = 0.337   (10s)
+    LODO held-out california_schools: AUROC 0.521
+
+  FINE-TUNED LEAVE-ONE-DB-OUT (transfer) mean AUROC = 0.5206473214285714
+
+  VERDICT: universal-verifier bet wins if LODO > 0.77 (beats frozen gpt-4o judge AND
+  the fine-tuned encoder's 0.67 transfer). If LODO ~ 0.67 too, generative judges also
+  overfit schemas and the universal verifier is just the frozen LLM.
+
+  wrote results/exp3_judge_Qwen2.5-1.5B-Instruct_smoke.json
