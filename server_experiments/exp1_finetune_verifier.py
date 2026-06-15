@@ -35,6 +35,13 @@ class Tee:
         self.stdout.write(s); self.f.write(s); self.f.flush()
     def flush(self):
         self.stdout.flush(); self.f.flush()
+    def isatty(self):
+        return False
+    def fileno(self):
+        return self.stdout.fileno()
+    def __getattr__(self, name):
+        # delegate anything else (encoding, etc.) to the real stdout
+        return getattr(self.stdout, name)
 
 
 def auroc(scores, labels):
