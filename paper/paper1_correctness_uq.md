@@ -18,13 +18,15 @@ signals break the ceiling:** an LLM verifier (0.72; an independent stronger judg
 white-box sequence log-probabilities (0.67) carry complementary information, combine to AUROC 0.76,
 and enable risk-controlled abstention that self-consistency structurally cannot offer (e.g., 27%
 coverage at 24% selective risk where the baseline yields no valid low-risk subset). We further ask
-whether the verifier can be *trained*: a fine-tuned transformer verifier reaches in-distribution
-AUROC 0.785 (beating a cheap feature classifier and matching the frozen GPT-4o judge) but **does not
-transfer** — leave-one-database-out AUROC drops to 0.670, the same overfitting the cheap classifier
-showed. The frozen LLM judge's 0.77 is, by contrast, already a transfer number, because it reasons
-rather than memorizes schema surface form. The practical upshot: correctness UQ for text-to-SQL is
-real but lives in *reasoning-based* signals; a fine-tuned verifier is an excellent **per-deployment**
-tool, while a **universal** verifier requires a model that generalizes across schemas.
+whether the verifier can be *trained*: fine-tuned verifiers — encoder and generative alike — reach
+in-distribution AUROC ≈ 0.77–0.79 (matching the frozen GPT-4o judge) but **do not transfer**,
+dropping to ≈ 0.66 across unseen schemas, even though fine-tuning clearly helps (it lifts a small
+generative judge +0.11 over its zero-shot self). Cross-schema transfer tracks **model scale and
+reasoning**, not fine-tuning: the frozen large judge's 0.77 is already a transfer number, while a
+small fine-tuned model memorizes schema surface form. The practical upshot: correctness UQ for
+text-to-SQL is real but lives in *reasoning-based* signals; a fine-tuned verifier is an excellent
+**per-deployment** tool, while a **universal** verifier requires a model that generalizes across
+schemas — so far, a large frozen reasoning judge.
 
 ---
 
@@ -119,30 +121,38 @@ A verifier from the same model family as the generator could merely echo it. It 
 *better*, and the two judges correlate only **0.49** — they capture different errors and combine
 (all-signals 0.763).
 
-### 4.4 Can the verifier be trained? In-distribution yes, transfer no
+### 4.4 Can the verifier be trained? In-distribution yes, transfer no — across architectures and scale
 
-We fine-tune a transformer verifier on (question + evidence + schema + SQL → correct), 6,400
-execution-labeled pairs, evaluated with the same leave-one-database-out (LODO) protocol used for
-schema linking.
+We fine-tune verifiers on (question + evidence + schema + SQL → correct), 6,400 execution-labeled
+pairs, evaluated with the same leave-one-database-out (LODO) protocol, spanning two architectures
+(an encoder classifier and a generative LLM judge fine-tuned with LoRA) plus an un-fine-tuned
+baseline.
 
 | verifier | in-distribution AUROC | leave-one-DB-out (transfer) |
 |---|---|---|
 | cheap feature classifier (embeddings + logprob + self-consistency) | 0.768 | 0.661 |
 | fine-tuned encoder, RoBERTa-base | 0.778 | — |
-| **fine-tuned encoder, ModernBERT-base (full schema context)** | **0.785** | **0.670** |
+| fine-tuned encoder, ModernBERT-base (full schema context) | 0.785 | 0.670 |
+| generative judge, Qwen2.5-1.5B-Instruct — **zero-shot** | 0.651 | 0.553 |
+| generative judge, Qwen2.5-1.5B-Instruct — **LoRA fine-tuned** | 0.766 | 0.659 |
 | *frozen `gpt-4o` judge (zero-shot)* | — | *0.770 (already a transfer number)* |
 
-In-distribution, a fine-tuned verifier is strong — it beats the cheap classifier and matches the
-frozen GPT-4o judge. But it **does not transfer**: LODO AUROC falls to 0.670 (a 0.115 gap), matching
-the cheap classifier's collapse, and worst on the most domain-specific held-out schemas. Long
-context (ModernBERT, no truncation) does not fix it — the fine-tuned encoder *memorizes schema
-surface form*. The frozen LLM judge's 0.77, by contrast, *is* its cross-schema number: reasoning
-generalizes where fitting does not.
+Three findings. **(i) Fine-tuning works** — it lifts the small generative judge +0.115
+in-distribution and +0.106 on transfer over its own zero-shot baseline; training is not a no-op.
+**(ii) But it does not transfer** — every fine-tuned verifier, encoder or generative, converges to
+the same wall: ≈ 0.77 in-distribution, ≈ 0.66 across unseen schemas (a ~0.11 gap), worst on the most
+domain-specific held-out databases (e.g., toxicology 0.56–0.64). Long context (ModernBERT) and a
+generative architecture (Qwen) both fail to close it; the models *memorize schema surface form*.
+**(iii) The frozen large judge is the exception** — GPT-4o's 0.77 *is* its cross-schema number, and
+the small base model's near-chance zero-shot transfer (0.553) shows why: transfer here is a function
+of **model scale / reasoning**, not of fine-tuning. A small model fine-tuned overfits; a large model
+reasons.
 
-**Consequence.** There are two distinct problems. A **per-deployment** verifier (trained on a given
-database's own schemas) is an excellent, near-zero-inference-cost option at ≈ 0.78. A **universal**
-verifier is *not* a fine-tuned encoder; the candidate route is a fine-tuned *generative* judge whose
-reasoning may transfer — an experiment we report as ongoing (Section 6).
+**Consequence.** Two distinct problems. A **per-deployment** verifier (trained on a database's own
+schemas) is an excellent, near-zero-inference-cost option at ≈ 0.77–0.79. A **universal** verifier,
+on this evidence, is a *large frozen reasoning model*: no small fine-tuned verifier (≤ 1.5B, encoder
+or generative) beats GPT-4o's 0.77 on transfer. Whether fine-tuning a *large* (7B+) generative judge
+transfers is the open question this leaves.
 
 ### 4.5 Selective prediction: abstention the baseline cannot do
 
@@ -182,9 +192,10 @@ fine-tuning a generative judge beats it.
 - **Frozen verifiers are within one provider**; a cross-*provider* judge is untested.
 - **PAC certificates are loose** because base accuracy is 0.45; a stronger generator should make them
   fire at useful coverage.
-- **Universal trained verifier — ongoing:** we are fine-tuning a small *generative* LLM judge (LoRA)
-  with the same LODO protocol to test whether a reasoning judge transfers where the encoder did not;
-  results will report its in-distribution vs. transfer gap against the frozen-judge bar (0.77).
+- **Universal trained verifier — scale is the open variable:** a fine-tuned small generative judge
+  (Qwen2.5-1.5B, LoRA) plateaus at the same transfer wall as the encoder (§4.4, LODO 0.659); the
+  remaining test is whether a *large* (7B+) fine-tuned generative judge transfers, since the only
+  verifier that generalizes across schemas so far is the large frozen judge.
 
 ## 7. Conclusion
 
