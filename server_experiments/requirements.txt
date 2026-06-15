@@ -4,3 +4,4 @@ torch>=2.0
 transformers>=4.30
 sentencepiece>=0.1.99   # needed by some tokenizers (e.g. deberta); harmless otherwise
 # Optional long-context verifier model: answerdotai/ModernBERT-base needs transformers>=4.48
+peft>=0.7               # exp3 only (generative LLM judge, LoRA fine-tune)
