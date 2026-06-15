@@ -63,8 +63,9 @@ def auroc(scores, labels):
 def load_rows():
     rows = [json.loads(l) for l in open(DATA)]
     for r in rows:
-        r["text"] = (f"Question: {r['question']}\nEvidence: {r['evidence']}\n"
-                     f"Schema:\n{r['schema']}\nSQL: {r['sql']}")
+        # SQL + question FIRST so they survive truncation; schema (long) is truncated from the tail.
+        r["text"] = (f"SQL: {r['sql']}\nQuestion: {r['question']}\nEvidence: {r['evidence']}\n"
+                     f"Schema:\n{r['schema']}")
     return rows
 
 
