@@ -64,7 +64,8 @@ def main():
         p = os.path.join(ROOT, path)
         return json.load(open(p)) if os.path.exists(p) else None
     caches = {"vmini_verbal": loadj("data/bird_verify_verbal.json"),
-              "claude": loadj("data/bird_verify_anthropic_claude_sonnet_4_6_verbal.json")}
+              "claude": loadj("data/bird_verify_anthropic_claude_sonnet_4_6_verbal.json"),
+              "gemini": loadj("data/bird_verify_gemini_gemini_2_5_flash_verbal.json")}
 
     y = np.array([r["ok"] for r in sig], int)
     S = {
@@ -77,6 +78,8 @@ def main():
         "verifier gpt-4o (logit)": np.array([r["v4o"] for r in sig]),
         "verifier Claude-sonnet-4.6 (verbal)": np.array([caches["claude"][k] for k in keyof]),
     }
+    if caches["gemini"]:
+        S["verifier Gemini-2.5-flash (verbal)"] = np.array([caches["gemini"][k] for k in keyof])
     print(f"n={len(y)} accuracy={y.mean():.3f}\n{'signal':<38}{'AUROC':>7}{'ECE':>7}")
     for name, s in S.items():
         isprob = s.min() >= 0 and s.max() <= 1
@@ -92,14 +95,25 @@ def main():
         full = crossfit([[a, b] for a, b in zip(base, S[k])], y)
         m, (lo, hi) = boot(base, full, y)
         print(f"  + {k:<40} {auroc(full, y):.3f}   Δ {m:+.3f} CI [{lo:+.3f},{hi:+.3f}]")
-    # cross-provider ensemble + everything
+    # cross-provider ensembles
     g, c = S["verifier gpt-4o (logit)"], S["verifier Claude-sonnet-4.6 (verbal)"]
-    ens = crossfit([[gi, ci] for gi, ci in zip(g, c)], y)
-    m, (lo, hi) = boot(g, ens, y)
-    print(f"\ntwo-provider ensemble (gpt-4o+Claude) {auroc(ens, y):.3f}  Δ vs gpt-4o {m:+.3f} CI [{lo:+.3f},{hi:+.3f}] (ECE {ece(ens,y):.3f})")
-    allf = crossfit([[base[i], S['logprob (white-box)'][i], g[i], c[i]] for i in range(len(y))], y)
-    print(f"all (SC+logprob+gpt-4o+Claude)       {auroc(allf, y):.3f}  (ECE {ece(allf,y):.3f})")
-    print(f"\ncorrelation gpt-4o x Claude judges: r={np.corrcoef(g, c)[0,1]:.2f}")
+    ens2 = crossfit([[gi, ci] for gi, ci in zip(g, c)], y)
+    m, (lo, hi) = boot(g, ens2, y)
+    print(f"\ntwo-provider ensemble (gpt-4o+Claude) {auroc(ens2, y):.3f}  "
+          f"Δ vs gpt-4o {m:+.3f} CI [{lo:+.3f},{hi:+.3f}] (ECE {ece(ens2,y):.3f})")
+    gem = S.get("verifier Gemini-2.5-flash (verbal)")
+    if gem is not None:
+        ens3 = crossfit([[gi, ci, ti] for gi, ci, ti in zip(g, c, gem)], y)
+        m3, (lo3, hi3) = boot(ens2, ens3, y)
+        print(f"three-provider ensemble (gpt-4o+Claude+Gemini) {auroc(ens3, y):.3f}  "
+              f"Δ vs two-provider {m3:+.3f} CI [{lo3:+.3f},{hi3:+.3f}] (ECE {ece(ens3,y):.3f})")
+        print("\nPairwise judge-score correlations (different errors => low r):")
+        for n1, s1 in (("gpt-4o", g), ("Claude", c), ("Gemini", gem)):
+            for n2, s2 in (("gpt-4o", g), ("Claude", c), ("Gemini", gem)):
+                if n1 < n2:
+                    print(f"  {n1} x {n2}: r={np.corrcoef(s1, s2)[0,1]:.2f}")
+    else:
+        print(f"correlation gpt-4o x Claude judges: r={np.corrcoef(g, c)[0,1]:.2f}")
 
 
 if __name__ == "__main__":
