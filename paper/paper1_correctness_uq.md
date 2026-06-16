@@ -12,14 +12,15 @@ out as a correctness predictor.*
 When should we trust an LLM's SQL? We study, on equal footing and with bootstrapped confidence
 intervals, which signals predict whether a generated query is *execution-correct* on hard
 multi-table text-to-SQL (BIRD). We find a sharp dichotomy. **Black-box statistical signals plateau:**
-sampling self-consistency, execution self-consistency, structural priors, and semantic
-schema-linking confidence all sit at AUROC ≈ 0.62, with only marginal gains from combining them.
-**Logic-aware signals break the ceiling:** an LLM verifier (0.72; an independent stronger judge 0.77)
-and white-box sequence log-probabilities (0.67) carry complementary information, combine to AUROC
-0.76 and a well-calibrated correctness probability (ECE 0.05), and support useful abstention
-frontiers (e.g., 27% coverage at 24% selective risk) where self-consistency yields no valid low-risk
-subset — though distribution-free certificates remain conservative under the regime's low base
-accuracy. We further ask
+string, structural, and execution self-consistency, structural priors, and semantic schema-linking
+confidence all sit at AUROC ≈ 0.61–0.68 (string self-consistency, 0.675, is the strongest), and
+**white-box log-probability does not exceed them** (0.67; no significant gain when combined with the
+best baseline). **What breaks the ceiling is verification:** an LLM judge scores 0.72 (GPT-4o-mini)
+to 0.78 (Claude), and because independent-provider judges make *different* errors (GPT-4o vs Claude
+score correlation 0.43) a two-provider ensemble reaches **AUROC 0.82** with a well-calibrated
+correctness probability (ECE 0.03), supporting useful abstention frontiers (e.g., 27% coverage at
+24% selective risk) where self-consistency yields no valid low-risk subset — though distribution-free
+certificates stay conservative under the regime's low base accuracy. We further ask
 whether the verifier can be *trained*: fine-tuned verifiers — encoder and generative alike — reach
 in-distribution AUROC ≈ 0.77–0.79 (matching the frozen GPT-4o judge) but **do not transfer**,
 dropping to ≈ 0.66 across unseen schemas, even though fine-tuning clearly helps (it lifts a small
@@ -45,12 +46,14 @@ much?**
 Our contribution is a careful, execution-grounded *map* with confidence intervals, plus the
 deployment consequences:
 
-1. **A correctness ceiling for black-box statistical UQ** (AUROC ≈ 0.62 on BIRD), shared by
-   self-consistency, execution self-consistency, structural priors, and schema-linking confidence.
-2. **Two signals that break it** — an LLM verifier and white-box log-probabilities — with
-   bootstrapped CIs excluding zero, and a cross-model robustness check.
-3. **A selective-prediction frontier**: the combined score supports risk-controlled abstention the
-   self-consistency baseline cannot.
+1. **A correctness ceiling for black-box statistical UQ** (AUROC ≈ 0.61–0.68 on BIRD), shared by
+   string/structural/execution self-consistency, structural priors, schema-linking confidence, and
+   — once measured against the *strongest* baseline — white-box log-probability.
+2. **Verification breaks it**: LLM judges clearly exceed the ceiling with bootstrapped CIs excluding
+   zero; a **cross-provider** result shows independent-provider judges make different errors and
+   **ensemble to the best, calibrated correctness signal** (AUROC 0.82, ECE 0.03).
+3. **A selective-prediction frontier**: the combined score supports empirical abstention frontiers
+   the self-consistency baseline cannot.
 4. **A trained-verifier study**: fine-tuned verifiers win in-distribution but **fail to transfer**
    across schemas; we separate the *per-deployment* from the *universal* verifier problem.
 
@@ -70,59 +73,69 @@ black-box baselines, and we test whether judging can be *trained* and whether it
   real SQLite databases for ground-truth correctness. Modal-query execution accuracy is 0.451 — a
   genuinely hard regime with ample headroom for UQ.
 - **Signals evaluated.**
-  - *Black-box statistical:* string self-consistency (largest identical-query cluster),
-    execution self-consistency (largest execution-result cluster), structural / schema-linking
-    confidence (companion-paper posteriors composed over the generated query).
+  - *Black-box statistical:* string self-consistency (largest identical-string cluster), structural
+    self-consistency (canonical-structure cluster), execution self-consistency (result-set cluster),
+    and schema-linking confidence (companion-paper posteriors over the generated query).
   - *Logic-aware:* mean sequence **log-probability** of the modal query (white-box); an **LLM
-    verifier** that is shown (question, evidence, schema, candidate SQL) and answers Yes/No, with
-    P(correct) read from the Yes/No first-token logits — using `gpt-4o-mini` and, independently,
-    `gpt-4o`.
+    verifier** shown (question, evidence, schema, candidate SQL) — `gpt-4o-mini` and `gpt-4o` (P from
+    YES/NO first-token logits), and **Claude-Sonnet-4.6** as an independent-provider judge (a
+    verbalized 0–100 probability, since Anthropic exposes no token logprobs).
 - **Metrics.** Tie-robust AUROC for correctness; cross-fit logistic combination (parity split) with
   2,000-sample bootstrap CIs on the AUROC delta; ECE; risk–coverage with a distribution-free
   (Bonferroni-over-grid, δ = 0.1) certificate and an empirical frontier.
 - **Cost & reproducibility.** All generation/verification is safe-by-default (cost estimate, no
-  calls without `--run`, hard caps, caching); total OpenAI spend for the study ≈ \$0.9. Code and
-  cached signals are released.
+  calls without `--run`, hard caps, caching); total API spend for the study ≈ \$1.6 (including the
+  cross-provider Claude judge). Code and cached signals are released.
 
 ## 4. Results
 
-### 4.1 The black-box correctness ceiling
+### 4.1 The black-box correctness ceiling (and where white-box logprob sits)
 
 | signal (alone) | AUROC for correctness |
 |---|---|
-| string self-consistency | 0.616 |
-| execution self-consistency | 0.613 |
+| **string self-consistency** (largest identical-string cluster) | **0.675** |
+| structural self-consistency (largest canonical-structure cluster) | 0.619 |
+| execution self-consistency (largest result-set cluster) | 0.613 |
+| log-probability (white-box, mean sequence logprob) | 0.669 |
 | schema-linking graph confidence | 0.553 |
 | *"does it execute / return rows"* | 0.500 (chance) |
 
-Every black-box statistical signal plateaus at ≈ 0.62, and combining them yields only marginal gains
-that stay near the same ceiling (self-consistency + execution self-consistency: +0.020, CI
-[+0.005, +0.035]). Wrong queries execute and return rows just fine, so executability is
-uninformative. This ceiling is a property of the regime, not of sample size (it is stable from
-n = 200 to n = 800).
+The black-box statistical signals plateau at AUROC ≈ 0.61–0.68; *string* self-consistency is the
+strongest (0.675). Crucially, **white-box log-probability does not exceed this ceiling** (0.669):
+added to string self-consistency it gives +0.005 (CI [−0.003, +0.012], not significant). Logprob
+separated confident-wrong queries on *saturated single-table* data, but on hard multi-table BIRD it
+is no better than sampling agreement. Wrong queries also execute and return rows just fine, so
+executability is chance.
 
-### 4.2 Logic-aware signals break the ceiling
+### 4.2 Verification breaks the ceiling
 
-Combined with string self-consistency via cross-fit logistic; AUROC and bootstrap CI of the delta:
+We combine each signal with the strongest baseline (string self-consistency) via cross-fit logistic;
+AUROC alone and bootstrap CI of the combined delta:
 
-| signal | AUROC alone | combined Δ over self-consistency (95% CI) |
+| signal | AUROC alone | combined Δ over string self-consistency (95% CI) |
 |---|---|---|
-| log-probability (white-box) | 0.669 | +0.054 [+0.027, +0.081] |
-| LLM verifier (`gpt-4o-mini`) | 0.724 | +0.095 [+0.060, +0.131] |
-| LLM verifier (`gpt-4o`, independent) | **0.770** | — |
-| verifier + log-probability | — | +0.109 [+0.071, +0.147] |
-| all signals | **0.763** | +0.117 [+0.077, +0.156] |
+| log-probability (white-box) | 0.669 | +0.005 [−0.003, +0.012]  (n.s.) |
+| LLM verifier (`gpt-4o-mini`) | 0.724 | — |
+| LLM verifier (`gpt-4o`) | 0.770 | +0.079 [+0.054, +0.105] |
+| LLM verifier (Claude-Sonnet-4.6) | **0.776** | +0.131 [+0.101, +0.163] |
 
-All positive deltas have P(Δ > 0) = 1.00 at n = 800. The signals that work are precisely those not
-blind to query logic: white-box token confidence and a verifier that can *reason* about whether the
-aggregation, filters, and joins answer the question.
+Only the verifiers break the ceiling, with CIs excluding zero. The signal that works is the one not
+blind to query logic: a model that can *reason* about whether the aggregation, filters, and joins
+answer the question. Log-probability, by contrast, adds nothing over the strongest sampling
+baseline here.
 
-### 4.3 The verifier is not a self-agreement artifact
+### 4.3 Cross-provider robustness: independent judges make different errors and ensemble
 
-A verifier from the same model family as the generator could merely echo it. It does not: an
-**independent, stronger** judge (`gpt-4o` judging `gpt-4o-mini`'s SQL) scores **0.770 > 0.724**, i.e.
-*better*, and the two judges correlate only **0.49** — they capture different errors and combine
-(all-signals 0.763).
+A verifier from the generator's own family could merely echo it, so we test an **independent
+provider**. Claude-Sonnet-4.6 (judging GPT-4o-mini's SQL, via a verbalized 0–100 probability since
+Anthropic exposes no token logprobs) is the *strongest single judge* (0.776 > GPT-4o's 0.770), and
+the two judges' scores correlate only **r = 0.43** — they make genuinely different errors. As a
+result a **two-provider ensemble (GPT-4o + Claude) reaches AUROC 0.822** (Δ over GPT-4o alone +0.052,
+CI [+0.032, +0.073]), the strongest correctness signal we obtain, and is well-calibrated (ECE 0.031;
+§4.5). This both rules out the self-agreement artifact and shows that combining independent reasoning
+judges — not a single bigger one — is the most reliable correctness signal. (Caveat: the OpenAI
+judges use YES/NO logits and the Anthropic judge a verbalized probability; a method-matched OpenAI
+verbal judge also clears the ceiling at 0.709, confirming the gap is not an elicitation artifact.)
 
 ### 4.4 Can the verifier be trained? In-distribution yes, transfer no — across architectures and scale
 
@@ -176,12 +189,13 @@ be used directly as P(correct); the raw individual signals are not (Figure `pape
 
 | score | AUROC | ECE |
 |---|---|---|
-| self-consistency (`top_prob`) | 0.619 | 0.365 |
+| string self-consistency | 0.675 | 0.212 |
 | verifier (GPT-4o, raw P) | 0.770 | 0.319 |
-| **combined (cross-fit logistic)** | 0.763 | **0.046** |
+| verifier (Claude, raw P) | 0.776 | 0.210 |
+| **two-provider ensemble (cross-fit logistic)** | **0.822** | **0.031** |
 
-Self-consistency and the raw verifier probability are badly over-confident (ECE > 0.3); the combined
-logistic is calibrated (ECE 0.046).
+The raw signals are over-confident (ECE 0.21–0.32); the cross-fit ensemble is well-calibrated
+(ECE 0.031) and can be used directly as P(correct).
 
 **Selective prediction.** Empirical risk–coverage (combined score, threshold calibrated on a
 held-out half; full curves in Figure `paper1_risk_coverage.png`):
@@ -238,12 +252,14 @@ Current limitations, each with the run that addresses it:
 
 ## 7. Conclusion
 
-On hard text-to-SQL, *what predicts correctness* is not sampling agreement or structure — those
-plateau at AUROC ≈ 0.62 — but **reasoning-based signals**: an LLM verifier and white-box
-log-probabilities, which combine to 0.76 and enable risk-controlled abstention the baseline cannot.
-Verifiers can be trained, but a fine-tuned encoder overfits schemas and fails to transfer (0.785 in
-domain, 0.670 across schemas), so a *universal* verifier must be a model that generalizes by
-reasoning. The map is the contribution: it tells practitioners which signal to pay for, and when.
+On hard text-to-SQL, *what predicts correctness* is not sampling agreement, structure, or even
+white-box log-probability — those plateau at AUROC ≈ 0.61–0.68 — but **verification**: an LLM judge
+that reasons about whether the query answers the question. Independent-provider judges make different
+errors and ensemble to AUROC 0.82 with calibrated probabilities, enabling empirical abstention the
+sampling baseline cannot. Verifiers can be trained, but a fine-tuned model overfits schemas and fails
+to transfer (≈ 0.78 in domain, ≈ 0.66 across schemas), so a *universal* verifier must be a model that
+generalizes by reasoning. The map is the contribution: it tells practitioners which signal to pay
+for, and when.
 
 ---
 

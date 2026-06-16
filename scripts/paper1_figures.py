@@ -9,6 +9,7 @@ and prints an ECE/AURC table for the paper text.
 """
 from __future__ import annotations
 import json, os, sys
+from collections import Counter
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import numpy as np
 import matplotlib
@@ -68,22 +69,26 @@ def main():
     samp = list(json.load(open(os.path.join(ROOT, "data", "bird_samples.json"))).values())
     assert len(sig) == len(samp)
     dbs = [e["db_id"] for e in samp]
+    keyof = [f"{e['db_id']}||{e['question_id']}" for e in samp]
+    claude_c = json.load(open(os.path.join(ROOT, "data",
+                          "bird_verify_anthropic_claude_sonnet_4_6_verbal.json")))
     y = np.array([r["ok"] for r in sig], int)
-    top = np.array([r["top"] for r in sig]); v4o = np.array([r["v4o"] for r in sig])
-    feats = [[r["top"], r["sem"], r["logp"], r["vmini"], r["v4o"]] for r in sig]
-    comb = crossfit(feats, y)
+    top = np.array([Counter(e["samples"]).most_common(1)[0][1] / len(e["samples"]) for e in samp])  # string SC
+    v4o = np.array([r["v4o"] for r in sig])
+    claude = np.array([claude_c[k] for k in keyof])
+    ens = crossfit([[a, b] for a, b in zip(v4o, claude)], y)  # two-provider ensemble
 
     # ---- ECE / AUROC table ----
     print(f"n={len(y)} accuracy={y.mean():.3f}")
-    print(f"{'signal':<22}{'AUROC':>8}{'ECE':>8}")
-    for name, s, isprob in (("self-consistency", top, True), ("verifier (gpt-4o)", v4o, True),
-                            ("combined (all)", comb, True)):
-        print(f"{name:<22}{auroc(s, y):>8.3f}{ece(s, y):>8.3f}")
+    print(f"{'signal':<26}{'AUROC':>8}{'ECE':>8}")
+    for name, s in (("string self-consistency", top), ("verifier (gpt-4o)", v4o),
+                    ("verifier (Claude)", claude), ("ensemble (gpt-4o+Claude)", ens)):
+        print(f"{name:<26}{auroc(s, y):>8.3f}{ece(s, y):>8.3f}")
 
     # ---- Fig 1: risk-coverage ----
     plt.figure(figsize=(5, 3.6))
-    for name, s, ls in (("self-consistency", top, "--"), ("verifier (gpt-4o)", v4o, "-."),
-                        ("combined (all signals)", comb, "-")):
+    for name, s, ls in (("string self-consistency", top, "--"), ("verifier (gpt-4o)", v4o, ":"),
+                        ("two-provider ensemble", ens, "-")):
         cov, risk = risk_coverage(s, y)
         plt.plot(cov, risk, ls, label=f"{name} (AURC {np.trapezoid(risk, cov):.3f})")
     plt.axhline(1 - y.mean(), color="gray", lw=0.8, alpha=0.6, label=f"base error {1-y.mean():.2f}")
@@ -94,7 +99,8 @@ def main():
     # ---- Fig 2: reliability ----
     plt.figure(figsize=(5, 3.6))
     plt.plot([0, 1], [0, 1], "k:", lw=0.8)
-    for name, s in (("self-consistency", top), ("verifier (gpt-4o)", v4o), ("combined", comb)):
+    for name, s in (("string self-consistency", top), ("verifier (Claude)", claude),
+                    ("ensemble (gpt-4o+Claude)", ens)):
         edges = np.linspace(0, 1, 11); xs, ys = [], []
         for i in range(10):
             m = (s >= edges[i]) & (s <= edges[i + 1] if i == 9 else s < edges[i + 1])
