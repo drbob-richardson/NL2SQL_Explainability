@@ -50,8 +50,9 @@ deployment consequences:
    string/structural/execution self-consistency, structural priors, schema-linking confidence, and
    — once measured against the *strongest* baseline — white-box log-probability.
 2. **Verification breaks it**: LLM judges clearly exceed the ceiling with bootstrapped CIs excluding
-   zero; a **cross-provider** result shows independent-provider judges make different errors and
-   **ensemble to the best, calibrated correctness signal** (AUROC 0.82, ECE 0.03).
+   zero — and the result is robust, replicating across **two generators** and **two judge providers**;
+   independent-provider judges make different errors and **ensemble to the best, calibrated
+   correctness signal** (AUROC 0.82, ECE 0.03).
 3. **A selective-prediction frontier**: the combined score supports empirical abstention frontiers
    the self-consistency baseline cannot.
 4. **A trained-verifier study**: fine-tuned verifiers win in-distribution but **fail to transfer**
@@ -136,6 +137,21 @@ CI [+0.032, +0.073]), the strongest correctness signal we obtain, and is well-ca
 judges — not a single bigger one — is the most reliable correctness signal. (Caveat: the OpenAI
 judges use YES/NO logits and the Anthropic judge a verbalized probability; a method-matched OpenAI
 verbal judge also clears the ceiling at 0.709, confirming the gap is not an elicitation artifact.)
+
+**A second generator.** The dichotomy is not unique to gpt-4o-mini. Regenerating the slice with
+**gpt-4.1-mini** (modal accuracy 0.522 — a stronger generator) and judging with the same gpt-4o-mini
+verifier reproduces it:
+
+| generator | accuracy | string self-consistency | verifier (gpt-4o-mini) | combined Δ over SC (95% CI) |
+|---|---|---|---|---|
+| gpt-4o-mini | 0.451 | 0.675 | 0.724 | +0.059 [+0.032, +0.087] |
+| gpt-4.1-mini | 0.522 | 0.641 | 0.677 | +0.033 [+0.007, +0.061] |
+
+For both generators, self-consistency sits at the ceiling and the verifier exceeds it with a combined
+delta whose CI excludes zero. The margin is smaller for gpt-4.1-mini — expected, since here the judge
+(gpt-4o-mini) is *weaker* than the generator and so catches fewer of the stronger model's subtler
+errors; a judge at least as strong as the generator (cf. the GPT-4o / Claude results above) should
+widen it.
 
 ### 4.4 Can the verifier be trained? In-distribution yes, transfer no — across architectures and scale
 
@@ -233,9 +249,9 @@ fine-tuning a generative judge beats it.
 
 Current limitations, each with the run that addresses it:
 
-- **One generator family** (`gpt-4o-mini`/`gpt-4o`) and an 800-question BIRD slice. *Planned:* repeat
-  the ceiling/verifier comparison on a second generator (an open-weight model) and a Spider slice,
-  even at n ≈ 200–300, to show the dichotomy is not unique to GPT-4o-mini.
+- **Generators within one provider.** The dichotomy is shown for two generators (gpt-4o-mini and
+  gpt-4.1-mini, §4.3), but both are OpenAI; *planned:* an open-weight generator and a second
+  benchmark (Spider slice) to broaden further.
 - **Frozen verifiers are within one provider.** *Planned (high priority):* a cross-provider judge
   (e.g., Claude / Gemini) on the same questions; the target result is that an independent-provider
   judge also beats self-consistency and that the two judges' errors are not identical.
