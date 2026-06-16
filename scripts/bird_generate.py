@@ -14,8 +14,14 @@ from bnp_nl2sql.execeval import open_db, exec_match
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 DBDIR = os.path.join(ROOT, "data", "bird", "db")
-CACHE = os.path.join(ROOT, "data", "bird_samples.json")
-PRICE_IN, PRICE_OUT = 0.150, 0.600   # gpt-4o-mini per 1M tokens
+PRICES = {"gpt-4o-mini": (0.150, 0.600), "gpt-4o": (2.50, 10.00),
+          "gpt-4.1-mini": (0.40, 1.60), "gpt-4.1": (2.00, 8.00)}
+
+
+def cache_path(model):
+    name = "bird_samples.json" if model == "gpt-4o-mini" \
+        else "bird_samples_" + model.replace(".", "_").replace("-", "_") + ".json"
+    return os.path.join(ROOT, "data", name)
 
 
 def have_dbs():
@@ -56,7 +62,12 @@ def main():
     ap.add_argument("--max-calls", type=int, default=200)
     ap.add_argument("--per-db", type=int, default=30, help="cap questions per db for diversity")
     ap.add_argument("--temperature", type=float, default=0.7)
+    ap.add_argument("--model", default="gpt-4o-mini", choices=list(PRICES))
     args = ap.parse_args()
+    MODEL = args.model
+    PRICE_IN, PRICE_OUT = PRICES[MODEL]
+    CACHE = cache_path(MODEL)
+    print(f"generator model: {MODEL}  cache: {os.path.basename(CACHE)}")
 
     dbs = have_dbs()
     qs = [q for q in json.load(open(os.path.join(ROOT, "data", "bird", "dev.json"))) if q["db_id"] in dbs]
@@ -104,7 +115,7 @@ def main():
     client = OpenAI()
     for i, q in enumerate(todo, 1):
         resp = client.chat.completions.create(
-            model="gpt-4o-mini", n=args.k, temperature=args.temperature, max_tokens=160,
+            model=MODEL, n=args.k, temperature=args.temperature, max_tokens=160,
             logprobs=True,
             messages=[{"role": "system", "content": sys_prompt(schemas[q["db_id"]])},
                       {"role": "user", "content": user_msg(q)}])

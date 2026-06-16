@@ -26,11 +26,14 @@ SAMPLES = os.path.join(ROOT, "data", "bird_samples.json")
 # (price_in, price_out) per 1M tokens, approximate
 PRICES = {"gpt-4o-mini": (0.150, 0.600), "gpt-4o": (2.50, 10.00), "gpt-4.1-mini": (0.40, 1.60),
           "claude-sonnet-4-6": (3.00, 15.00), "claude-haiku-4-5": (1.00, 5.00),
-          "claude-opus-4-8": (15.00, 75.00)}
+          "claude-opus-4-8": (15.00, 75.00),
+          "gemini-2.0-flash": (0.10, 0.40), "gemini-2.5-flash": (0.30, 2.50)}
 
 
-def cache_path(model, mode="full", provider="openai", elicit="logit"):
+def cache_path(model, mode="full", provider="openai", elicit="logit", stag=""):
     base = "bird_verify"
+    if stag:
+        base += f"_gen-{stag}"
     if provider != "openai":
         base += f"_{provider}"
     if not (provider == "openai" and model == "gpt-4o-mini"):
@@ -104,19 +107,21 @@ def main():
     ap.add_argument("--run", action="store_true")
     ap.add_argument("--max-calls", type=int, default=900)
     ap.add_argument("--model", default="gpt-4o-mini")
-    ap.add_argument("--provider", default="openai", choices=["openai", "anthropic"])
+    ap.add_argument("--provider", default="openai", choices=["openai", "anthropic", "gemini"])
     ap.add_argument("--input-mode", default="full", choices=["qsql", "qsql_schema", "full"])
     ap.add_argument("--elicit", default="logit", choices=["logit", "verbal"])
+    ap.add_argument("--samples", default=SAMPLES, help="generator sample cache to verify")
     args = ap.parse_args()
-    if args.provider == "anthropic":
-        args.elicit = "verbal"   # Anthropic exposes no token logprobs
+    if args.provider in ("anthropic", "gemini"):
+        args.elicit = "verbal"   # no convenient token logprobs -> verbalized 0-100
     MODEL, MODE, PROV, ELI = args.model, args.input_mode, args.provider, args.elicit
     PRICE_IN, PRICE_OUT = PRICES.get(MODEL, (1.0, 4.0))
-    CACHE = cache_path(MODEL, MODE, PROV, ELI)
-    print(f"verifier: provider={PROV} model={MODEL} input={MODE} elicit={ELI}  "
-          f"cache={os.path.basename(CACHE)}")
+    stag = os.path.basename(args.samples)[:-5].replace("bird_samples", "").strip("_")
+    CACHE = cache_path(MODEL, MODE, PROV, ELI, stag)
+    print(f"verifier: provider={PROV} model={MODEL} input={MODE} elicit={ELI} gen={stag or 'gpt-4o-mini'}"
+          f"  cache={os.path.basename(CACHE)}")
 
-    samples = json.load(open(SAMPLES))
+    samples = json.load(open(args.samples))
     dbs = {os.path.basename(p)[:-7] for p in glob.glob(os.path.join(DBDIR, "*.sqlite"))}
     conns, schemas = {}, {}
     for e in samples.values():
@@ -146,9 +151,13 @@ def main():
     if PROV == "openai":
         from openai import OpenAI
         client = OpenAI()
-    else:
+    elif PROV == "anthropic":
         from anthropic import Anthropic
         client = Anthropic()
+    else:
+        from google import genai
+        from google.genai import types
+        client = genai.Client()
 
     def score(sys_p, usr):
         if PROV == "openai" and ELI == "logit":
@@ -161,14 +170,32 @@ def main():
                 model=MODEL, temperature=0, max_tokens=4,
                 messages=[{"role": "system", "content": sys_p}, {"role": "user", "content": usr}])
             return parse_pct(r.choices[0].message.content)
-        r = client.messages.create(model=MODEL, max_tokens=8, system=sys_p,
-                                   messages=[{"role": "user", "content": usr}])
-        return parse_pct(r.content[0].text)
+        if PROV == "anthropic":
+            r = client.messages.create(model=MODEL, max_tokens=8, system=sys_p,
+                                       messages=[{"role": "user", "content": usr}])
+            return parse_pct(r.content[0].text)
+        cfg = dict(system_instruction=sys_p, temperature=0, max_output_tokens=16)
+        if "2.5" in MODEL:  # disable "thinking" so the budget goes to the answer
+            cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+        r = client.models.generate_content(
+            model=MODEL, contents=usr, config=types.GenerateContentConfig(**cfg))
+        return parse_pct(r.text)
+
+    import time
+
+    def robust_score(sys_p, usr, tries=6):
+        for t in range(tries):
+            try:
+                return score(sys_p, usr)
+            except Exception as ex:
+                if t == tries - 1:
+                    print(f"  [skip after {tries} tries: {str(ex)[:70]}]"); return 0.5
+                time.sleep(min(2 ** t, 30))   # backoff on 429/503/transient errors
 
     for i, e in enumerate(todo, 1):
         sys_p, usr = prompt(schemas[e["db_id"]], e["question"], e.get("evidence", ""),
                             modal(e), MODE, ELI)
-        cache[f"{e['db_id']}||{e['question_id']}"] = score(sys_p, usr)
+        cache[f"{e['db_id']}||{e['question_id']}"] = robust_score(sys_p, usr)
         if i % 50 == 0:
             json.dump(cache, open(CACHE, "w")); print(f"  verified {i}/{len(todo)}")
     json.dump(cache, open(CACHE, "w"))
