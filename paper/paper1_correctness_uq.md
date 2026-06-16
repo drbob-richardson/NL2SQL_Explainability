@@ -155,6 +155,14 @@ Per database (Figure `paper1_lodo_perdb.png`), the frozen GPT-4o judge leads on 
 schema (per-DB mean 0.710) above both fine-tuned verifiers (encoder 0.670, Qwen-1.5B 0.659),
 making the "reasoning transfers, fitting does not" pattern visible schema by schema.
 
+**What the verifier actually uses.** An input ablation of the frozen judge confirms the mechanism.
+Shown only the *question and SQL*, the GPT-4o-mini judge already scores AUROC 0.692; adding the full
+*schema* changes nothing (0.688, Δ −0.004), and only BIRD's external-knowledge *evidence* helps
+(+0.031 → 0.724). The frozen verifier reasons about whether the query answers the question rather
+than looking up schema content — which is precisely why it generalizes to unseen schemas, and the
+mirror image of the fine-tuned verifiers, whose in-domain edge comes from schema-specific patterns
+that do not transfer.
+
 **Consequence.** Two distinct problems. A **per-deployment** verifier (trained on a database's own
 schemas) is an excellent, near-zero-inference-cost option at ≈ 0.77–0.79. A **universal** verifier,
 on this evidence, is a *large frozen reasoning model*: no small fine-tuned verifier (≤ 1.5B, encoder

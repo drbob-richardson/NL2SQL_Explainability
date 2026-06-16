@@ -1,16 +1,21 @@
-"""LLM-as-verifier correctness signal (#2): ask gpt-4o-mini whether the modal generated SQL
-correctly answers the question, and read a calibrated P(correct) from the YES/NO first-token
-logprobs. Unlike sampling/execution self-consistency, the verifier can REASON about the query
-logic -- the candidate path to break the ~0.65 black-box correctness ceiling.
+"""LLM-as-verifier correctness signal: ask a model whether the modal generated SQL correctly
+answers the question, and read P(correct) either from YES/NO first-token logprobs (OpenAI) or from a
+verbalized 0-100 probability (any provider, incl. Anthropic). Supports:
 
-SAFE BY DEFAULT: dry-run cost estimate, ZERO calls unless --run, --max-calls cap, caches to
-data/bird_verify.json (keyed by db||question_id, skips cached).
+  --input-mode {qsql, qsql_schema, full}   what the verifier is shown (ablation of its inputs)
+  --provider   {openai, anthropic}         cross-provider judge robustness check
+  --elicit     {logit, verbal}             logprob YES/NO (openai) vs verbalized 0-100 (any)
 
-  ./.venv/bin/python scripts/bird_verify.py            # estimate
-  ./.venv/bin/python scripts/bird_verify.py --run
+SAFE BY DEFAULT: dry-run cost estimate, ZERO calls unless --run, --max-calls cap, per-config cache.
+
+  # input ablation (OpenAI, logprob):
+  ./.venv/bin/python scripts/bird_verify.py --run --model gpt-4o-mini --input-mode qsql
+  ./.venv/bin/python scripts/bird_verify.py --run --model gpt-4o-mini --input-mode qsql_schema
+  # cross-provider judge (needs ANTHROPIC_API_KEY + `pip install anthropic`):
+  ./.venv/bin/python scripts/bird_verify.py --run --provider anthropic --model claude-sonnet-4-6 --elicit verbal
 """
 from __future__ import annotations
-import argparse, glob, json, math, os, sys
+import argparse, glob, json, math, os, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from collections import Counter
 from bnp_nl2sql.execeval import open_db
@@ -18,13 +23,23 @@ from bnp_nl2sql.execeval import open_db
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 DBDIR = os.path.join(ROOT, "data", "bird", "db")
 SAMPLES = os.path.join(ROOT, "data", "bird_samples.json")
-PRICES = {"gpt-4o-mini": (0.150, 0.600), "gpt-4o": (2.50, 10.00), "gpt-4.1-mini": (0.40, 1.60)}
+# (price_in, price_out) per 1M tokens, approximate
+PRICES = {"gpt-4o-mini": (0.150, 0.600), "gpt-4o": (2.50, 10.00), "gpt-4.1-mini": (0.40, 1.60),
+          "claude-sonnet-4-6": (3.00, 15.00), "claude-haiku-4-5": (1.00, 5.00),
+          "claude-opus-4-8": (15.00, 75.00)}
 
 
-def cache_path(model):
-    name = "bird_verify.json" if model == "gpt-4o-mini" \
-        else f"bird_verify_{model.replace('.', '_').replace('-', '_')}.json"
-    return os.path.join(ROOT, "data", name)
+def cache_path(model, mode="full", provider="openai", elicit="logit"):
+    base = "bird_verify"
+    if provider != "openai":
+        base += f"_{provider}"
+    if not (provider == "openai" and model == "gpt-4o-mini"):
+        base += "_" + model.replace(".", "_").replace("-", "_").replace("/", "_")
+    if mode != "full":
+        base += f"_{mode}"
+    if elicit != "logit":
+        base += f"_{elicit}"
+    return os.path.join(ROOT, "data", base + ".json")
 
 
 def schema_str(conn):
@@ -43,17 +58,28 @@ def count_tokens(text):
         return max(1, len(text) // 4)
 
 
-def prompt(schema, q, ev, sql):
-    sys_p = ("You are a strict SQL reviewer. Given a SQLite schema, a question, optional evidence, "
-             "and a candidate SQL query, decide whether the query CORRECTLY answers the question "
-             "(right tables, columns, conditions, aggregation, and result). Answer with exactly one "
-             "word: YES or NO.")
-    usr = f"Schema:\n{schema}\n\nQuestion: {q}\nEvidence: {ev}\n\nCandidate SQL:\n{sql}\n\nIs it correct? Answer YES or NO."
-    return sys_p, usr
+def prompt(schema, q, ev, sql, mode, elicit):
+    if elicit == "logit":
+        sys_p = ("You are a strict SQL reviewer. Decide whether the candidate SQL CORRECTLY answers "
+                 "the question (right tables, columns, conditions, aggregation, and result). Answer "
+                 "with exactly one word: YES or NO.")
+        ask = "Is it correct? Answer YES or NO."
+    else:
+        sys_p = ("You are a strict SQL reviewer. Decide whether the candidate SQL correctly answers "
+                 "the question. Respond with ONLY an integer from 0 to 100: the probability (percent) "
+                 "that it is correct. Output only the number.")
+        ask = "Probability (0-100) that the SQL is correct:"
+    blocks = []
+    if mode in ("qsql_schema", "full"):
+        blocks.append(f"Schema:\n{schema}")
+    blocks.append(f"Question: {q}")
+    if mode == "full" and ev:
+        blocks.append(f"Evidence: {ev}")
+    blocks.append(f"Candidate SQL:\n{sql}")
+    return sys_p, "\n\n".join(blocks) + "\n\n" + ask
 
 
-def p_yes(choice):
-    """P(correct) from the first-token YES/NO logprob distribution."""
+def p_yes_logit(choice):
     try:
         top = choice.logprobs.content[0].top_logprobs
     except Exception:
@@ -65,21 +91,30 @@ def p_yes(choice):
             py += math.exp(t.logprob)
         elif tok.startswith("NO"):
             pn += math.exp(t.logprob)
-    if py + pn == 0:
-        return 0.5
-    return py / (py + pn)
+    return py / (py + pn) if (py + pn) else 0.5
+
+
+def parse_pct(text):
+    m = re.search(r"\d{1,3}", text or "")
+    return min(100, max(0, int(m.group()))) / 100.0 if m else 0.5
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", action="store_true")
     ap.add_argument("--max-calls", type=int, default=900)
-    ap.add_argument("--model", default="gpt-4o-mini", choices=list(PRICES))
+    ap.add_argument("--model", default="gpt-4o-mini")
+    ap.add_argument("--provider", default="openai", choices=["openai", "anthropic"])
+    ap.add_argument("--input-mode", default="full", choices=["qsql", "qsql_schema", "full"])
+    ap.add_argument("--elicit", default="logit", choices=["logit", "verbal"])
     args = ap.parse_args()
-    MODEL = args.model
-    PRICE_IN, PRICE_OUT = PRICES[MODEL]
-    CACHE = cache_path(MODEL)
-    print(f"verifier model: {MODEL}  cache: {os.path.basename(CACHE)}")
+    if args.provider == "anthropic":
+        args.elicit = "verbal"   # Anthropic exposes no token logprobs
+    MODEL, MODE, PROV, ELI = args.model, args.input_mode, args.provider, args.elicit
+    PRICE_IN, PRICE_OUT = PRICES.get(MODEL, (1.0, 4.0))
+    CACHE = cache_path(MODEL, MODE, PROV, ELI)
+    print(f"verifier: provider={PROV} model={MODEL} input={MODE} elicit={ELI}  "
+          f"cache={os.path.basename(CACHE)}")
 
     samples = json.load(open(SAMPLES))
     dbs = {os.path.basename(p)[:-7] for p in glob.glob(os.path.join(DBDIR, "*.sqlite"))}
@@ -96,9 +131,9 @@ def main():
 
     def modal(e):
         return Counter(e["samples"]).most_common(1)[0][0]
-    in_tok = sum(count_tokens(schemas[e["db_id"]]) + count_tokens(e["question"]) +
-                 count_tokens(modal(e)) + 40 for e in todo)
-    cost = in_tok / 1e6 * PRICE_IN + len(todo) * 2 / 1e6 * PRICE_OUT
+    sch_tok = (lambda e: count_tokens(schemas[e["db_id"]])) if MODE != "qsql" else (lambda e: 0)
+    in_tok = sum(sch_tok(e) + count_tokens(e["question"]) + count_tokens(modal(e)) + 40 for e in todo)
+    cost = in_tok / 1e6 * PRICE_IN + len(todo) * 4 / 1e6 * PRICE_OUT
     print(f"verify: {len(items)} questions, to call {len(todo)} (cached {len(items)-len(todo)}); "
           f"est cost ${cost:.4f}")
     if not args.run:
@@ -107,14 +142,33 @@ def main():
         return
     if len(todo) > args.max_calls:
         print(f"REFUSING: {len(todo)} > --max-calls {args.max_calls}"); sys.exit(1)
-    from openai import OpenAI
-    client = OpenAI()
+
+    if PROV == "openai":
+        from openai import OpenAI
+        client = OpenAI()
+    else:
+        from anthropic import Anthropic
+        client = Anthropic()
+
+    def score(sys_p, usr):
+        if PROV == "openai" and ELI == "logit":
+            r = client.chat.completions.create(
+                model=MODEL, temperature=0, max_tokens=1, logprobs=True, top_logprobs=10,
+                messages=[{"role": "system", "content": sys_p}, {"role": "user", "content": usr}])
+            return p_yes_logit(r.choices[0])
+        if PROV == "openai":
+            r = client.chat.completions.create(
+                model=MODEL, temperature=0, max_tokens=4,
+                messages=[{"role": "system", "content": sys_p}, {"role": "user", "content": usr}])
+            return parse_pct(r.choices[0].message.content)
+        r = client.messages.create(model=MODEL, max_tokens=8, system=sys_p,
+                                   messages=[{"role": "user", "content": usr}])
+        return parse_pct(r.content[0].text)
+
     for i, e in enumerate(todo, 1):
-        sys_p, usr = prompt(schemas[e["db_id"]], e["question"], e.get("evidence", ""), modal(e))
-        resp = client.chat.completions.create(
-            model=MODEL, temperature=0, max_tokens=1, logprobs=True, top_logprobs=10,
-            messages=[{"role": "system", "content": sys_p}, {"role": "user", "content": usr}])
-        cache[f"{e['db_id']}||{e['question_id']}"] = p_yes(resp.choices[0])
+        sys_p, usr = prompt(schemas[e["db_id"]], e["question"], e.get("evidence", ""),
+                            modal(e), MODE, ELI)
+        cache[f"{e['db_id']}||{e['question_id']}"] = score(sys_p, usr)
         if i % 50 == 0:
             json.dump(cache, open(CACHE, "w")); print(f"  verified {i}/{len(todo)}")
     json.dump(cache, open(CACHE, "w"))
