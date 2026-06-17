@@ -89,7 +89,9 @@ a more accurate query, and reports end-task accuracy. We do not regenerate; we a
 predicts correctness so that a system can answer or abstain under a risk target, and we report
 calibration and risk--coverage rather than accuracy gains. The two are complementary: even after any
 amount of self-correction, a system emits a final query and still needs a calibrated estimate of
-whether to trust it, which is the question we study. We also note that typical self-correction relies
+whether to trust it, which is the question we study. We verify this directly in Section~4.2: one
+round of self-correction barely changes accuracy and produces badly miscalibrated confidence
+(ECE $0.50$), so it does not substitute for a calibrated verifier. We also note that typical self-correction relies
 on execution feedback, whereas our verifier reasons over the question, schema, and SQL without
 executing the candidate (and we find executability itself is uninformative for correctness,
 Section~4.1).
@@ -165,6 +167,15 @@ Only the verifiers move past the ceiling, with confidence intervals that exclude
 that works is the one that is not blind to query logic: a model that can reason about whether the
 aggregation, filters, and joins answer the question. Log-probability adds nothing over the strongest
 sampling baseline here.
+
+\textit{A self-correction baseline.} Self-correcting agents are an alternative way to use a critic,
+so we also run one reflection round: each modal query is fed back to gpt-4o-mini, which reviews it,
+revises it if needed, and reports a confidence. On this slice the revision improves execution
+accuracy only marginally ($0.451$ to $0.468$), and the model's self-reported confidence is not usable
+for abstention. It assigns at least $0.9$ confidence to $99\%$ of queries (mean $0.97$), giving
+\auroc{} $0.637$ and ECE $0.501$ for the revised query's correctness. A single round of
+self-correction therefore neither closes the accuracy gap nor yields a calibrated trust signal, so an
+external verifier remains necessary and the abstention question is orthogonal to iteration.
 
 \subsection{Robustness: cross-provider judges and a second generator}
 A verifier from the generator's own family might merely echo it, so we also test an independent
