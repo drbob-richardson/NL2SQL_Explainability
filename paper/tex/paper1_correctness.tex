@@ -17,98 +17,99 @@
 \maketitle
 
 \begin{abstract}
-When should we trust an LLM's SQL? We study, on equal footing and with bootstrapped confidence
-intervals, which signals predict whether a generated query is \emph{execution-correct} on hard
-multi-table text-to-SQL (BIRD). We find a sharp dichotomy. \textbf{Black-box statistical signals
-plateau:} string, structural, and execution self-consistency, structural priors, and semantic
-schema-linking confidence all sit at \auroc{} $\approx 0.61$--$0.68$ (string self-consistency,
-$0.675$, is the strongest), and \textbf{white-box log-probability does not exceed them} ($0.67$; no
-significant gain when combined with the best baseline). \textbf{What breaks the ceiling is
-verification:} an LLM judge scores $0.72$ (GPT-4o-mini) to $0.78$ (Claude), and because
-independent-provider judges make \emph{different} errors (GPT-4o vs.\ Claude score correlation
-$0.43$) a two-provider ensemble reaches \auroc{} $\mathbf{0.82}$ with a well-calibrated correctness
-probability (ECE $0.03$), supporting useful abstention frontiers (e.g., $27\%$ coverage at $24\%$
-selective risk) where self-consistency yields no valid low-risk subset---though distribution-free
-certificates stay conservative under the regime's low base accuracy. The verifier dichotomy
-replicates across two generators and two judge providers. We further ask whether the verifier can be
-\emph{trained}: fine-tuned verifiers---encoder and generative alike---reach in-distribution \auroc{}
-$\approx 0.77$--$0.79$ (matching the frozen GPT-4o judge) but \textbf{do not transfer}, dropping to
-$\approx 0.66$ across unseen schemas. Cross-schema transfer tracks \textbf{model scale and
-reasoning}, not fine-tuning. The practical upshot: correctness UQ for text-to-SQL lives in
-\emph{reasoning-based} signals; a fine-tuned verifier is an excellent \emph{per-deployment} tool,
-while a \emph{universal} verifier requires a model that generalizes across schemas---so far, a large
-frozen reasoning judge.
+Deciding whether to trust an LLM-generated SQL query requires an estimate of whether it is correct.
+We study which signals provide that estimate on hard multi-table text-to-SQL (BIRD), comparing them
+on equal footing with bootstrapped confidence intervals. The black-box statistical signals cluster
+together and plateau: string, structural, and execution self-consistency, along with structural
+priors and semantic schema-linking confidence, all fall between about $0.61$ and $0.68$ \auroc{},
+with string self-consistency the strongest at $0.675$. White-box log-probability does not exceed
+them ($0.67$), and it adds nothing significant when combined with the best baseline. The signals
+that move past this ceiling are verification-based: an LLM judge scores from $0.72$ (GPT-4o-mini) to
+$0.78$ (Claude). Because judges from different providers make different errors (GPT-4o and Claude
+scores correlate at only $0.43$), a two-provider ensemble reaches $0.82$ \auroc{} with a
+well-calibrated probability (ECE $0.03$), and it supports useful abstention frontiers (for example,
+$27\%$ coverage at $24\%$ selective risk) where self-consistency offers no valid low-risk subset.
+The pattern replicates across two generators and two judge providers. We also ask whether a verifier
+can be trained. Fine-tuned verifiers, both encoder and generative, reach about $0.77$ to $0.79$
+in-distribution but fall to about $0.66$ on unseen schemas; cross-schema transfer appears to depend
+on model scale and reasoning rather than on fine-tuning. In practice, correctness uncertainty for
+text-to-SQL lives in reasoning-based signals. A fine-tuned verifier is a good per-deployment tool,
+while a verifier that generalizes across schemas currently means a large frozen reasoning model.
 \end{abstract}
 
 \section{Introduction}
-Text-to-SQL systems are deployed where wrong answers are costly, so the decision \emph{``answer or
-abstain''} matters as much as raw accuracy. That decision needs a calibrated estimate of whether a
-generated query is correct. The uncertainty-quantification (UQ) literature is dominated by
-\textbf{black-box statistical} signals---sampling agreement \citep{wang2023selfconsistency},
-semantic entropy \citep{kuhn2023semantic,farquhar2024semantic}, structural frequency---that are
-attractive because they need no extra model. We ask directly: \textbf{on hard text-to-SQL, which
-signals actually predict execution correctness, and by how much?}
+Text-to-SQL systems are increasingly used where a wrong answer is costly, so deciding when to answer
+and when to abstain matters as much as raw accuracy. That decision rests on a calibrated estimate of
+whether a generated query is correct. Most of the uncertainty-quantification (UQ) literature relies
+on black-box statistical signals such as sampling agreement
+\citep{wang2023selfconsistency}, semantic entropy \citep{kuhn2023semantic,farquhar2024semantic}, and
+structural frequency, which are appealing because they need no extra model. We ask a direct question:
+on hard text-to-SQL, which signals actually predict execution correctness, and by how much?
 
-Our contribution is a careful, execution-grounded \emph{map} with confidence intervals, plus the
-deployment consequences:
+The contribution is an execution-grounded comparison, with confidence intervals, of the signals
+available to a practitioner, together with the consequences for deployment.
 \begin{enumerate}
-\item \textbf{A correctness ceiling for black-box statistical UQ} (\auroc{} $\approx 0.61$--$0.68$ on
-BIRD), shared by string/structural/execution self-consistency, structural priors, schema-linking
-confidence, and---once measured against the \emph{strongest} baseline---white-box log-probability.
-\item \textbf{Verification breaks it}: LLM judges clearly exceed the ceiling with bootstrapped CIs
-excluding zero, replicating across \emph{two generators} and \emph{two judge providers};
-independent-provider judges make different errors and \textbf{ensemble to the best, calibrated
-correctness signal} (\auroc{} $0.82$, ECE $0.03$).
-\item \textbf{A selective-prediction frontier}: the combined score supports empirical abstention the
-self-consistency baseline cannot.
-\item \textbf{A trained-verifier study}: fine-tuned verifiers win in-distribution but \textbf{fail to
-transfer} across schemas; we separate the \emph{per-deployment} from the \emph{universal} verifier
-problem.
+\item A correctness ceiling for black-box statistical UQ on BIRD (roughly $0.61$ to $0.68$ \auroc{}),
+shared by string, structural, and execution self-consistency, by structural priors and
+schema-linking confidence, and, once compared against the strongest of these baselines, by white-box
+log-probability.
+\item Verification moves past the ceiling. LLM judges exceed it with bootstrapped confidence
+intervals that exclude zero, and the result holds across two generators and two judge providers.
+Judges from different providers make different errors, and combining them gives the best, and
+best-calibrated, correctness signal we obtain ($0.82$ \auroc{}, $0.03$ ECE).
+\item A selective-prediction frontier that the self-consistency baseline cannot match.
+\item A study of trained verifiers, which do well in-distribution but fail to transfer across
+schemas. We distinguish the per-deployment verifier from the universal one.
 \end{enumerate}
 
 \section{Related work}
-Self-consistency and sampling-based UQ \citep{wang2023selfconsistency}; semantic entropy via meaning
-clustering \citep{kuhn2023semantic,farquhar2024semantic}; verbalized confidence; conformal/selective
-generation \citep{geifman2017selective,angelopoulos2021ltt,angelopoulos2023conformalrisk};
-sub-clause Platt scaling \citep{ramachandran2024calibrating}; RTS conformal abstention over
-schema-linking branch points \citep{somov2025rts}. Schema linking has been addressed with encoder-side
-graph models \citep{wang2020ratsql,cao2021lgesql}. LLM-as-judge is widely used for open-ended
-evaluation; we evaluate it specifically as a \emph{calibrated correctness predictor for SQL} against
-black-box baselines, and test whether judging can be \emph{trained} and whether it \emph{transfers}.
-Benchmarks: Spider \citep{yu2018spider}, BIRD \citep{li2023bird}, Spider~2.0 \citep{lei2025spider2}.
+Relevant lines of work include self-consistency and sampling-based UQ
+\citep{wang2023selfconsistency}, semantic entropy via meaning clustering
+\citep{kuhn2023semantic,farquhar2024semantic}, verbalized confidence, conformal and selective
+generation \citep{geifman2017selective,angelopoulos2021ltt,angelopoulos2023conformalrisk},
+sub-clause Platt scaling \citep{ramachandran2024calibrating}, and RTS conformal abstention over
+schema-linking branch points \citep{somov2025rts}. Schema linking has also been addressed with
+encoder-side graph models \citep{wang2020ratsql,cao2021lgesql}. LLM-as-judge is widely used for
+open-ended evaluation; here we evaluate it specifically as a calibrated correctness predictor for
+SQL, against black-box baselines, and we test whether judging can be trained and whether it
+transfers. We use the Spider \citep{yu2018spider}, BIRD \citep{li2023bird}, and Spider~2.0
+\citep{lei2025spider2} benchmarks for context.
 
 \section{Setup}
-\textbf{Benchmark and generation.} BIRD dev \citep{li2023bird} (11 databases with data dictionaries
-and external-knowledge ``evidence''). We generate SQL with \texttt{gpt-4o-mini} ($K=8$ samples per
-question, temperature $0.7$, schema $+$ evidence in the prompt) for an 800-question slice across 8
-databases, and execute every sample against the real SQLite databases for ground-truth correctness.
-Modal-query execution accuracy is $0.451$---a genuinely hard regime with ample headroom for UQ. A
-second generator, \texttt{gpt-4.1-mini} (accuracy $0.522$), is used for the breadth check.
+\textit{Benchmark and generation.} We use BIRD dev \citep{li2023bird}, which has 11 databases with
+data dictionaries and external-knowledge ``evidence.'' We generate SQL with \texttt{gpt-4o-mini}
+($K=8$ samples per question, temperature $0.7$, schema and evidence in the prompt) for an
+800-question slice across 8 databases, and we execute every sample against the real SQLite databases
+to get ground-truth correctness. Modal-query execution accuracy is $0.451$, a hard regime with ample
+headroom for UQ. A second generator, \texttt{gpt-4.1-mini} (accuracy $0.522$), is used for the
+breadth check.
 
-\textbf{Signals.} \emph{Black-box statistical:} string self-consistency (largest identical-string
-cluster), structural self-consistency (canonical-structure cluster), execution self-consistency
-(result-set cluster), and schema-linking confidence (per-node posteriors over the generated query,
-from a companion study). \emph{Logic-aware:} mean sequence \textbf{log-probability} of the modal
-query (white-box); an \textbf{LLM verifier} shown (question, evidence, schema, candidate SQL)---
-\texttt{gpt-4o-mini} and \texttt{gpt-4o} (P from YES/NO first-token logits), and
-\textbf{Claude-Sonnet-4.6} as an independent-provider judge (a verbalized 0--100 probability, since
-Anthropic exposes no token logprobs).
+\textit{Signals.} The black-box statistical signals are string self-consistency (the largest
+identical-string cluster), structural self-consistency (canonical-structure cluster), execution
+self-consistency (result-set cluster), and schema-linking confidence (per-node posteriors over the
+generated query, from a companion study). The logic-aware signals are the mean sequence
+log-probability of the modal query (white-box) and an LLM verifier shown the question, evidence,
+schema, and candidate SQL. The verifiers are \texttt{gpt-4o-mini} and \texttt{gpt-4o}, which report
+$P(\text{correct})$ from the YES/NO first-token logits, and Claude-Sonnet-4.6, used as an
+independent-provider judge with a verbalized 0--100 probability since Anthropic does not expose
+token logprobs.
 
-\textbf{Metrics.} Tie-robust \auroc{} for correctness; cross-fit logistic combination (parity split)
-with 2{,}000-sample bootstrap CIs on the \auroc{} delta; expected calibration error (ECE)
-\citep{guo2017calibration}; risk--coverage with a distribution-free (Bonferroni-over-grid,
-$\delta=0.1$) certificate \citep{angelopoulos2021ltt} and an empirical frontier. All
-generation/verification is safe-by-default (cost estimate, caching); total API spend $\approx \$1.6$.
+\textit{Metrics.} We report tie-robust \auroc{} for correctness, a cross-fit logistic combination
+(parity split) with 2{,}000-sample bootstrap confidence intervals on the \auroc{} delta, expected
+calibration error (ECE) \citep{guo2017calibration}, and risk--coverage with a distribution-free
+(Bonferroni-over-grid, $\delta=0.1$) certificate \citep{angelopoulos2021ltt} alongside an empirical
+frontier. All generation and verification is safe-by-default, with cost estimates and caching; total
+API spend is about \$1.6.
 
 \section{Results}
 
-\subsection{The black-box correctness ceiling (and where white-box logprob sits)}
+\subsection{The black-box correctness ceiling, and where white-box logprob sits}
 \begin{table}[h]\centering
 \begin{tabular}{lr}
 \toprule
 signal (alone) & \auroc{} for correctness \\
 \midrule
-\textbf{string self-consistency} (largest identical-string cluster) & \textbf{0.675} \\
+string self-consistency (largest identical-string cluster) & 0.675 \\
 structural self-consistency (largest canonical-structure cluster) & 0.619 \\
 execution self-consistency (largest result-set cluster) & 0.613 \\
 log-probability (white-box, mean sequence logprob) & 0.669 \\
@@ -118,15 +119,16 @@ schema-linking graph confidence & 0.553 \\
 \end{tabular}
 \end{table}
 
-The black-box statistical signals plateau at \auroc{} $\approx 0.61$--$0.68$; \emph{string}
-self-consistency is the strongest (0.675). Crucially, \textbf{white-box log-probability does not
-exceed this ceiling} (0.669): added to string self-consistency it gives $+0.005$ (CI
-$[-0.003, +0.012]$, not significant). Log-probability separated confident-wrong queries on
-\emph{saturated single-table} data, but on hard multi-table BIRD it is no better than sampling
-agreement. Wrong queries also execute and return rows just fine, so executability is chance.
+The black-box statistical signals plateau between about $0.61$ and $0.68$ \auroc{}, with string
+self-consistency the strongest at $0.675$. White-box log-probability does not exceed this ceiling
+($0.669$); added to string self-consistency it gives $+0.005$ (CI $[-0.003, +0.012]$), which is not
+significant. Log-probability did separate confident-wrong queries on saturated single-table data,
+but on hard multi-table BIRD it is no better than sampling agreement. Wrong queries also execute and
+return rows without trouble, so executability is uninformative.
 
-\subsection{Verification breaks the ceiling}
-We combine each signal with the strongest baseline (string self-consistency) via cross-fit logistic.
+\subsection{Verification moves past the ceiling}
+We combine each signal with the strongest baseline (string self-consistency) using a cross-fit
+logistic.
 \begin{table}[h]\centering
 \begin{tabular}{lrr}
 \toprule
@@ -135,28 +137,31 @@ signal & \auroc{} alone & combined $\Delta$ over string SC (95\% CI) \\
 log-probability (white-box) & 0.669 & $+0.005\ [-0.003, +0.012]$ (n.s.) \\
 LLM verifier (\texttt{gpt-4o-mini}) & 0.724 & --- \\
 LLM verifier (\texttt{gpt-4o}) & 0.770 & $+0.079\ [+0.054, +0.105]$ \\
-LLM verifier (Claude-Sonnet-4.6) & \textbf{0.776} & $+0.131\ [+0.101, +0.163]$ \\
+LLM verifier (Claude-Sonnet-4.6) & 0.776 & $+0.131\ [+0.101, +0.163]$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Only the verifiers break the ceiling, with CIs excluding zero. The signal that works is the one not
-blind to query logic: a model that can \emph{reason} about whether the aggregation, filters, and
-joins answer the question. Log-probability adds nothing over the strongest sampling baseline here.
+Only the verifiers move past the ceiling, with confidence intervals that exclude zero. The signal
+that works is the one that is not blind to query logic: a model that can reason about whether the
+aggregation, filters, and joins answer the question. Log-probability adds nothing over the strongest
+sampling baseline here.
 
 \subsection{Robustness: cross-provider judges and a second generator}
-A verifier from the generator's own family could merely echo it, so we test an \textbf{independent
-provider}. Claude-Sonnet-4.6 (judging GPT-4o-mini's SQL) is the \emph{strongest single judge}
-($0.776 > 0.770$), and the two judges' scores correlate only $r=0.43$---they make genuinely different
-errors. As a result a \textbf{two-provider ensemble (GPT-4o $+$ Claude) reaches \auroc{} 0.822}
-($\Delta$ over GPT-4o alone $+0.052$, CI $[+0.032, +0.073]$), the strongest correctness signal we
-obtain, and is well-calibrated (ECE 0.031; \S\ref{sec:cal}). This rules out the self-agreement
-artifact and shows that combining independent reasoning judges---not a single bigger one---is the
-most reliable correctness signal. (The OpenAI judges use YES/NO logits and Claude a verbalized
-probability; a method-matched OpenAI verbal judge also clears the ceiling at 0.709.)
+A verifier from the generator's own family might merely echo it, so we also test an independent
+provider. Claude-Sonnet-4.6, judging GPT-4o-mini's SQL, is the strongest single judge
+($0.776$ versus $0.770$), and the two judges' scores correlate at only $r=0.43$, so they make
+genuinely different errors. A two-provider ensemble (GPT-4o and Claude) reaches $0.822$ \auroc{}
+($\Delta$ over GPT-4o alone of $+0.052$, CI $[+0.032, +0.073]$), the strongest correctness signal we
+obtain, and it is well-calibrated (ECE $0.031$; Section~\ref{sec:cal}). This rules out a
+self-agreement artifact and suggests that combining independent reasoning judges, rather than using a
+single larger one, is the most reliable approach. The OpenAI judges use YES/NO logits while Claude
+uses a verbalized probability; a method-matched OpenAI verbal judge also clears the ceiling at
+$0.709$, so the gap is not an elicitation artifact.
 
-\textbf{A second generator.} The dichotomy is not unique to gpt-4o-mini. Regenerating the slice with
-\texttt{gpt-4.1-mini} (accuracy 0.522, a stronger generator), judged by the same gpt-4o-mini verifier:
+The pattern is not specific to gpt-4o-mini. Regenerating the slice with \texttt{gpt-4.1-mini}
+(accuracy $0.522$, a stronger generator) and judging with the same gpt-4o-mini verifier reproduces
+it.
 \begin{table}[h]\centering
 \begin{tabular}{lrrrr}
 \toprule
@@ -168,128 +173,131 @@ gpt-4.1-mini & 0.522 & 0.641 & 0.677 & $+0.033\ [+0.007, +0.061]$ \\
 \end{tabular}
 \end{table}
 
-For both generators, self-consistency sits at the ceiling and the verifier exceeds it with a combined
-delta whose CI excludes zero. The margin is smaller for gpt-4.1-mini---expected, since there the judge
-(gpt-4o-mini) is \emph{weaker} than the generator and catches fewer of its subtler errors; a judge at
-least as strong as the generator should widen it.
+For both generators, self-consistency sits at the ceiling and the verifier exceeds it, with a
+combined delta whose interval excludes zero. The margin is smaller for gpt-4.1-mini, which is
+expected: there the judge (gpt-4o-mini) is weaker than the generator and so catches fewer of its
+subtler errors. A judge at least as strong as the generator should widen the gap.
 
 \subsection{Can the verifier be trained? In-distribution yes, transfer no}
 \label{sec:trained}
-We fine-tune verifiers on (question $+$ evidence $+$ schema $+$ SQL $\rightarrow$ correct), 6{,}400
-execution-labeled pairs, evaluated leave-one-database-out (LODO), across an encoder classifier and a
-generative LLM judge (LoRA), plus an un-fine-tuned baseline.
+We fine-tune verifiers on (question, evidence, schema, SQL) $\rightarrow$ correct, using 6{,}400
+execution-labeled pairs, evaluated leave-one-database-out (LODO). We compare an encoder classifier
+and a generative LLM judge (LoRA), along with an un-fine-tuned baseline.
 \begin{table}[h]\centering
 \begin{tabular}{lrr}
 \toprule
 verifier & in-distribution \auroc{} & leave-one-DB-out (transfer) \\
 \midrule
-cheap feature classifier (embeddings $+$ logprob $+$ SC) & 0.768 & 0.661 \\
+cheap feature classifier (embeddings, logprob, SC) & 0.768 & 0.661 \\
 fine-tuned encoder, RoBERTa-base & 0.778 & --- \\
 fine-tuned encoder, ModernBERT-base (full schema) & 0.785 & 0.670 \\
-generative judge, Qwen2.5-1.5B --- zero-shot & 0.651 & 0.553 \\
-generative judge, Qwen2.5-1.5B --- LoRA fine-tuned & 0.766 & 0.659 \\
-\emph{frozen GPT-4o judge (zero-shot)} & --- & \emph{0.770 (already a transfer number)} \\
+generative judge, Qwen2.5-1.5B, zero-shot & 0.651 & 0.553 \\
+generative judge, Qwen2.5-1.5B, LoRA fine-tuned & 0.766 & 0.659 \\
+frozen GPT-4o judge (zero-shot) & --- & 0.770 (already a transfer number) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Fine-tuning works (it lifts the small generative judge $+0.115$ in-distribution and $+0.106$ on
-transfer over its zero-shot baseline), \textbf{but it does not transfer}: every fine-tuned verifier,
-encoder or generative, converges to $\approx 0.77$ in-distribution and $\approx 0.66$ across unseen
-schemas, worst on the most domain-specific held-out databases. Long context (ModernBERT) and a
-generative architecture both fail to close it; the models memorize schema surface form. The frozen
-large judge is the exception---GPT-4o's $0.77$ \emph{is} its cross-schema number, and the small base
-model's near-chance zero-shot transfer ($0.553$) shows why: transfer tracks \textbf{model scale and
-reasoning}, not fine-tuning. Per database (Fig.~\ref{fig:lodo}), the frozen GPT-4o judge leads on
-every held-out schema (mean $0.710$) above both fine-tuned verifiers ($0.670$, $0.659$).
+Fine-tuning helps in-distribution; it lifts the small generative judge by $+0.115$ in-distribution
+and $+0.106$ on transfer over its zero-shot baseline. It does not transfer well, though. Every
+fine-tuned verifier, encoder or generative, converges to about $0.77$ in-distribution and about
+$0.66$ across unseen schemas, with the worst results on the most domain-specific held-out databases.
+Long context (ModernBERT) and a generative architecture both fail to close this gap, which suggests
+the models are learning schema surface form. The frozen large judge is the exception: GPT-4o's
+$0.77$ is already its cross-schema number, and the small base model's near-chance zero-shot transfer
+($0.553$) shows why. Transfer here seems to follow model scale and reasoning rather than fine-tuning.
+Per database (Figure~\ref{fig:lodo}), the frozen GPT-4o judge leads on every held-out schema (mean
+$0.710$), above both fine-tuned verifiers ($0.670$ and $0.659$).
 
-\textbf{What the verifier uses.} An input ablation of the frozen judge confirms the mechanism: shown
-only the question and SQL it scores $0.692$; adding the schema changes nothing ($0.688$,
-$\Delta -0.004$); only evidence helps ($+0.031 \rightarrow 0.724$). The frozen verifier reasons about
-whether the query answers the question rather than looking up schema content---precisely why it
-generalizes, and the mirror image of the fine-tuned verifiers.
+An input ablation of the frozen judge is consistent with this reading. Shown only the question and
+SQL, the judge scores $0.692$; adding the schema changes nothing ($0.688$, a change of $-0.004$); and
+only evidence helps ($+0.031$, to $0.724$). The frozen verifier reasons about whether the query
+answers the question rather than looking up schema content, which is why it generalizes, and which is
+the opposite of what the fine-tuned verifiers do.
 
-\textbf{Consequence.} A \emph{per-deployment} verifier (trained on a database's own schemas) is an
-excellent, near-zero-inference-cost option at $\approx 0.77$--$0.79$. A \emph{universal} verifier, on
-this evidence, is a large frozen reasoning model: no small fine-tuned verifier ($\le 1.5$B) beats
+In short, there are two distinct problems. A per-deployment verifier, trained on a database's own
+schemas, is a good and inexpensive option at about $0.77$ to $0.79$. A universal verifier, on this
+evidence, is a large frozen reasoning model: no small fine-tuned verifier ($\le 1.5$B) beats
 GPT-4o's $0.77$ on transfer.
 
 \begin{figure}[t]\centering
 \includegraphics[width=0.48\textwidth]{../figures/paper1_lodo_perdb.png}
-\caption{Per-database transfer: the frozen GPT-4o judge leads on every held-out schema, above both
-fine-tuned verifiers. Reasoning transfers; fitting memorizes schema surface form.}
+\caption{Per-database transfer. The frozen GPT-4o judge leads on every held-out schema, above both
+fine-tuned verifiers. Reasoning transfers; fitting learns schema surface form.}
 \label{fig:lodo}
 \end{figure}
 
 \subsection{Calibration and selective prediction}
 \label{sec:cal}
-\textbf{Calibration.} The raw signals are over-confident; the cross-fit ensemble is well-calibrated
-and usable directly as $P(\text{correct})$ (Fig.~\ref{fig:reliab}).
+The raw signals are over-confident, while the cross-fit ensemble is well-calibrated and can be used
+directly as $P(\text{correct})$ (Figure~\ref{fig:reliab}).
 \begin{table}[h]\centering
 \begin{tabular}{lrr}
 \toprule
 score & \auroc{} & ECE \\
 \midrule
 string self-consistency & 0.675 & 0.212 \\
-verifier (GPT-4o, raw P) & 0.770 & 0.319 \\
-verifier (Claude, raw P) & 0.776 & 0.210 \\
-\textbf{two-provider ensemble (cross-fit)} & \textbf{0.822} & \textbf{0.031} \\
+verifier (GPT-4o, raw $P$) & 0.770 & 0.319 \\
+verifier (Claude, raw $P$) & 0.776 & 0.210 \\
+two-provider ensemble (cross-fit) & 0.822 & 0.031 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Selective prediction.} Empirical risk--coverage (Fig.~\ref{fig:rc}); threshold calibrated on
-a held-out half:
+For selective prediction, we report an empirical risk--coverage frontier (Figure~\ref{fig:rc}) with
+the threshold calibrated on a held-out half.
 \begin{table}[h]\centering
 \begin{tabular}{lll}
 \toprule
 target risk & self-consistency & all signals \\
 \midrule
-0.20 & --- (no valid subset) & 9\% coverage @ 14\% risk \\
-0.30 & --- & 27\% coverage @ 24\% risk \\
-0.40 & --- & 58\% coverage @ 38\% risk \\
+0.20 & none (no valid subset) & 9\% coverage at 14\% risk \\
+0.30 & none & 27\% coverage at 24\% risk \\
+0.40 & none & 58\% coverage at 38\% risk \\
 \bottomrule
 \end{tabular}
 \end{table}
-Self-consistency cannot form a low-risk subset at any threshold; the logic-aware combination yields
-useful empirical abstention frontiers. The distribution-free PAC certificate is conservative under
-the regime's low base accuracy (0.45)---only ``all signals at $\alpha=0.40$'' certifies (16\%
-coverage / 22\% risk)---so a tight guarantee needs a stronger generator or more calibration data, not
-a better signal. We report the empirical frontier as the practical result and the certificate as a
-conservative lower bound.
+Self-consistency cannot form a low-risk subset at any threshold, whereas the logic-aware combination
+gives useful empirical abstention frontiers. The distribution-free certificate is conservative under
+the regime's low base accuracy ($0.45$): only ``all signals at $\alpha=0.40$'' certifies (16\%
+coverage, 22\% risk). A tighter guarantee would need a stronger generator or more calibration data
+rather than a better signal, so we report the empirical frontier as the practical result and the
+certificate as a conservative lower bound.
 
 \begin{figure}[t]\centering
 \includegraphics[width=0.48\textwidth]{../figures/paper1_risk_coverage.png}
 \hfill
 \includegraphics[width=0.48\textwidth]{../figures/paper1_reliability.png}
-\caption{Left: risk--coverage---the ensemble dominates self-consistency. Right: reliability---the
-cross-fit ensemble is calibrated (ECE 0.031) while raw signals are over-confident.}
+\caption{Left: risk--coverage, where the ensemble dominates self-consistency. Right: reliability,
+where the cross-fit ensemble is calibrated (ECE $0.031$) and the raw signals are over-confident.}
 \label{fig:rc}\label{fig:reliab}
 \end{figure}
 
 \section{Discussion}
-Correctness UQ for text-to-SQL is tractable, but only with signals that engage the query's
-\emph{logic}. The popular black-box statistical signals are a ceiling, not a solution, on hard
-multi-table data. Two recipes follow: (i) for a fixed deployment, a cheap trained verifier delivers
-$\approx 0.78$ at negligible inference cost; (ii) for an open setting, use a reasoning judge---the
-frozen LLM already transfers at $0.77$, and combining independent providers is the most reliable and
-best-calibrated option.
+Correctness uncertainty for text-to-SQL is tractable, but only with signals that engage the query's
+logic. The popular black-box statistical signals are a ceiling rather than a solution on hard
+multi-table data. Two practical recipes follow. For a fixed deployment, a cheap trained verifier
+delivers about $0.78$ at negligible inference cost. For an open setting, a reasoning judge is the
+better choice, since the frozen LLM already transfers at $0.77$ and combining independent providers
+is the most reliable and best-calibrated option.
 
 \section{Limitations}
-Generators are within one provider (two models shown, \S4.3); a stronger judge than the generator
-would widen the gpt-4.1-mini margin. PAC certificates are loose under low base accuracy. A
-\emph{universal} trained verifier remains open at the large-model ($\ge 7$B) scale; the only verifier
-that generalizes across schemas so far is the large frozen judge. Planned: an open-weight generator,
-a second benchmark (Spider), and a cross-\emph{provider} third judge.
+The generators are within one provider; we show the effect for two models (Section~4.3), and a judge
+stronger than the generator would likely widen the gpt-4.1-mini margin. The PAC certificate is loose
+under low base accuracy. Whether a universal trained verifier is possible at larger scale (7B and up)
+remains open; the only verifier that generalizes across schemas in our experiments is the large
+frozen judge. Planned additions include an open-weight generator, a second benchmark (Spider), and a
+third judge from another provider.
 
 \section{Conclusion}
-On hard text-to-SQL, \emph{what predicts correctness} is not sampling agreement, structure, or even
-white-box log-probability---those plateau at \auroc{} $\approx 0.61$--$0.68$---but \textbf{verification}:
-an LLM judge that reasons about whether the query answers the question. Independent-provider judges
-make different errors and ensemble to \auroc{} $0.82$ with calibrated probabilities, enabling
-empirical abstention the sampling baseline cannot. Verifiers can be trained, but a fine-tuned model
-overfits schemas and fails to transfer, so a \emph{universal} verifier must generalize by reasoning.
-The map is the contribution: it tells practitioners which signal to pay for, and when.
+On hard text-to-SQL, what predicts correctness is not sampling agreement, structure, or even
+white-box log-probability, all of which plateau between about $0.61$ and $0.68$ \auroc{}. It is
+verification: an LLM judge that reasons about whether the query answers the question.
+Independent-provider judges make different errors and ensemble to $0.82$ \auroc{} with calibrated
+probabilities, which enables empirical abstention that the sampling baseline cannot provide.
+Verifiers can be trained, but a fine-tuned model learns schema surface form and fails to transfer, so
+a universal verifier needs to generalize by reasoning. The map itself is the contribution: it
+indicates which signal to pay for, and when.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
