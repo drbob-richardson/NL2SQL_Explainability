@@ -28,3 +28,6 @@ paper/tex/*.fdb_latexmk
 paper/tex/*.synctex.gz
 paper/tex/*.bbl
 paper/tex/*.blg
+
+# abandoned partial Gemini caches (billing never activated)
+data/bird_verify_gemini*
