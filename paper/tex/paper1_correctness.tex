@@ -62,7 +62,12 @@ best-calibrated, correctness signal we obtain ($0.82$ \auroc{}, $0.03$ ECE).
 schemas. We distinguish the per-deployment verifier from the universal one.
 \end{enumerate}
 
+Our scope is selective prediction rather than generation. We quantify and calibrate correctness to
+decide whether to answer or abstain, and we do not iterate to improve the query, in contrast with the
+self-correcting agents discussed in Section~\ref{sec:related}.
+
 \section{Related work}
+\label{sec:related}
 Relevant lines of work include self-consistency and sampling-based UQ
 \citep{wang2023selfconsistency}, semantic entropy via meaning clustering
 \citep{kuhn2023semantic,farquhar2024semantic}, verbalized confidence, conformal and selective
@@ -74,6 +79,20 @@ open-ended evaluation; here we evaluate it specifically as a calibrated correctn
 SQL, against black-box baselines, and we test whether judging can be trained and whether it
 transfers. We use the Spider \citep{yu2018spider}, BIRD \citep{li2023bird}, and Spider~2.0
 \citep{lei2025spider2} benchmarks for context.
+
+A closely related line builds self-correcting or agentic text-to-SQL systems, in which the model
+generates a query and then critiques or executes it and regenerates, often over several rounds
+\citep{shinn2023reflexion,chen2023selfdebug,pourreza2023dinsql,wang2024macsql}. That work shares a
+component with ours, since the critic in such a loop is an LLM verifier much like the judge we study.
+The objective is different, though. A self-correcting agent uses the critic to drive iteration toward
+a more accurate query, and reports end-task accuracy. We do not regenerate; we ask how well a signal
+predicts correctness so that a system can answer or abstain under a risk target, and we report
+calibration and risk--coverage rather than accuracy gains. The two are complementary: even after any
+amount of self-correction, a system emits a final query and still needs a calibrated estimate of
+whether to trust it, which is the question we study. We also note that typical self-correction relies
+on execution feedback, whereas our verifier reasons over the question, schema, and SQL without
+executing the candidate (and we find executability itself is uninformative for correctness,
+Section~4.1).
 
 \section{Setup}
 \textit{Benchmark and generation.} We use BIRD dev \citep{li2023bird}, which has 11 databases with
