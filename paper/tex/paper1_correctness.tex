@@ -239,6 +239,16 @@ schemas, is a good and inexpensive option at about $0.77$ to $0.79$. A universal
 evidence, is a large frozen reasoning model: no small fine-tuned verifier ($\le 1.5$B) beats
 GPT-4o's $0.77$ on transfer.
 
+The per-deployment case has a concrete payoff for abstention. Used as the selective-prediction score,
+a cheap trained verifier (a logistic over question/SQL embeddings, log-probability, and
+self-consistency, with no LLM call at inference) yields a risk--coverage frontier competitive with
+the frozen GPT-4o judge and far above self-consistency. At a $20\%$ risk target it answers $21\%$ of
+questions, against $9\%$ for the frozen judge and $1\%$ for self-consistency (area under the
+risk--coverage curve $0.340$, $0.355$, and $0.413$ respectively; lower is better). So when the
+deployment owns its schemas, a trained verifier is not only accurate in-distribution but also the
+cheaper way to get risk-controlled abstention; the fine-tuned encoders, which score higher
+in-distribution still, would do at least as well.
+
 \begin{figure}[t]\centering
 \includegraphics[width=0.48\textwidth]{../figures/paper1_lodo_perdb.png}
 \caption{Per-database transfer. The frozen GPT-4o judge leads on every held-out schema, above both

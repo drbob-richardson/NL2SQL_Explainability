@@ -84,6 +84,24 @@ to widen the oracle ceiling — more tokens → more headroom for the verifier t
 3. **Scale the data** — regenerate samples across Spider + BIRD + Spider 2.0 with larger K to build
    a big execution-labeled correctness dataset (a contribution in its own right + training fuel).
 
+## exp4 - does schema diversity fix the transfer failure?
+
+exp1/exp3 trained on 8 BIRD schemas and did not transfer (LODO ~0.67). exp4 tests whether adding
+Spider's 20 schemas to the training pool helps. For each held-out BIRD database it trains two models,
+BIRD-only (the other 7 BIRD dbs) and diverse (those 7 plus all 20 Spider dbs), both evaluated on the
+held-out BIRD db, and compares mean transfer AUROC. Self-contained: uses the bundled
+`data/verifier_data_diverse.jsonl` (10,752 rows, 28 schemas; rebuildable with
+`scripts/build_diverse_verifier_data.py` if you have the Spider DBs).
+
+```bash
+python exp4_finetune_diverse.py --smoke                                  # ~2 min sanity
+python exp4_finetune_diverse.py --model answerdotai/ModernBERT-base --max-len 1024 --epochs 3
+```
+16 trainings (2 per held-out BIRD db), so budget a couple of hours; use tmux. Read: if mean diverse
+beats mean bird-only (and approaches the frozen judge's 0.77), schema diversity buys cross-schema
+transfer and a universal trained verifier is within reach. If diverse is about equal to bird-only,
+the wall is not a data-diversity problem and the universal verifier remains the frozen reasoning judge.
+
 ## What to bring back
 
 The `results/` folder (`*.json` for numbers, `*.log` for full output). Optionally:
