@@ -1,0 +1,40 @@
+torch 2.12.0+cu130  cuda=True  model=Qwen/Qwen2.5-7B-Instruct
+loaded 6400 rows across 8 dbs; yes_id=7414 no_id=2308
+  ZERO-SHOT in-distribution AUROC = 0.693
+  ZERO-SHOT per-DB mean AUROC = 0.572
+    [indist] epoch 1/2 done (5120 steps)
+    [indist] epoch 2/2 done (10240 steps)
+
+  FINE-TUNED IN-DISTRIBUTION AUROC = 0.798   (1297s)
+    [lodo:california_schools] epoch 1/2 done (5688 steps)
+    [lodo:california_schools] epoch 2/2 done (11376 steps)
+    LODO held-out california_schools: AUROC 0.706
+    [lodo:debit_card_specializing] epoch 1/2 done (5960 steps)
+    [lodo:debit_card_specializing] epoch 2/2 done (11920 steps)
+    LODO held-out debit_card_specializing: AUROC 0.515
+    [lodo:financial] epoch 1/2 done (5552 steps)
+    [lodo:financial] epoch 2/2 done (11104 steps)
+    LODO held-out financial: AUROC 0.632
+    [lodo:formula_1] epoch 1/2 done (5520 steps)
+    [lodo:formula_1] epoch 2/2 done (11040 steps)
+    LODO held-out formula_1: AUROC 0.756
+    [lodo:student_club] epoch 1/2 done (5520 steps)
+    [lodo:student_club] epoch 2/2 done (11040 steps)
+    LODO held-out student_club: AUROC 0.706
+    [lodo:superhero] epoch 1/2 done (5520 steps)
+    [lodo:superhero] epoch 2/2 done (11040 steps)
+    LODO held-out superhero: AUROC 0.655
+    [lodo:thrombosis_prediction] epoch 1/2 done (5520 steps)
+    [lodo:thrombosis_prediction] epoch 2/2 done (11040 steps)
+    LODO held-out thrombosis_prediction: AUROC 0.679
+    [lodo:toxicology] epoch 1/2 done (5520 steps)
+    [lodo:toxicology] epoch 2/2 done (11040 steps)
+    LODO held-out toxicology: AUROC 0.645
+
+  FINE-TUNED LEAVE-ONE-DB-OUT (transfer) mean AUROC = 0.6616106064886794
+
+  VERDICT: universal-verifier bet wins if LODO > 0.77 (beats frozen gpt-4o judge AND
+  the fine-tuned encoder's 0.67 transfer). If LODO ~ 0.67 too, generative judges also
+  overfit schemas and the universal verifier is just the frozen LLM.
+
+  wrote results/exp3_judge_Qwen2.5-7B-Instruct.json

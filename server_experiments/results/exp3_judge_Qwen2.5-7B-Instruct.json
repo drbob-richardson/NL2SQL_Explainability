@@ -1,0 +1,34 @@
+{
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "epochs": 2,
+  "n_rows": 6400,
+  "baselines": {
+    "frozen_verifier_gpt4o": 0.77,
+    "encoder_indist": 0.785,
+    "encoder_lodo": 0.67
+  },
+  "zeroshot_indist_auroc": 0.693344790802418,
+  "zeroshot_lodo_per_db": {
+    "california_schools": 0.5409403246633463,
+    "debit_card_specializing": 0.6237833481432498,
+    "financial": 0.5893011341574375,
+    "formula_1": 0.6755470532214126,
+    "student_club": 0.5429201689681791,
+    "superhero": 0.6795872309060099,
+    "thrombosis_prediction": 0.4252549810246679,
+    "toxicology": 0.49534862062542684
+  },
+  "zeroshot_lodo_mean_auroc": 0.5715853577137162,
+  "indist_auroc": 0.7983633598040377,
+  "lodo_per_db": {
+    "california_schools": 0.705560551558753,
+    "debit_card_specializing": 0.5151164472732533,
+    "financial": 0.6319725762238411,
+    "formula_1": 0.7556227990520697,
+    "student_club": 0.7059487305943906,
+    "superhero": 0.6551303581334205,
+    "thrombosis_prediction": 0.6788672122074636,
+    "toxicology": 0.6446661768662431
+  },
+  "lodo_mean_auroc": 0.6616106064886794
+}
