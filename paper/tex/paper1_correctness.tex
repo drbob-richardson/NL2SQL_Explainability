@@ -28,8 +28,8 @@ signals that move past this ceiling are verification-based: an LLM judge scores 
 correlate at only $0.43$), so a two-provider ensemble reaches $0.82$ \auroc{} with a well-calibrated
 probability (expected calibration error $0.03$), and it supports useful abstention frontiers (for
 example, answering $27\%$ of questions at $24\%$ selective risk) where self-consistency offers no
-valid low-risk subset. The pattern holds across two generators and two judge providers. We also ask
-whether a verifier can be trained. Fine-tuned verifiers, both encoder and generative, reach about
+valid low-risk subset. The pattern holds across two benchmarks (BIRD and Spider), two generators, and
+two judge providers. We also ask whether a verifier can be trained. Fine-tuned verifiers, both encoder and generative, reach about
 $0.77$--$0.79$ \auroc{} in-distribution but fall to about $0.66$ on unseen schemas, and scaling to
 7B, adding schema diversity, distilling a strong judge's rationales, and cross-benchmark training all
 fail to close that gap. Cross-schema transfer appears to track model scale and reasoning rather than
@@ -54,7 +54,7 @@ available to a practitioner, together with the consequences for deployment.
 string, structural, and execution self-consistency, by a schema-relevance score, and, once compared
 against the strongest of these, by white-box log-probability.
 \item Verification moves past the ceiling, with bootstrapped intervals that exclude zero, across two
-generators and two judge providers. Judges from different providers make different errors, and an
+benchmarks, two generators, and two judge providers. Judges from different providers make different errors, and an
 ensemble of them is the best and best-calibrated correctness signal we obtain ($0.82$ \auroc{},
 $0.03$ calibration error).
 \item A selective-prediction frontier that the self-consistency baseline cannot match.
@@ -100,8 +100,9 @@ correctness.
 dictionaries and external-knowledge ``evidence.'' We generate SQL with GPT-4o-mini ($K=8$ samples
 per question, temperature $0.7$, schema and evidence in the prompt) for an 800-question slice across
 8 databases, and execute every sample against the real databases to obtain ground-truth correctness.
-Modal-query execution accuracy is $0.451$, a hard regime with ample headroom for UQ. A second
-generator, GPT-4.1-mini (accuracy $0.522$), is used for a breadth check.
+Modal-query execution accuracy is $0.451$, a hard regime with ample headroom for UQ. For breadth we
+also use a second generator, GPT-4.1-mini (accuracy $0.522$), and a second benchmark, Spider's
+multi-table dev queries ($490$ questions over $20$ databases), generated and executed the same way.
 
 \textit{Signals.} The black-box statistical signals are string self-consistency (the size of the
 largest cluster of identical queries among the samples), structural self-consistency (clustering by
@@ -198,6 +199,15 @@ For both generators, self-consistency sits at the ceiling and the verifier excee
 interval that excludes zero. The margin is smaller for GPT-4.1-mini, as expected: there the judge
 (GPT-4o-mini) is weaker than the generator and so catches fewer of its subtler errors; a judge at
 least as strong as the generator should widen the gap.
+
+\textit{A second benchmark.} The pattern also reproduces on a different benchmark. On Spider's
+multi-table dev queries ($490$ questions over $20$ databases; modal accuracy $0.620$), string
+self-consistency again sits at the ceiling ($0.618$) and a strong verifier clears it: GPT-4o scores
+$0.712$ (paired $\Delta$ over self-consistency $+0.094$, CI $[+0.029, +0.155]$). The weaker GPT-4o-mini
+judge is above the ceiling but not significantly so here ($0.669$, $\Delta +0.051$, CI
+$[-0.013, +0.114]$), again consistent with the judge needing to be a strong enough reasoner. Across
+two benchmarks, two generators, and two providers, then, self-consistency plateaus and a sufficiently
+strong verifier moves past it.
 
 \textit{A self-correction baseline.} Self-correction is an alternative way to use a critic, so we run
 one reflection round: each modal query is fed back to GPT-4o-mini, which reviews it, revises it if
@@ -353,8 +363,7 @@ The generators are within one provider, though we show the effect for two of the
 stronger than the generator would likely widen the GPT-4.1-mini margin. The certificate is loose under
 low base accuracy. Whether a universal trained verifier is possible at much larger scale remains
 open; the only verifier that generalizes across schemas in our experiments is the large frozen judge.
-Natural extensions include an open-weight generator, a second evaluation benchmark, and a third judge
-provider.
+Natural extensions include an open-weight generator and a third judge provider.
 
 \section{Conclusion}
 On hard text-to-SQL, what predicts correctness is not sampling agreement, structure, or even
