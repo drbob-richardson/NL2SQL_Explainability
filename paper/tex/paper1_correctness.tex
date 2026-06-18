@@ -223,6 +223,7 @@ fine-tuned encoder, RoBERTa-base & 0.778 & --- \\
 fine-tuned encoder, ModernBERT-base (full schema) & 0.785 & 0.670 \\
 generative judge, Qwen2.5-1.5B, zero-shot & 0.651 & 0.553 \\
 generative judge, Qwen2.5-1.5B, LoRA fine-tuned & 0.766 & 0.659 \\
+generative judge, Qwen2.5-7B, LoRA fine-tuned & 0.798 & 0.662 \\
 frozen GPT-4o judge (zero-shot) & --- & 0.770 (already a transfer number) \\
 \bottomrule
 \end{tabular}
@@ -252,6 +253,16 @@ Diversity helps modestly, raising mean held-out transfer from $0.659$ to $0.682$
 8 databases), but it stays well below the frozen judge's $0.770$. So schema diversity helps at the
 margin; it does not substitute for the reasoning of a large model, and the transfer gap is not
 mainly a data-diversity problem.
+
+Three further levers also fail to close it. Scaling the generative judge to 7B raises
+in-distribution accuracy to $0.798$ (the best per-deployment number) but leaves transfer at $0.662$.
+Distilling a strong judge's rationales into a 1.5B model does not help transfer and in fact lowers it
+(mean $0.564$ versus $0.653$ for a verdict-only fine-tune), because the small model's
+self-generated reasoning at test time is unreliable. And cross-benchmark transfer (train on one
+benchmark, test the other) is lossy in both directions ($0.67$--$0.71$, versus in-distribution
+$0.77$/$0.91$). Across architecture, scale, schema diversity, reasoning distillation, and benchmark,
+no fine-tuned verifier exceeds about $0.68$ on transfer; only the large frozen reasoning judge
+reaches $0.77$.
 
 In short, there are two distinct problems. A per-deployment verifier, trained on a database's own
 schemas, is a good and inexpensive option at about $0.77$ to $0.79$. A universal verifier, on this
@@ -320,6 +331,43 @@ certificate as a conservative lower bound.
 where the cross-fit ensemble is calibrated (ECE $0.031$) and the raw signals are over-confident.}
 \label{fig:rc}\label{fig:reliab}
 \end{figure}
+
+\subsection{Where the errors are: computation, not schema linking}
+Parsing each gold query into structural features and grouping modal correctness by them shows that
+the errors concentrate in computation and composition, not in schema selection.
+
+\begin{table}[h]\centering
+\begin{tabular}{lrr}
+\toprule
+gold-query feature & modal accuracy when present & drop vs absent \\
+\midrule
+arithmetic / math (ratios, \%) & 0.277 & $+0.210$ \\
+nested subquery & 0.280 & $+0.183$ \\
+CASE expression & 0.286 & $+0.180$ \\
+GROUP BY & 0.290 & $+0.177$ \\
+DISTINCT & 0.317 & $+0.159$ \\
+ORDER BY & 0.331 & $+0.151$ \\
+multi-table / join & 0.441 & $+0.049$ \\
+aggregate & 0.451 & $\approx 0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Join count barely matters (0/1/2/3+ joins: $0.48$/$0.45$/$0.41$/$0.45$), and a logistic over the
+features ranks arithmetic (BIRD's signature ratio and percentage questions), ORDER BY, and DISTINCT
+as the strongest independent error predictors, while \texttt{join} and \texttt{aggregate} carry
+negative coefficients. BIRD's own difficulty labels line up as a check (simple $0.544$, moderate
+$0.332$, challenging $0.287$). The reading is that the generator gets the tables and columns right
+and fails on the math, nesting, conditional logic, grouping, and ranking.
+
+This explains two earlier results. Schema-linking confidence does not predict correctness
+(Section~4.1) because the errors are not in schema selection; and a reasoning verifier does
+(Section~4.2) because catching a wrong ratio or a misgrouped aggregate requires reasoning about the
+computation. Consistent with this, the verifier's strongest discrimination is on the largest error
+category, arithmetic (\auroc{} $0.813$), and it improves over self-consistency across query types,
+including the ``simple'' queries where the model is confidently wrong and self-consistency is weakest
+(verifier $-$ self-consistency $+0.117$ there). The one exception is GROUP BY, where the verifier
+does not beat self-consistency (a small subset).
 
 \section{Discussion}
 Correctness uncertainty for text-to-SQL is tractable, but only with signals that engage the query's
