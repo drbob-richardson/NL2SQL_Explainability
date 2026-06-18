@@ -1,0 +1,14 @@
+{
+  "model": "answerdotai/ModernBERT-base",
+  "baselines": {
+    "exp1_bird_only_lodo": 0.67
+  },
+  "per_db": {
+    "california_schools": {
+      "bird_only": 0.5123136645962733,
+      "diverse": 0.5670807453416149
+    }
+  },
+  "mean_bird_only": 0.5123136645962733,
+  "mean_diverse": 0.5670807453416149
+}

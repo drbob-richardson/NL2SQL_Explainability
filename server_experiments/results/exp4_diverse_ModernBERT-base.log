@@ -1,0 +1,16 @@
+torch 2.12.0+cu130 cuda=True model=answerdotai/ModernBERT-base
+10752 rows; 8 BIRD held-out dbs; 20 Spider dbs in pool
+  california_schools         bird-only 0.679   diverse 0.685   (748s)
+  debit_card_specializing    bird-only 0.701   diverse 0.729   (910s)
+  financial                  bird-only 0.661   diverse 0.644   (875s)
+  formula_1                  bird-only 0.631   diverse 0.665   (811s)
+  student_club               bird-only 0.672   diverse 0.734   (871s)
+  superhero                  bird-only 0.664   diverse 0.650   (872s)
+  thrombosis_prediction      bird-only 0.618   diverse 0.687   (875s)
+  toxicology                 bird-only 0.650   diverse 0.665   (806s)
+
+  MEAN transfer to held-out BIRD db:  bird-only 0.659   diverse 0.682
+  VERDICT: diverse > bird-only means schema diversity improves transfer (universal verifier
+  within reach); diverse ~ bird-only means the transfer wall is not about data diversity.
+
+  wrote results/exp4_diverse_ModernBERT-base.json

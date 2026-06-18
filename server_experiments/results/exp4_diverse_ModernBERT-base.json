@@ -1,0 +1,42 @@
+{
+  "model": "answerdotai/ModernBERT-base",
+  "baselines": {
+    "exp1_bird_only_lodo": 0.67
+  },
+  "per_db": {
+    "california_schools": {
+      "bird_only": 0.6786801328168235,
+      "diverse": 0.6851595646559675
+    },
+    "debit_card_specializing": {
+      "bird_only": 0.7012047694819284,
+      "diverse": 0.7288545390671819
+    },
+    "financial": {
+      "bird_only": 0.6610741172175183,
+      "diverse": 0.6435604545902371
+    },
+    "formula_1": {
+      "bird_only": 0.6308553520409294,
+      "diverse": 0.664963123740338
+    },
+    "student_club": {
+      "bird_only": 0.6716699545415559,
+      "diverse": 0.7340412985676301
+    },
+    "superhero": {
+      "bird_only": 0.6635460755780819,
+      "diverse": 0.6504608697634481
+    },
+    "thrombosis_prediction": {
+      "bird_only": 0.6178249525616698,
+      "diverse": 0.6869564358001266
+    },
+    "toxicology": {
+      "bird_only": 0.6498789296136096,
+      "diverse": 0.6650903371344605
+    }
+  },
+  "mean_bird_only": 0.6593417854815147,
+  "mean_diverse": 0.6823858279149237
+}
