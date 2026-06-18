@@ -245,6 +245,14 @@ only evidence helps ($+0.031$, to $0.724$). The frozen verifier reasons about wh
 answers the question rather than looking up schema content, which is why it generalizes, and which is
 the opposite of what the fine-tuned verifiers do.
 
+\textit{Does training on more schemas help?} A natural worry is that transfer fails simply because
+training saw too few schemas. We test this by adding Spider's 20 single-table schemas to the
+training pool (28 schemas in all) and re-evaluating transfer to each held-out BIRD database.
+Diversity helps modestly, raising mean held-out transfer from $0.659$ to $0.682$ (and improving 6 of
+8 databases), but it stays well below the frozen judge's $0.770$. So schema diversity helps at the
+margin; it does not substitute for the reasoning of a large model, and the transfer gap is not
+mainly a data-diversity problem.
+
 In short, there are two distinct problems. A per-deployment verifier, trained on a database's own
 schemas, is a good and inexpensive option at about $0.77$ to $0.79$. A universal verifier, on this
 evidence, is a large frozen reasoning model: no small fine-tuned verifier ($\le 1.5$B) beats
