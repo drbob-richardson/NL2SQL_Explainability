@@ -1,0 +1,7 @@
+{
+  "model": "answerdotai/ModernBERT-base",
+  "bird_in_dist": 0.7653614041325906,
+  "spider_in_dist": 0.9089888454295234,
+  "bird_to_spider": 0.7125535775824933,
+  "spider_to_bird": 0.67156657911937
+}

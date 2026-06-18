@@ -1,0 +1,43 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "baselines": {
+    "exp3_verdict_only_lodo": 0.659,
+    "frozen_gpt4o": 0.77
+  },
+  "per_db": {
+    "california_schools": {
+      "verdict_only": 0.7468561584840655,
+      "reasoning": 0.5199827734711455
+    },
+    "debit_card_specializing": {
+      "verdict_only": 0.6875220926122305,
+      "reasoning": 0.6466065747613998
+    },
+    "financial": {
+      "verdict_only": 0.6321758329987957,
+      "reasoning": 0.5139000401445203
+    },
+    "formula_1": {
+      "verdict_only": 0.7235858585858586,
+      "reasoning": 0.574040404040404
+    },
+    "student_club": {
+      "verdict_only": 0.639107069036792,
+      "reasoning": 0.6364200082678793
+    },
+    "superhero": {
+      "verdict_only": 0.660366931918656,
+      "reasoning": 0.7021441202475686
+    },
+    "thrombosis_prediction": {
+      "verdict_only": 0.5510276399716513,
+      "reasoning": 0.43860737065910704
+    },
+    "toxicology": {
+      "verdict_only": 0.5838794233289646,
+      "reasoning": 0.47645932049601775
+    }
+  },
+  "mean_verdict_only": 0.6530651258671267,
+  "mean_reasoning": 0.5635200765110053
+}

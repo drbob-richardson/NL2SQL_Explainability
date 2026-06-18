@@ -1,0 +1,9 @@
+torch 2.12.0+cu130 cuda=True model=answerdotai/ModernBERT-base
+BIRD rows 6400, Spider rows 4352
+
+  in-distribution: BIRD 0.765   Spider 0.909
+  cross-benchmark: BIRD->Spider 0.713   Spider->BIRD 0.672   (935s)
+  Read: cross-benchmark << in-distribution means the verifier learns benchmark-specific
+  surface form; cross-benchmark ~ in-distribution means it learns transferable correctness.
+
+  wrote results/exp6_crossbench_ModernBERT-base.json

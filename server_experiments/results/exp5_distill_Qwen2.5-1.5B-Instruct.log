@@ -1,0 +1,15 @@
+torch 2.12.0+cu130 cuda=True model=Qwen/Qwen2.5-1.5B-Instruct
+2000 rationale rows across 8 dbs
+  california_schools         verdict-only 0.747   reasoning 0.520   (713s)
+  debit_card_specializing    verdict-only 0.688   reasoning 0.647   (726s)
+  financial                  verdict-only 0.632   reasoning 0.514   (807s)
+  formula_1                  verdict-only 0.724   reasoning 0.574   (781s)
+  student_club               verdict-only 0.639   reasoning 0.636   (805s)
+  superhero                  verdict-only 0.660   reasoning 0.702   (806s)
+  thrombosis_prediction      verdict-only 0.551   reasoning 0.439   (801s)
+  toxicology                 verdict-only 0.584   reasoning 0.476   (828s)
+
+  MEAN transfer:  verdict-only 0.653   reasoning 0.564
+  Read: reasoning > verdict-only means distilled reasoning improves transfer.
+
+  wrote results/exp5_distill_Qwen2.5-1.5B-Instruct.json
