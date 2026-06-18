@@ -102,6 +102,30 @@ beats mean bird-only (and approaches the frozen judge's 0.77), schema diversity 
 transfer and a universal trained verifier is within reach. If diverse is about equal to bird-only,
 the wall is not a data-diversity problem and the universal verifier remains the frozen reasoning judge.
 
+## exp5 - reasoning distillation (does reasoning, not just verdicts, transfer?)
+
+Distill a strong judge's rationales into a small verifier and test transfer. Two LoRA fine-tunes on
+the same pairs (bundled `data/distill_data.jsonl`, 2000 gpt-4o rationales + true verdicts): one
+trained to emit just a verdict, one to emit reasoning then a verdict. Leave-one-DB-out; the reasoning
+model generates its own reasoning at eval. If reasoning beats verdict-only on transfer, the
+verifier's generalization is reasoning (distillable), not scale alone. This is the most complex
+script (eval uses generation) - run `--smoke` first.
+
+```bash
+python exp5_distill.py --smoke
+python exp5_distill.py --model Qwen/Qwen2.5-1.5B-Instruct --epochs 2 --eval-cap 200
+```
+Compare to exp3 verdict-only LoRA (LODO 0.659) and the frozen judge (0.77).
+
+## exp6 - cross-benchmark transfer (no API, fast)
+
+Train on one benchmark, test on the other, both directions (uses bundled `verifier_data_diverse.jsonl`).
+A harder transfer test than leave-one-DB-out within a benchmark.
+```bash
+python exp6_crossbench.py --smoke
+python exp6_crossbench.py --model answerdotai/ModernBERT-base --max-len 1024 --epochs 3
+```
+
 ## What to bring back
 
 The `results/` folder (`*.json` for numbers, `*.log` for full output). Optionally:
