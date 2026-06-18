@@ -17,9 +17,11 @@
 \maketitle
 
 \begin{abstract}
-Deciding whether to trust a generated SQL query requires an estimate of whether it is correct. We
-study which signals provide that estimate on hard multi-table text-to-SQL (BIRD), comparing them on
-equal footing with bootstrapped confidence intervals. The black-box statistical signals cluster
+Deciding whether to trust a generated SQL query requires an estimate of whether it is correct, where
+correct means the query executes to the same result as a human-written reference query. We study
+which signals provide that estimate on hard multi-table text-to-SQL (BIRD), comparing them on equal
+footing by how well each ranks correct queries above incorrect ones (\auroc{}), with bootstrapped
+confidence intervals. The black-box statistical signals cluster
 together and plateau: string, structural, and execution self-consistency, a schema-relevance score,
 and query executability all fall between about $0.61$ and $0.68$ \auroc{}, with string
 self-consistency the strongest at $0.675$. White-box log-probability does not beat them ($0.67$). The
@@ -39,27 +41,46 @@ currently means a large frozen reasoning model.
 \end{abstract}
 
 \section{Introduction}
-Text-to-SQL systems are increasingly used where a wrong answer is costly, so deciding when to answer
-and when to abstain matters as much as raw accuracy. That decision rests on a calibrated estimate of
-whether a generated query is correct. Most uncertainty-quantification (UQ) work for this setting
-relies on black-box statistical signals such as sampling agreement \citep{wang2023selfconsistency},
-semantic entropy \citep{kuhn2023semantic,farquhar2024semantic}, and structural frequency, which are
-appealing because they need no extra model. We ask a direct question: on hard text-to-SQL, which
-signals actually predict execution correctness, and by how much?
+A text-to-SQL system turns a natural-language question into a SQL query that runs against a database.
+These systems are increasingly used where a wrong query is costly, so a system needs to know not just
+how to answer but when it should decline to. Knowing when to decline requires, for each query the
+system produces, an estimate of how likely that query is to be correct. We use \emph{correct} in its
+standard benchmark sense: the generated query, when executed against the database, returns the same
+result as a human-written reference query for the same question. Predicting correctness so a system
+can choose to answer or to abstain is the problem of \emph{selective prediction}, and it is the focus
+of this paper.
 
-Our contribution is an execution-grounded comparison, with confidence intervals, of the signals
-available to a practitioner, together with the consequences for deployment.
+How should such an estimate be produced? Most uncertainty-quantification (UQ) work for text-to-SQL
+reads it off statistics of the model's own outputs, without any extra model or labels. The clearest
+example is \emph{self-consistency}: draw several queries for the same question and measure how much
+they agree, on the premise that a confident model repeats itself \citep{wang2023selfconsistency}.
+Related signals include the entropy of the samples' meanings \citep{kuhn2023semantic,farquhar2024semantic}
+and how often a particular query structure recurs. We call these \emph{black-box statistical} signals
+because they look only at agreement among samples, not at whether a query's logic actually answers the
+question. The alternative is \emph{verification}: show a separate model the question, the schema, and
+the candidate query, and ask it to judge whether the query is correct (also called LLM-as-judge). We
+ask a direct question: on hard text-to-SQL, which of these signals actually predicts correctness, and
+by how much?
+
+To answer it we score each signal by its ability to rank correct queries above incorrect ones,
+measured as the area under the ROC curve (\auroc{}): the probability that a randomly chosen correct
+query is scored above a randomly chosen incorrect one, where $0.5$ is chance and $1.0$ is a perfect
+ranking. We attach paired bootstrap confidence intervals to every comparison, so a difference between
+two signals can be read as significant or not. Our contribution is this execution-grounded comparison
+of the signals available to a practitioner, together with what it implies for deployment.
 \begin{enumerate}
 \item A correctness ceiling for black-box statistical UQ (roughly $0.61$--$0.68$ \auroc{}), shared by
 string, structural, and execution self-consistency, by a schema-relevance score, and, once compared
-against the strongest of these, by white-box log-probability.
+against the strongest of these, by white-box log-probability (the model's own probability for the
+query it generated).
 \item Verification moves past the ceiling, with bootstrapped intervals that exclude zero, across two
-benchmarks, two generators, and two judge providers. Judges from different providers make different errors, and an
-ensemble of them is the best and best-calibrated correctness signal we obtain ($0.82$ \auroc{},
-$0.03$ calibration error).
+benchmarks, two generators, and two judge providers. Judges from different providers make different
+errors, and an ensemble of them is the best and best-calibrated correctness signal we obtain ($0.82$
+\auroc{}, $0.03$ calibration error).
 \item A selective-prediction frontier that the self-consistency baseline cannot match.
-\item A study of trained verifiers, which do well in-distribution but fail to transfer across
-schemas, separating the in-domain verifier from a universal one.
+\item A study of \emph{trained} verifiers, fine-tuned on labeled examples. They do well on databases
+seen in training but fail to \emph{transfer} (keep working on databases never seen during training),
+which separates an in-domain verifier from a universal one.
 \end{enumerate}
 
 Our scope is selective prediction rather than generation. We quantify and calibrate correctness to
@@ -98,11 +119,16 @@ correctness.
 \section{Setup}
 \textit{Benchmark and generation.} We use BIRD \citep{li2023bird}, which has databases with data
 dictionaries and external-knowledge ``evidence.'' We generate SQL with GPT-4o-mini ($K=8$ samples
-per question, temperature $0.7$, schema and evidence in the prompt) for an 800-question slice across
-8 databases, and execute every sample against the real databases to obtain ground-truth correctness.
-Modal-query execution accuracy is $0.451$, a hard regime with ample headroom for UQ. For breadth we
-also use a second generator, GPT-4.1-mini (accuracy $0.522$), and a second benchmark, Spider's
-multi-table dev queries ($490$ questions over $20$ databases), generated and executed the same way.
+per question, temperature $0.7$, schema and evidence in the prompt) for a fixed slice of 800 questions
+spanning 8 databases. The slice was fixed before any analysis and does not depend on model output: it
+takes the questions in benchmark order from each of the 8 databases whose files we held locally,
+capped per database and at 800 in total. We execute every generated sample against the real database
+and label a query \emph{correct} when its result set matches the reference query's, which is the
+standard execution-correctness criterion for these benchmarks. Throughout, the query we score is the
+\emph{modal} query, the one a question's samples most often produce. Modal-query execution accuracy is
+$0.451$, a hard regime with ample headroom for UQ. For breadth we also use a second generator,
+GPT-4.1-mini (accuracy $0.522$), and a second benchmark, Spider's \citep{yu2018spider} multi-table dev
+queries ($490$ questions over $20$ databases), generated and executed the same way.
 
 \textit{Signals.} The black-box statistical signals are string self-consistency (the size of the
 largest cluster of identical queries among the samples), structural self-consistency (clustering by
@@ -113,14 +139,18 @@ the mean sequence log-probability of the modal query (white-box) and an LLM veri
 question, evidence, schema, and candidate SQL. The verifiers are GPT-4o-mini and GPT-4o, which report
 $P(\text{correct})$ from the YES/NO first-token logits, and Claude-Sonnet-4.6, an
 independent-provider judge that reports a verbalized $0$--$100$ probability (Anthropic does not expose
-token logprobs).
+token logprobs). All judges see the same input in the same order; the exact prompts are in
+Appendix~\ref{app:prompts}.
 
 \textit{Metrics.} We report tie-robust \auroc{} for correctness, with $2{,}000$-sample paired
-bootstrap confidence intervals on \auroc{} differences; cross-fit logistic combinations on a parity
-split; expected calibration error (ECE) \citep{guo2017calibration}; and risk--coverage with both an
-empirical frontier and a distribution-free (Bonferroni-over-grid, $\delta=0.1$) certificate
-\citep{angelopoulos2021ltt}. All model outputs are cached; the API experiments are inexpensive (about
-\$1.6 total).
+bootstrap confidence intervals on \auroc{} differences. We also combine signals with a cross-fit
+logistic regression (the combiner is fit on one split and scored on a disjoint split, so it never
+sees its own test data). For calibration we report expected calibration error (ECE), the average gap
+between a score read as a probability and the empirical fraction correct at that score
+\citep{guo2017calibration}. For abstention we report a risk--coverage frontier (the selective risk,
+or error rate among answered questions, as a function of coverage, the fraction answered), using both
+an empirical frontier and a distribution-free (Bonferroni-over-grid, $\delta=0.1$) certificate
+\citep{angelopoulos2021ltt}. All model outputs are cached, and the API experiments are inexpensive.
 
 \section{Results}
 
@@ -181,7 +211,7 @@ well-calibrated (ECE $0.031$; Section~\ref{sec:cal}). This rules out a self-agre
 suggests that combining independent reasoning judges, rather than using one larger judge, is the most
 reliable approach. The OpenAI judges use YES/NO logits while Claude reports a verbalized probability;
 a method-matched OpenAI verbal judge also clears the ceiling at $0.709$, so the gap is not an
-elicitation artifact.
+elicitation artifact (Appendix~\ref{app:prompts}).
 
 The pattern is not specific to GPT-4o-mini. Regenerating the slice with GPT-4.1-mini (accuracy
 $0.522$, a stronger generator) and judging with the same GPT-4o-mini verifier reproduces it.
@@ -220,27 +250,28 @@ signal, so an external verifier remains necessary and abstention is orthogonal t
 \subsection{Can the verifier be trained? In-distribution yes, transfer no}
 \label{sec:trained}
 We fine-tune verifiers on (question, evidence, schema, SQL) $\rightarrow$ correct, using $6{,}400$
-execution-labeled pairs, and evaluate transfer leave-one-database-out (LODO). We compare an encoder
-classifier and a generative LLM judge (LoRA), with an un-fine-tuned baseline. Transfer values are
-macro-averaged over held-out databases.
+execution-labeled pairs, and evaluate transfer to unseen databases by leave-one-database-out (LODO):
+hold out one database, train on the rest, and score the held-out one, repeating for each database.
+We compare an encoder classifier (ModernBERT) and a generative LLM judge (Qwen2.5, LoRA-tuned), with
+an un-fine-tuned (zero-shot) baseline. Transfer values are macro-averaged over the held-out databases.
 \begin{table}[h]\centering
 \begin{tabular}{lrr}
 \toprule
 verifier & in-distribution \auroc{} & transfer (LODO, macro) \\
 \midrule
 feature classifier (embeddings, logprob, self-consistency) & 0.768 & 0.661 \\
-fine-tuned encoder (ModernBERT, full schema) & 0.785 & 0.670 \\
-generative judge, 1.5B (LoRA) & 0.766 & 0.659 \\
-generative judge, 7B (LoRA) & 0.798 & 0.662 \\
+fine-tuned encoder (ModernBERT-base, full schema) & 0.785 & 0.670 \\
+generative judge, Qwen2.5-1.5B (LoRA) & 0.766 & 0.659 \\
+generative judge, Qwen2.5-7B (LoRA) & 0.798 & 0.662 \\
 frozen GPT-4o judge (zero-shot) & --- & 0.710 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Four findings. First, \emph{fine-tuning works in-distribution}: it lifts the generative judge well
-above its zero-shot baseline and reaches the best in-domain numbers (7B at $0.798$). Second, \emph{it
-does not transfer}: every fine-tuned verifier, encoder or generative, lands near $0.66$ on unseen
-schemas, with the worst results on the most domain-specific databases. The frozen large judge is the
+above its zero-shot baseline, and the largest fine-tuned judge reaches the best in-domain number
+($0.798$). Second, \emph{it does not transfer}: every fine-tuned verifier, encoder or generative,
+lands near $0.66$ on unseen schemas, with the worst results on the most domain-specific databases. The frozen large judge is the
 exception; macro-averaged the same way it scores $0.710$ (and $0.770$ pooled over all questions),
 above every fine-tuned alternative, and the small base model's near-chance zero-shot transfer shows
 why a large model is needed. Third, \emph{nothing closes the gap}: scaling to 7B, adding schema
@@ -264,7 +295,8 @@ schemas, a trained verifier is accurate in-domain and the cheaper route to a use
 \begin{figure}[t]\centering
 \includegraphics[width=0.48\textwidth]{../figures/paper1_lodo_perdb.png}
 \caption{Per-database transfer. The frozen GPT-4o judge leads on every held-out schema, above both
-fine-tuned verifiers. Reasoning transfers; fitting captures schema-specific regularities.}
+fine-tuned verifiers. The pattern is consistent with reasoning transferring across schemas while
+fine-tuning captures schema-specific regularities.}
 \label{fig:lodo}
 \end{figure}
 
@@ -285,8 +317,11 @@ two-provider ensemble (cross-fit) & 0.822 & 0.031 \\
 \end{tabular}
 \end{table}
 
-For selective prediction we report an empirical risk--coverage frontier (Figure~\ref{fig:rc}), with
-the threshold calibrated on a held-out half.
+For selective prediction we report an empirical risk--coverage frontier (Figure~\ref{fig:rc}). We
+split the questions in half: the abstention threshold for each target risk is selected on the
+calibration half, and the coverage and risk we report are measured on the disjoint test half, so no
+threshold is evaluated on the data that chose it. ``No valid subset'' below means that on the test
+half no threshold answers any questions within the target risk.
 \begin{table}[h]\centering
 \begin{tabular}{lll}
 \toprule
@@ -398,6 +433,26 @@ frozen GPT-4o judge (macro / pooled) & 0.710 / 0.770 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\section{Verifier prompts}
+\label{app:prompts}
+Every verifier sees the same content, presented in this order: the schema, the question, the evidence
+string (when available), and the candidate SQL, followed by the elicitation request. Two elicitation
+formats are used. The logit format (the OpenAI judges) asks for a one-word verdict and reads
+$P(\text{correct})$ from the first-token YES/NO probabilities; the verbalized format (Claude, which
+does not expose token logprobs, and the method-matched OpenAI verbal judge) asks for a numeric
+probability and divides it by $100$.
+
+\noindent\textbf{Logit (YES/NO) judge.} System: \textit{``You are a strict SQL reviewer. Decide
+whether the candidate SQL CORRECTLY answers the question (right tables, columns, conditions,
+aggregation, and result). Answer with exactly one word: YES or NO.''} The candidate block ends with
+\textit{``Is it correct? Answer YES or NO.''}
+
+\noindent\textbf{Verbalized (0--100) judge.} System: \textit{``You are a strict SQL reviewer. Decide
+whether the candidate SQL correctly answers the question. Respond with ONLY an integer from 0 to 100:
+the probability (percent) that it is correct. Output only the number.''} The candidate block ends with
+\textit{``Probability (0-100) that the SQL is correct:''} The returned integer divided by $100$ is the
+correctness probability.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
