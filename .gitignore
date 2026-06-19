@@ -39,3 +39,5 @@ paper-overleaf/
 data/ambrosia/
 data/ambrosia_samples.json
 data/ambrosia_elicit_*.json
+data/ambrosia_interp_*.json
+data/ambrosia_realize_*.json

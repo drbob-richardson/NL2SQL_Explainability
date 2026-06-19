@@ -275,3 +275,71 @@ Every API script is safe-by-default: a dry run prints a cost estimate and refuse
   numbers are not directly comparable to Paper 1.
 - Several 2026 ambiguity preprints (SOMA-SQL, CLARITY) had unverified author lists at survey time —
   verify before citing.
+
+---
+
+## 8. Follow-up (post-review): is the ambiguity "dead" verdict an artifact? (Exp 1, 2, 2b)
+
+A reviewer note argued we *posteriorized the wrong object* — probes 4b/4c scored ambiguity at the
+SQL layer, conflating "didn't find the reading" with "wrote slightly-off SQL." We tested this.
+Additional spend here: Exp1 $0 (re-score), Exp2 $0.61, Exp2b $0.80.
+
+### Exp 1 — re-score 4c with AMBROSIA's OFFICIAL metric (`scripts/ambrosia_rescore.py`, no API)
+Their metric (`src/evaluation/metrics.py`) uses a **cell-multiset** comparison and reports
+**recall** (fraction of gold interpretations matched) and **all_found** (all matched = our
+"coverage-both"). Re-scoring our cached zero-shot elicitation:
+
+| model | SQL recall | SQL all_found |
+|---|---|---|
+| gpt-4o | 0.23 | 1% |
+| gpt-4o-mini | 0.22 | 1% |
+
+The metric was **not** the artifact (all_found came in at 1%, not higher). The gap to AMBROSIA's
+published ~30–65% is the **prompt** (they use few-shot + "no extra columns") and the
+discovery-vs-realization split.
+
+### Exp 2 — interpretation-FIRST elicitation (`scripts/ambrosia_interp.py`, $0.61)
+Same model (gpt-4o), same 300 stratified Qs, same "may be ambiguous" framing; only the output
+modality changes (English, not SQL). A gpt-4o-mini judge checks each of AMBROSIA's two gold NL
+interpretations against the candidate list.
+
+| type | n | NL recall | NL both | (SQL recall / both) |
+|---|---|---|---|---|
+| attachment | 100 | 0.90 | 80% | 0.07 / 0% |
+| vague | 100 | 0.82 | 72% | 0.26 / 2% |
+| scope | 100 | 0.54 | 7% | 0.36 / 0% |
+| **all** | 300 | **0.75** | **53%** | **0.23 / 1%** |
+
+**Judge caveat (important).** A spot-check caught the gpt-4o-mini judge **over-crediting** subtle
+*attachment* distinctions (a single vaguely-worded candidate scored `[True, True]` against two
+genuinely different golds). So **53% / attachment 80% are inflated**; vague 72% is supported by the
+spot-check; scope 7% is a trustworthy low. The robust, defensible claim is **directional**:
+discovery is far easier than realization (vague alone 2% → 72%).
+
+### Exp 2b — two-stage discover→realize, execution-grounded (`scripts/ambrosia_realize.py`, $0.80)
+Feed each discovered NL interpretation back, generate one SQL per interpretation ("no extra
+columns"), score with the **official** metric (no soft judge).
+
+| type | n | recall | all_found | (one-shot) |
+|---|---|---|---|---|
+| attachment | 100 | 0.16 | 0% | 0.07 / 0% |
+| scope | 100 | 0.38 | 7% | 0.36 / 0% |
+| vague | 98 | 0.34 | 14% | 0.26 / 2% |
+| **all** | 298 | **0.29** | **7%** | **0.23 / 1%** |
+
+Interpretation-conditioning lifts all_found **1% → 7%** (7×), recall 0.23 → 0.29 — real but modest.
+Even handed the exact reading, exec-exact SQL succeeds ~7%; the residual is **output-exactness**
+(columns/shape under strict cell-match), the part few-shot + execution-guided repair address.
+
+### Revised verdict (supersedes §4's "ambiguity dead" line)
+- **Discovery is tractable** and was NOT the bottleneck — the earlier "ambiguity undetectable"
+  reading was a measurement artifact of scoring at the SQL layer.
+- **Realization is the dominant bottleneck**; interpretation-conditioning helps 7× but absolute
+  stays low. Closing it is known engineering (few-shot, execution-guided repair) — what AMBROSIA's
+  own pipeline does to reach ~30–65%.
+- The ambiguity/decision paper is **viable but must build on an AMBROSIA-style realization stack**;
+  the novel BNP/decision layer (interpretation posterior + unified execute/clarify/abstain +
+  calibrated materiality) sits above it.
+- **Open-world novelty (probe 2) remains the lowest-dependency BNP contribution.**
+- Still pending (free): Exp 5 decision-simulation on gold interpretations — demonstrates the
+  decision-theoretic payoff independent of the realization bottleneck.
