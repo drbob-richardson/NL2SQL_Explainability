@@ -343,3 +343,48 @@ Even handed the exact reading, exec-exact SQL succeeds ~7%; the residual is **ou
 - **Open-world novelty (probe 2) remains the lowest-dependency BNP contribution.**
 - Still pending (free): Exp 5 decision-simulation on gold interpretations — demonstrates the
   decision-theoretic payoff independent of the realization bottleneck.
+
+---
+
+## 9. Experiment 5 — decision simulation (execute / clarify / abstain)
+
+`scripts/ambrosia_decision_sim.py` (no API). AMBROSIA gold interpretations as oracle posterior
+support; user's intended reading uniform over the K valid readings; wrong answer costs 1, abstain
+0.5, clarify costs c then must *realize* the revealed reading (success prob r). All policies share
+the same realization ability r and differ only in the chosen action — isolating the value of the
+*decision*. r is a global knob (the SQL generator's realization quality). (Note: a first pass had a
+bug — sampled coverage used as realization ability, which made the "oracle" worse than execute; fixed
+with the explicit r knob.)
+
+**r = 1.0 (perfect realization — value-of-discovery ceiling)**
+
+| policy | loss c=0.1 | loss c=0.3 | loss c=0.5 | clarify amb/ctl |
+|---|---|---|---|---|
+| always-execute | 0.296 | 0.296 | 0.296 | 0 / 0 |
+| always-clarify | 0.100 | 0.300 | 0.500 | 100 / 100 |
+| **Bayes-oracle** | **0.053** | **0.160** | **0.267** | 100 / 0 |
+| Bayes-realistic | 0.257 | 0.293 | 0.296 | ~0 / ~0 |
+
+**r = 0.3 (today's realization, Exp 2b)**: all policies ≈ 0.79; oracle abstains (0.50) — clarify
+can't be realized 70% of the time. Mean sampled modal confidence is **0.95 on ambiguous questions**
+(the collapse).
+
+**Reading.** (1) The decision layer has large value if discovery works: oracle cuts loss 0.296 →
+0.053 at c=0.1 (~5×), beating both baselines (clarify ambiguous, execute controls). (2) Today's
+collapsed posterior captures almost none of it (Bayes-realistic ≈ always-execute) — `oracle −
+realistic` = the value of **discovery**. (3) Realization gates the payoff: at r=0.3 even the oracle
+stops clarifying — `r=1 vs r=0.3` = the value of fixing **realization**.
+
+## 10. Overall verdict after the follow-ups
+
+The arc supports a coherent Paper 2 thesis: **decision-aware text-to-SQL under ambiguity.**
+- Discovery is tractable (Exp 2); realization is the binding constraint (Exp 2b, ~0.3) but is
+  known-engineering (few-shot + execution-guided repair, as AMBROSIA reaches ~30–65%).
+- A Bayes execute/clarify/abstain layer over an interpretation posterior captures large value
+  (Exp 5) that the collapsed generator posterior misses — and this unified objective is the
+  confirmed white space (EIG clarify-only, TrustSQL abstain-only).
+- BNP's load-bearing role is the **open-world interpretation/motif prior** (probe 2), not correctness.
+
+Recommended next decision: either (a) replicate AMBROSIA's few-shot realization to lift r toward
+~0.5–0.65 and instantiate the full discover→realize→decide pipeline, or (b) pursue the
+lower-dependency open-world-novelty BNP paper. Total exploration spend ≈ $4.2.
