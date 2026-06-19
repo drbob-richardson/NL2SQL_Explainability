@@ -31,3 +31,9 @@ paper/tex/*.blg
 
 # abandoned partial Gemini caches (billing never activated)
 data/bird_verify_gemini*
+
+# Overleaf git-bridge clone (its own repo, syncs to Overleaf)
+paper-overleaf/
+
+# AMBROSIA benchmark (re-downloadable from Edinburgh share, pw AM8R0S1A)
+data/ambrosia/
