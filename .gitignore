@@ -38,3 +38,4 @@ paper-overleaf/
 # AMBROSIA benchmark (re-downloadable from Edinburgh share, pw AM8R0S1A)
 data/ambrosia/
 data/ambrosia_samples.json
+data/ambrosia_elicit_*.json
