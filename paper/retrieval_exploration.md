@@ -178,3 +178,12 @@ superhero +0.125, debit_card +0.044 (rich/large schemas) vs thrombosis −0.029,
 −0.057, toxicology −0.093 (tiny 3–4 table schemas, where coupling over-includes). Clean mechanism:
 structure helps ∝ available structure. Refinement: adaptive β gated by schema size/FK-density
 (β→0 for tiny schemas). Large-schema regime (all schemas rich) is the natural home.
+
+## Phase-1 adaptive-β refinement — FAILED (`scripts/phase1_adaptive.py`)
+Gating β=0 for ≤4-table schemas, β=1.5 else: overall recall 0.781 < fixed β=1 0.806 (adaptive−fixed
+−0.025 [−0.038,−0.011]). Per-DB shows the tiny-schema regression is mostly the LEARNED UNARY features
+underperforming raw cosine on already-solved schemas (california β=0 0.893 < cosine 0.951), not the
+structural prior — so a table-count gate can't fix it. **Conclusion: keep fixed β=1.** The win is
+significant and concentrates where retrieval is HARD (financial 0.61→0.81, formula_1 0.47→0.66);
+regressions only on tiny schemas where cosine was already ~0.9 (low-stakes). Defensible as-is;
+smarter per-schema adaptation not worth it over fixed β.
