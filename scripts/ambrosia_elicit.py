@@ -92,6 +92,7 @@ def main():
     ap.add_argument("--model", default="gpt-4o-mini", choices=list(PRICES))
     ap.add_argument("--max-calls", type=int, default=1200)
     ap.add_argument("--workers", type=int, default=12)
+    ap.add_argument("--per-type", type=int, default=0, help="if >0, use first N ambiguous Qs per ambig_type (stratified subset)")
     args = ap.parse_args()
     cache_p = os.path.join(ROOT, "data", f"ambrosia_elicit_{args.model.replace('-', '_')}.json")
     cache = json.load(open(cache_p)) if os.path.exists(cache_p) else {}
@@ -104,6 +105,12 @@ def main():
         if p not in conns and os.path.exists(p):
             conns[p] = open_db(p); schemas[p] = schema_str(conns[p])
     tasks = [r for r in amb if os.path.exists(db_path(r["db_file"]))]
+    if args.per_type > 0:
+        per = defaultdict(list)
+        for r in tasks:
+            per[r["ambig_type"]].append(r)
+        tasks = [r for t in sorted(per) for r in per[t][:args.per_type]]
+        print(f"  stratified subset: {args.per_type}/type -> {len(tasks)} questions")
     todo = [r for r in tasks if f"{r['db_file']}||{r['question']}" not in cache]
     pin, pout = PRICES[args.model]
     in_tok = sum(count_tokens(schemas[db_path(r["db_file"])]) + count_tokens(r["question"]) + 120 for r in todo)
