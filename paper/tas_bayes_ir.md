@@ -100,7 +100,9 @@ worth the trouble, and offer practitioner guidance.
 
 | **Structured selection (correlated enterprise SQL, BEAVER)** | join-graph diffusion/MRF | cosine | **Bayes/structure helps MORE** | cosine CRATERS 0.42 (vs BIRD 0.72); PageRank/MRF +12-14pp — gain grows with correlation |
 
-| **Single-hop control (SQL |gold|=1)** | FK diffusion/MRF | cosine | **structure HURTS (diffusion) / neutral (MRF)** | PageRank 0.727 < cosine 0.839 (−0.11); MRF 0.857 graceful — boundary: structure needs multi-hop |
+| **Single-hop control (SQL |gold|=1)** | FK diffusion/MRF | cosine | **structure HURTS / neutral (MRF)** | PageRank 0.727 < cosine 0.839 (−0.11); MRF 0.857 graceful |
+| **Single-hop RAG control (SciFact)** | cosine-kNN graph diffusion | cosine | **structure DESTRUCTIVE** | kNN-diffusion 0.016 vs cosine 0.608 (−0.59): imposing a graph w/o real connectivity buries the gold |
+| **Graph RAG, by reasoning type (2WikiMultiHopQA)** | entity-graph PageRank/MRF | cosine | **WINS chained, HURTS independent** | +0.21 bridge / +0.17 compositional / +0.13 inference / −0.22 comparison; PageRank≈MRF (0.805≈0.804) |
 
 Cross-cutting: structure's gain **grows with relational complexity AND corpus correlation** (FK/join density, query hop count, near-duplicate distractors);
 `oracle > full` (+6pp EX) shows precise retrieval beats showing-everything (distractors hurt).

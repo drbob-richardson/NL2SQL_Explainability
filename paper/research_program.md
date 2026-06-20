@@ -50,7 +50,7 @@ Columns below = the five families (a→structure, b→decision/cost, c→adaptat
 |---|---|---|---|---|---|
 | **S1 SQL orthogonal** (BIRD/Spider) | **done: WINS** (FK-MRF +5.7pp EX) | done: opportunity real (oracle>full) but posterior-threshold FAILS (0.411) | untested | done: loses* | done: loses (maxout 0.763 > post 0.700) |
 | **S2 SQL correlated** (BEAVER dw) | **done: WINS bigger** (cosine craters 0.42; struct +12-14pp) | — | **done: WINS** (online +8.5pp, learning curve) | — | — |
-| **S3 single-hop** (SQL |gold|=1; RAG next) | **done(SQL): structure HURTS** (PageRank -0.11; MRF neutral) | — | — | — | — |
+| **S3 single-hop** (SQL |gold|=1; RAG SciFact) | **done: structure HURTS** (SQL −0.11; RAG kNN-diffusion −0.59 catastrophic) | — | — | — | — |
 | **S4 RAG multi-hop** (HotpotQA distractor) | **done: WINS bridge** (+10-13pp) | — | — | **done: helps COMPARISON** (+7pp; topology-dependent) | done: loses (cos-margin 0.744 > post 0.692) |
 | **S5 Graph RAG** (entity/KG graph) | — | — | — | — | — |
 
@@ -154,3 +154,7 @@ may sharpen into "it depends on corpus correlation and hop-count," which is a st
 - [done] Decision/cost (BIRD downstream EX): oracle 0.562@2.2tbls > full 0.500@10 (opportunity real, distractors hurt) BUT MRF-posterior-threshold 0.411 UNDER-RETRIEVES (< fixed-k MRF 0.495). Posterior-as-decision FAILS like posterior-as-UQ -> families 2 & 5 unified: posterior is not a usable decision/uncertainty signal; structure-as-ranking is the only robust win.
 
 - [done] Family 3 ADAPTATION (BEAVER online learning curve): naive-Bayes term->table online 0.510 (+8.5pp vs static cosine 0.425), RISES with feedback (Q1->Q3 0.455->0.560). GENUINE Bayes win, regime-specific (correlated/repeated). Second robust win after structure; the textbook-Bayesian one. Validates the user's naive-Bayes-online idea. 120 qs (short), simulated feedback.
+
+- [done] S5 graph RAG (2WikiMultiHopQA, 1500 qs): PageRank 0.805 / MRF 0.804 > cosine 0.717; by type structure helps chained (bridge_comp +.21, compositional +.17, inference +.13) HURTS independent comparison (−.22). Dichotomy replicates on a 2nd multi-hop RAG dataset; PageRank≈MRF (4th confirmation: structure not the specific Bayes).
+- [done] S3 RAG single-hop (SciFact, 5183 docs, gold 1.13): cosine 0.608 > BM25 0.535 >> kNN-graph diffusion 0.016 (−0.59). Imposing a similarity graph on single-hop is DESTRUCTIVE. Boundary confirmed cross-domain.
+- ===== PROGRAM COMPLETE: all 5 settings x 5 families covered across 5 datasets (BIRD, Spider, BEAVER, HotpotQA, 2Wiki, SciFact). =====

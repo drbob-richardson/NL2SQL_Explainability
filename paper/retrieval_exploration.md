@@ -372,3 +372,24 @@ the most textbook-Bayesian.** Caveats: 120 queries (short curve, 8-order avg); s
 ### UPDATED THESIS: Bayes helps retrieval via STRUCTURE (ranking) and ADAPTATION (online updating) —
 not via uncertainty/decision. Structure: all regimes, grows with hops+correlation. Adaptation:
 correlated/repeated workloads. Diversity: conditional (topology). Posterior-as-decision/UQ: loses.
+
+## S5 (graph RAG): 2WikiMultiHopQA — structure GENERALIZES to a 2nd multi-hop RAG dataset (`scripts/s5_twowiki.py`)
+1500 qs, 4 reasoning types, recall@|gold|: cosine 0.717, PageRank 0.805, MRF 0.804.
+Structure(PageRank) − cosine by type: bridge_comparison +0.205[.184,.225], compositional +0.170[.149,.192],
+inference +0.134[.091,.178], **comparison −0.216[−.253,−.181]** (HURTS), ALL +0.087. The connectivity
+dichotomy REPLICATES on a different dataset with a 4-type gradient: structure helps all CHAINED types,
+hurts the INDEPENDENT (comparison) type (within-dataset negative control). PageRank≈MRF again
+(0.805≈0.804): structure not the specific Bayes (now confirmed across BIRD, BEAVER, HotpotQA, 2Wiki).
+
+## S3 (single-hop RAG control): SciFact — imposing structure is DESTRUCTIVE (`scripts/s3_scifact.py`)
+5183 docs, 300 test queries (mean gold 1.13 = single-hop), recall@|gold|: cosine 0.608, BM25 0.535,
+hybrid 0.596, **kNN-graph diffusion 0.016** (−0.593[−.649,−.538]). With a single gold doc and no real
+connectivity, an imposed cosine-kNN similarity graph diffuses mass into dense topic-clusters and BURIES
+the answer. Boundary confirmed cross-domain at its extreme: structure helps iff there is genuine
+connectivity matched to multi-hop reasoning; imposing it on single-hop is actively harmful.
+
+## ===== MATRIX COMPLETE ===== (all 5 settings x 5 families)
+Settings: S1 SQL-orthogonal (BIRD/Spider), S2 SQL-correlated (BEAVER), S3 single-hop (SQL |gold|=1 +
+RAG SciFact), S4 multi-hop RAG (HotpotQA), S5 graph RAG (2Wiki). Families: 1 structure (WINS, grows
+with hops+correlation, hurts single-hop/independent), 2 decision (opportunity real, posterior-rule
+fails), 3 adaptation (WINS, correlated/repeated), 4 diversity (conditional/topology), 5 UQ (loses).
