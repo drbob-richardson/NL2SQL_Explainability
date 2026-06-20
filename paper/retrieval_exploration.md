@@ -129,3 +129,36 @@ Next: **Phase 3** (the methodological novelty, doable on BIRD now) — turn the 
 marginals into a calibrated P(gold ⊆ retrieved) coverage signal, conformal/LTT threshold →
 abstain / ask-for-schema / route; show a risk-coverage frontier and that the posterior beats a
 cosine-margin abstention baseline. **Phase 2** (parallel) — Spider 2.0-Lite / BEAVER scaling.
+
+## Phase 3 — selective/risk-controlled retrieval: posterior is NOT the abstention signal (`scripts/phase3_selective.py`)
+Retriever R = posterior marginal≥0.5 (completeness rate gold⊆R = 0.745). AUROC for predicting a
+COMPLETE retrieval:
+
+| completeness signal | AUROC | LTT coverage @risk 0.05 |
+|---|---|---|
+| **cosine max-out** (−max excluded-table cosine) | **0.763** | **0.22** |
+| posterior P(S⊆R) | 0.700 | 0.03 |
+| cosine margin | 0.631 | 0.00 |
+| all signals combined (xfit) | 0.670 | — |
+
+**Negative result:** a trivial cosine heuristic ("is a high-similarity table excluded?") beats the
+Bayesian posterior as an abstention signal, and the posterior does **not add** to it (combined 0.670 <
+maxout 0.762). The selective-retrieval *framework* works (LTT gives ~22% coverage at ≤5% incompleteness
+risk via cosine max-out), but the **posterior is not the source of the confidence**. Phase-3's
+methodological novelty (calibrated subgraph posterior → better selective retrieval) does not hold.
+
+## Consolidated verdict (retrieval direction)
+A consistent pattern now holds across the WHOLE project (BNP-correctness, ambiguity, retrieval):
+**structured/Bayesian objects help RANKING/recall but lose to simple baselines on the
+UNCERTAINTY/decision layer.**
+- Paper 1: agreement/structure plateau; a reasoning verifier wins correctness.
+- Ambiguity: discovery tractable, but reserve/divergence signals lose for detection.
+- Retrieval: **Phase 1 — FK-graph MRF beats cosine/fusion on multi-hop recall (solid, hardened win).
+  Phase 3 — the posterior loses to cosine max-out for abstention.**
+
+So the bankable result is **Phase 1: structured graph-prior retrieval improves multi-hop SQL table
+recall** (out-of-sample, +8–15pp over cosine, gain scaling with join count). It is an *applied*
+text-to-SQL retrieval contribution (crowded field: CHESS/CRUSH4SQL/RESDSQL/LinkAlign), differentiated
+by the explicit FK-graph MRF posterior and the complexity-scaling. The Bayesian-UQ/decision novelty
+did not materialize. To be a strong paper it needs large-schema validation (Phase 2); to be a *methods*
+paper, the UQ angle would need a different signal than the posterior.
