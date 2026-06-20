@@ -51,7 +51,7 @@ Columns below = the five families (a→structure, b→decision/cost, c→adaptat
 | **S1 SQL orthogonal** (BIRD/Spider) | **done: WINS** (FK-MRF +5.7pp EX) | untested (oracle>full motivates) | untested | done: loses* | done: loses (maxout 0.763 > post 0.700) |
 | **S2 SQL correlated** (BEAVER/Spider 2.0) | — | — | — | — | — |
 | **S3 RAG single-hop** (chunked Wiki/docs) | — | — | — | — | — |
-| **S4 RAG multi-hop** (HotpotQA distractor) | **done: WINS** (graph +10-13pp recall@2, bridge-conc.) | — | — | — | — |
+| **S4 RAG multi-hop** (HotpotQA distractor) | **done: WINS bridge** (+10-13pp) | — | — | **done: helps COMPARISON** (+7pp; topology-dependent) | done: loses (cos-margin 0.744 > post 0.692) |
 | **S5 Graph RAG** (entity/KG graph) | — | — | — | — | — |
 
 \* likely an **orthogonality artifact** — re-test under correlation (S2/S3).
@@ -137,3 +137,6 @@ may sharpen into "it depends on corpus correlation and hop-count," which is a st
 
 - [done] S4-a structure (HotpotQA): graph prior (PageRank/MRF) beats cosine +10-13pp recall@2, bridge-concentrated (+17pp), ~tie comparison. THE SQL STRUCTURAL WIN GENERALIZES TO TEXT RAG. PageRank~=MRF again.
 - [variation] PageRank slightly HURTS comparison -> adaptive gating by bridge-ness/query-type (the structure-exploitability meta-predictor). Full-corpus (not distractor-rerank) multi-hop + noisy entity-linking = future tests. S4 harness now enables S4-d (diversity, distractors are redundant) and S4-e (UQ) cheaply.
+
+- [done] S4-d/e: diversity helps COMPARISON under redundancy (+7pp) but hurts bridge; structure mirror -> TOPOLOGY-DEPENDENT complementarity (structure|bridge, diversity|comparison; oracle-routing ~0.76 beats all fixed). UQ posterior loses to cosine-margin again.
+- [variation] ADAPTIVE topology-routed retriever (predict bridge-vs-comparison from question, apply structure-prior vs diversity-prior) -> beats both fixed; query-type classifier is easy. HIGH PRIORITY new method idea.

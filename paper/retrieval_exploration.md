@@ -275,3 +275,24 @@ replicates in text RAG**: graph prior beats cosine +10–13pp, concentrated on B
 analog of FK bridges; +17pp), ~tie/slight-hurt on COMPARISON (no bridge to recover) — same conditional
 as SQL. PageRank≈MRF again (structure, not the specific Bayes). Scope: distractor *rerank* (10
 candidates, clean Wikipedia title-links), not full-corpus first-stage retrieval.
+
+## S4-d (diversity) + S4-e (UQ) on HotpotQA — topology-dependent complementarity (`scripts/s4_diversity_uq.py`)
+Redundancy real (mean off-diag passage-sim 0.52). recall@2:
+
+| method | all | bridge | comparison |
+|---|---|---|---|
+| cosine | 0.685 | 0.642 | 0.866 |
+| MMR (λ=0.7) | 0.684 | 0.624 | **0.939** |
+| DPP (k=2) | 0.664 | 0.600 | 0.934 |
+| PageRank (structure) | 0.703 | **0.719** | 0.639 |
+
+**Orthogonality critique CONFIRMED & refined:** diversity helps under redundancy — but only for
+COMPARISON (+7pp; independent/contrastive evidence) — and HURTS bridge; structure is the mirror
+(best bridge, worst comparison). **The right inductive bias is query-topology-dependent: structure
+for bridge (connected evidence), diversity for comparison (independent evidence).** Oracle
+topology-routing ≈ 0.76 recall@2, beating every fixed method (best single 0.703) → an adaptive
+method to build (query-type is easily predicted).
+
+S4-e UQ: predicting "both gold in top-2" — cosine margin 0.744 > softmax-pair posterior 0.692 >
+cosine max-out 0.625. **Family-5 (UQ) keeps losing in RAG too** (simple cosine signal beats the
+posterior) — lesson #2 replicates across domains.
