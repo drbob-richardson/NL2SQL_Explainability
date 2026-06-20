@@ -230,3 +230,23 @@ principled, evidence-weighted, distractor-selective version that adds a modest g
 large schemas. Theory: bridge/connectivity (#1) = dominant grounded mechanism (heuristic embodies it);
 distractor/selectivity (#3) = the MRF's extra. Large-schema validation now tests BOTH scale AND whether
 MRF pulls ahead of the heuristic.
+
+## Cosine-correlation coupling in the prior — doesn't add for tables (`scripts/phase1_cosinecoupling.py`)
+Extended subset model with a cosine pairwise term (both signs), held-out γ, β=1:
+
+| variant | ≥2 | ≥3 | ≥4 |
+|---|---|---|---|
+| FK-only MRF | 0.806 | 0.829 | 0.820 |
+| FK + cosine-attractive | 0.782 | 0.827 | 0.812 |
+| FK + cosine-repulsive | 0.810 | 0.790 | 0.753 |
+| cosine-attractive only (no FK) | 0.784 | 0.771 | 0.687 |
+| cosine-repulsive only (no FK) | 0.783 | 0.762 | 0.695 |
+
+(1) Attractive/smoothing: no help (slightly hurts) — wrong sign for tables. (2) Repulsive/DPP: HURTS
+recall on multi-hop (pushes out co-relevant cosine-similar gold tables, ≥3 0.829→0.790); its distractor
+payoff can't show in recall and would be dominated by the recall loss → downstream EX not worth running.
+(3) **Cosine-coupling cannot substitute for FK** — cosine-only tops ~0.78/0.77/0.69 ≪ FK 0.806/0.829/
+0.820 on multi-hop. **Keeper:** the embedding-similarity graph and the FK graph are *different
+structures*; only FK carries the signal (connectors are cosine-*dissimilar*) — justifies the FK prior
+and rules out a metadata-free correlation shortcut. Model elaboration on BIRD is now at diminishing
+returns; the decisive open question is large-schema validation.
