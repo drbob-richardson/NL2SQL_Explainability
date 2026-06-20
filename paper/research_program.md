@@ -50,7 +50,7 @@ Columns below = the five families (a→structure, b→decision/cost, c→adaptat
 |---|---|---|---|---|---|
 | **S1 SQL orthogonal** (BIRD/Spider) | **done: WINS** (FK-MRF +5.7pp EX) | untested (oracle>full motivates) | untested | done: loses* | done: loses (maxout 0.763 > post 0.700) |
 | **S2 SQL correlated** (BEAVER dw) | **done: WINS bigger** (cosine craters 0.42; struct +12-14pp) | — | — | — | — |
-| **S3 RAG single-hop** (chunked Wiki/docs) | — | — | — | — | — |
+| **S3 single-hop** (SQL |gold|=1; RAG next) | **done(SQL): structure HURTS** (PageRank -0.11; MRF neutral) | — | — | — | — |
 | **S4 RAG multi-hop** (HotpotQA distractor) | **done: WINS bridge** (+10-13pp) | — | — | **done: helps COMPARISON** (+7pp; topology-dependent) | done: loses (cos-margin 0.744 > post 0.692) |
 | **S5 Graph RAG** (entity/KG graph) | — | — | — | — | — |
 
@@ -145,3 +145,6 @@ may sharpen into "it depends on corpus correlation and hop-count," which is a st
 
 - [done] S2 BEAVER (correlated enterprise SQL): cosine 0.425 (vs BIRD 0.72) -> CORRELATION makes retrieval hard; structure (PageRank/MRF) +12-14pp, LARGER gain than BIRD -> orthogonality critique CONFIRMED. Methods cluster (sparse join graph; no MRF>heuristic separation). 120 qs, recall-only.
 - [variation] BEAVER join graph sparse -> densify with cosine-sim edges to test MRF>heuristic; dev_nw.json (88 qs, multi-DB) = cross-DB routing cell; no warehouse data = metadata-prior-only regime.
+
+- [done] S3 SQL single-hop control (|gold|=1, recall@1): cosine 0.839, PageRank 0.727 (HURTS -0.11), MRF 0.857 (neutral). Boundary confirmed: structure helps iff multi-hop. MRF degrades GRACEFULLY (backs off to unary) while diffusion heuristic hurts single-hop -> MRF's niche = safe across MIXED hop-count workloads. Structure-value is monotone in hop-count.
+- [variation] hop-count / connectivity-need predictor to GATE structure (apply only when multi-hop) -- analog of the topology router; would let the diffusion heuristic match the MRF's graceful degradation. RAG single-hop (BEIR SciFact / chunked-doc redundancy) still to run.

@@ -322,3 +322,14 @@ LARGER under correlation (+12–14pp vs +8.6pp on BIRD)** → structure's value 
 correlation + multi-hop depth (the orthogonality critique, measured). Methods cluster (PageRank≈MRF≈
 unary; sparse graph → no MRF-over-heuristic separation). Caveats: 120 queries (wide CIs); recall-only
 (no warehouse data → no EX); ~0.55 best leaves big headroom (realistic enterprise difficulty).
+
+## S3 control: single-hop SQL (|gold|=1) — the boundary of structure (`scripts/s3_sql_singlehop.py`)
+161 single-table BIRD queries, recall@1: cosine 0.839, unary 0.851, **PageRank 0.727**, MRF 0.857.
+PageRank − cosine = −0.111 [−0.186,−0.043] (significant). **Structure HURTS single-hop via hard
+diffusion** (demotes the lone gold toward FK-neighbors) — confirms the boundary: structure helps iff
+evidence is connected/multi-hop. **But the MRF degrades gracefully** (0.857, neutral) — its subset
+posterior backs off to unary when no coupling helps. → structure value is MONOTONE in hop-count
+(negative@1 → grows with hops; bigger under correlation, S2). **The MRF's real niche: safe across a
+MIXED workload** (neutral single-hop, wins multi-hop) where the diffusion heuristic hurts single-hop —
+the first clean "why not just the heuristic" answer (graceful degradation), or gate structure by
+predicted hop-count.
