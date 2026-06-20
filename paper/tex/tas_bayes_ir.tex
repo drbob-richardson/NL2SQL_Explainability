@@ -14,7 +14,7 @@
 \newtheorem{lesson}{Lesson}
 
 \title{\bf Can Bayes Help Information Retrieval for LLM Systems?\\
-\large A Controlled Audit: Structure and Adaptation, Not Uncertainty}
+\large Structure and Adaptation, Not Uncertainty}
 \author{Anonymous}
 \date{\today}
 
@@ -82,6 +82,15 @@ test whether each finding recurs in open-domain RAG by replicating on multi-hop 
 result is a $5\times5$ map---five Bayesian entry points by five retrieval regimes---summarized in
 Figure~\ref{fig:matrix} and Table~\ref{tab:master}.
 
+\paragraph{Why this matters for statisticians.} LLM systems are increasingly built around retrieval,
+scoring, calibration, and decision thresholds---all statistical objects. Yet their Bayesian
+interpretations are frequently adopted without the checks a statistician would insist on: is the
+posterior calibrated, is it compared against a sensible baseline, is the right loss being minimized?
+This article is a small case study in applying that discipline to a fashionable area, and the lessons
+(a ranking score is not a decision score; an auto-gating posterior buys robustness, not accuracy; a
+modeling idea can be separated from its Bayesian apparatus) are statistical rather than specific to
+retrieval.
+
 \paragraph{Contributions.}
 \begin{itemize}[leftmargin=1.4em,itemsep=2pt]
 \item A taxonomy of the five places a Bayesian idea enters an LLM retriever, each paired with the
@@ -101,8 +110,9 @@ conceptual account of all of the above (\S\ref{sec:account}).
 
 Probabilistic and Bayesian retrieval is not new; much of what is proposed as ``Bayesian retrieval for
 LLMs'' reinvents a mature lineage. The probabilistic relevance framework
-\citep{robertson1976relevance} and its modern form BM25 \citep{robertson2009bm25} already \emph{are} a
-probability of relevance. Language-model IR \citep{ponte1998lm} with Dirichlet smoothing
+\citep{robertson1976relevance} motivates BM25-style scoring \citep{robertson2009bm25} as a
+relevance-ranking model, though the resulting scores are not calibrated posterior probabilities.
+Language-model IR \citep{ponte1998lm} with Dirichlet smoothing
 \citep{zhai2004smoothing} is a Bayesian predictive distribution over terms. Risk-minimization IR
 \citep{zhai2006risk} casts retrieval as expected-loss minimization, and diversity via determinantal
 point processes \citep{kulesza2012dpp} is an explicitly probabilistic repulsion model. The modern
@@ -178,9 +188,13 @@ abstracts, 300 test claims, mean 1.13 gold); (S4) \emph{multi-hop RAG}---HotpotQ
 \paragraph{Methods.} For structured selection we build, per query, a cross-fit logistic \emph{unary}
 relevance score over interpretable features (dense cosine, BM25, name/column token overlap, max column
 cosine, value-token overlap), then couple items through the relational graph in three ways:
-(i) an Ising/MRF posterior over connected subsets with exact marginalization where tractable,
-$p(x)\propto\exp(\sum_i a_i x_i + \beta\sum_{(i,j)\in E} x_i x_j)$, scoring each item by its posterior
-marginal; (ii) personalized PageRank diffusion \citep{page1999pagerank} seeded by the unary scores;
+(i) an Ising/MRF posterior over item subsets,
+$p(x)\propto\exp(\sum_i a_i x_i + \beta\sum_{(i,j)\in E} x_i x_j)$, which does \emph{not} restrict its
+support to connected subsets but favors connectedness through the edge term, scoring each item by its
+posterior marginal. Marginalization is exact by enumeration over a candidate pool---the full table set
+for SQL schemas ($\le 13$ tables) and the candidate passages for RAG ($\le 16$); for the 97-table BEAVER
+warehouse we marginalize over the top-15 unary candidates. We also evaluate
+(ii) personalized PageRank diffusion \citep{page1999pagerank} seeded by the unary scores;
 (iii) a shortest-path foreign-key closure heuristic. Hyperparameters ($\beta$, diffusion $\alpha$,
 closure bonus) are selected on held-out queries. Diversity uses MMR \citep{carbonell1998mmr} and a
 $k\!=\!2$ DPP; UQ contrasts the model posterior with a max-excluded-similarity signal; adaptation uses
@@ -201,7 +215,8 @@ Table~\ref{tab:master} is the spine. We summarize in prose, then devote
 \begin{table}[t]
 \centering\small
 \caption{Master evidence table. Each row is a (Bayesian object, control) contest in a given regime.
-Numbers are recall at $|{\rm gold}|$ unless noted; intervals are 95\% paired bootstrap.}
+Numbers are recall at $|{\rm gold}|$ unless noted; intervals are 95\% paired bootstrap. Sample sizes
+are in \S\ref{sec:setup}; each row maps to a named script in Appendix~\ref{app:methods}.}
 \label{tab:master}
 \begin{tabular}{@{}p{3.4cm}p{3.2cm}cp{4.6cm}@{}}
 \toprule
@@ -258,12 +273,16 @@ The single most organizing finding is that the sign and size of structure's bene
 \emph{connected} the relevant evidence is. We observe this in every regime we can stratify.
 
 \begin{itemize}[leftmargin=1.4em,itemsep=2pt]
-\item \textbf{Single-hop: structure hurts.} On single-table SQL queries, PageRank diffusion lowers
-recall@1 from 0.839 to 0.727 ($-0.11$): with one relevant table, diffusion demotes the lone gold
-toward its graph neighbors. On single-hop SciFact the effect is severe---an imposed cosine-kNN
-similarity graph lowers recall from 0.608 to 0.016 ($-0.59$), because diffusion spreads mass into dense
-clusters of topically-similar-but-irrelevant abstracts. Imposing a graph that is not aligned with
-relevance can be actively harmful.
+\item \textbf{Single-hop: hard diffusion hurts, marginalization is neutral.} On single-table SQL
+queries, PageRank diffusion lowers recall@1 from 0.839 to 0.727 ($-0.11$): with one relevant table,
+diffusion demotes the lone gold toward its graph neighbors. The MRF, by contrast, is neutral to
+slightly positive (0.857 vs.\ cosine 0.839) because marginalizing over subsets avoids committing as
+strongly to propagation---a first hint of the auto-gating of \S\ref{sec:posterior}. On single-hop
+SciFact the effect of hard diffusion is severe---an imposed cosine-kNN similarity graph lowers recall
+from 0.608 to 0.016 ($-0.59$), because diffusion spreads mass into dense clusters of
+topically-similar-but-irrelevant abstracts. (This is a negative control, not a recommended SciFact
+method: it shows that an arbitrary similarity graph is not a substitute for a relevance-aligned one.)
+Imposing a graph that is not aligned with relevance can be actively harmful.
 \item \textbf{Multi-hop: structure helps, more so with deeper chains.} On 2WikiMultiHopQA the gain
 increases with reasoning depth and connectivity: $+0.13$ (inference), $+0.17$ (compositional), $+0.21$
 (bridge-comparison), while the one \emph{independent}-evidence type (comparison) goes the other way,
