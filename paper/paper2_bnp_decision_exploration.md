@@ -412,3 +412,32 @@ a genuine power law (d=0.49, real head top-1 12.3%, accumulation b=0.676, R²=0.
 semantic-motif discovery — deflated 3–4× from 52% but robustly nonzero and load-bearing. *Caveat:*
 quotienting removes syntactic inflation, not **curation** inflation; ~15% remains an upper bound vs a
 repetitive production workload — the real-workload check is the next gate and we lack the data.
+
+---
+
+## 12. UQ-coverage experiment — Option C's detector fails (`scripts/ambrosia_uq_coverage.py`)
+
+Make-or-break for Option C: does a PYP-reserve / elicited-interpretation-count score detect ambiguity
+(to gate execute vs clarify) better than the failed sample baselines? 300 ambiguous + 300 control.
+
+| score | AUROC(is_ambiguous) | cov@risk 0.1 / 0.2 / 0.3 |
+|---|---|---|
+| divergence | 0.407 | 2% / 8% / 33% |
+| uncertainty | 0.411 | 2% / 8% / 33% |
+| K_elicited | 0.557 | 0% / 6% / 22% |
+| pyp_reserve | 0.443 | 0% / 0% / 0% |
+
+All near/below chance. **Mechanism:** over-elicitation — P(K≥2 interpretations) is 70% on *controls*
+vs 77% on ambiguous. The model has good ambiguity recall but poor precision; the count can't separate
+the classes. **Verdict (pre-registered): Option C's cheap detector fails → collapse to Option B.** A
+materiality-filtered detector might survive but inherits the realization gate (not cheap).
+
+### Final standing of the options
+- **Option B (open-world novelty via equivalence-class PYP): the validated, disciplined choice.** The
+  motif tail survives quotienting as a real power law (canon d=0.49, §11). Remaining gate: real-workload
+  (curation inflation).
+- **Option C (interpretation posterior + decision): cheap version dead.** Discovery has recall but not
+  precision; reserve score doesn't gate. Revivable only with a realization stack + materiality filter.
+- **Option A (decision layer): valid applied work**, but depends on a detector/realization that we do
+  not currently have. Exp 5 stands as a "what it would enable" ceiling result.
+- **Total exploration spend ≈ $4.8.**

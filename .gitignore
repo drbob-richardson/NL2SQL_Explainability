@@ -41,3 +41,4 @@ data/ambrosia_samples.json
 data/ambrosia_elicit_*.json
 data/ambrosia_interp_*.json
 data/ambrosia_realize_*.json
+data/ambrosia_interp_gen_ctl_*.json

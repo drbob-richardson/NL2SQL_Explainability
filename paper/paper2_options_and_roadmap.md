@@ -251,7 +251,7 @@ least "yours."
 ## 10. Open questions to resolve before committing
 
 - ~~Does the motif power-law tail survive denotational quotienting?~~ **ANSWERED (Exp, §11 of findings):** yes — at the semantic 'canon' level it is a clean power law (d=0.49, accumulation b=0.68, R²=1.0) with ~15% discovery (deflated from the inflated skeleton-level 52%). Syntactic inflation removed; **curation inflation (real-workload check) is now the open co-gate.**
-- Is theorem #1 actually provable, or only heuristic? (Step 3.)
+- ~~Is theorem #1 provable?~~ **RESOLVED:** robust (conformal-wrapped) form is provable but borrows LTT validity; the novel part was the reserve-SCORE *efficiency*, which **failed empirically** (UQ-coverage AUROC 0.557 ≈ chance; over-elicitation kills precision). **Option C cheap version dead → collapse to Option B.**
 - Can we get *any* repetitive real-world SQL workload? (Decides whether the open-world story is
   benchmark-bound or production-credible.)
 - Is the target venue statistics (theory-forward) or ML (method+benchmark)? This changes how much of

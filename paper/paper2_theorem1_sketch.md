@@ -166,3 +166,31 @@ contribution stands. If the reserve score is no better than baselines, Option C 
 Next step: implement the UQ-coverage experiment — compute `ρ_m` per AMBROSIA question from the
 elicited set + fitted (d,θ), run LTT threshold selection on a calibration split, and compare the
 risk–coverage frontier of `ρ_m` vs divergence vs max-prob on the test split.
+
+---
+
+## 8. UQ-coverage result — the efficiency claim FAILS (`scripts/ambrosia_uq_coverage.py`)
+
+Pre-registered test (§7): does the PYP-reserve / elicited-count score control executed-error
+(executing on an ambiguous question) with higher coverage than divergence/confidence? 300 ambiguous
++ 300 control, target = is_ambiguous.
+
+| score | AUROC(amb) | cov@risk 0.1 | 0.2 | 0.3 |
+|---|---|---|---|---|
+| divergence | 0.407 | 2% | 8% | 33% |
+| uncertainty | 0.411 | 2% | 8% | 33% |
+| K_elicited | 0.557 | 0% | 6% | 22% |
+| pyp_reserve | 0.443 | 0% | 0% | 0% |
+
+All scores are at/below chance. Sample-based scores are **below 0.5** (ambiguous questions are *more*
+confident than controls — the collapse). The best, elicited-count, is **0.557** — not usefully above
+chance. **Mechanism:** the model over-elicits — P(K≥2) is 70% on *controls* vs 77% on ambiguous
+(mean 1.77 vs 1.94). Good recall, poor precision: it manufactures readings for clear questions, so
+the count can't gate.
+
+**Verdict (pre-registered): the cheap efficiency claim fails → Option C collapses to Option B.**
+The only version of C that might survive is a **materiality-filtered** detector (realize each elicited
+interpretation, execute, count *materially-distinct* result sets — spurious control paraphrases
+should collapse to one). But that **inherits the realization gate** (Exp 2b, r≈0.3) and is no longer
+cheap or realization-independent. Per the pre-registration we do not pursue it as a rescue without an
+explicit decision to pay the realization cost.
