@@ -333,3 +333,13 @@ posterior backs off to unary when no coupling helps. → structure value is MONO
 MIXED workload** (neutral single-hop, wins multi-hop) where the diffusion heuristic hurts single-hop —
 the first clean "why not just the heuristic" answer (graceful degradation), or gate structure by
 predicted hop-count.
+
+## Hop-gated structural retrieval (SQL) — the MRF's genuine niche (`scripts/s3_sql_hopgate.py`)
+All 800 BIRD queries (639 multi, 161 single), recall@|gold|: cosine 0.744, always-PageRank 0.751,
+**always-MRF 0.803**, hop-gated-PageRank(pred) 0.751, hop-gated-PageRank(oracle) 0.791. Hop predictor
+acc only 0.799 (vs RAG topology 0.936). **The MRF is the best single method on mixed-hop workloads**
+— its marginalization AUTO-GATES (wins multi-hop, graceful single-hop, no predictor). Oracle gating
+rescues PageRank toward MRF, but REAL gating fails (hop-count too hard to predict). → the clean answer
+to "heuristic matches MRF, why Bayes?": **on realistic mixed-hop workloads the MRF's marginalization is
+a predictor-free implicit gate** the heuristic can't match. Honest contrast: RAG topology IS
+predictable (explicit routing wins there); SQL hop-count is not (implicit MRF gating wins here).

@@ -148,3 +148,5 @@ may sharpen into "it depends on corpus correlation and hop-count," which is a st
 
 - [done] S3 SQL single-hop control (|gold|=1, recall@1): cosine 0.839, PageRank 0.727 (HURTS -0.11), MRF 0.857 (neutral). Boundary confirmed: structure helps iff multi-hop. MRF degrades GRACEFULLY (backs off to unary) while diffusion heuristic hurts single-hop -> MRF's niche = safe across MIXED hop-count workloads. Structure-value is monotone in hop-count.
 - [variation] hop-count / connectivity-need predictor to GATE structure (apply only when multi-hop) -- analog of the topology router; would let the diffusion heuristic match the MRF's graceful degradation. RAG single-hop (BEIR SciFact / chunked-doc redundancy) still to run.
+
+- [done] Hop-gated SQL: on mixed workload (800 qs), always-MRF 0.803 > always-PageRank 0.751 > cosine 0.744; oracle-gate rescues PageRank (0.791) but real gate fails (hop predictor 0.799 too weak). MRF MARGINALIZATION = predictor-free implicit hop-gate -> the MRF's genuine niche (graceful degradation on heterogeneous workloads). Contrast: RAG topology predictable (explicit routing wins); SQL hop-count not (implicit MRF wins).

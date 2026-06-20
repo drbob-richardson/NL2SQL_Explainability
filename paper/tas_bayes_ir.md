@@ -122,9 +122,14 @@ constructive recommendation: don't pick one prior — *match the prior to the qu
 2. **The LLM distribution is a proposal, not a posterior.** It is mode-collapsed (0.95 confidence on
    ambiguous questions), so calibrated uncertainty cannot be read off sampling; UQ must come from a
    separate reasoner or a simple external signal — and simple signals win.
-3. **Marginalization is the one load-bearing Bayesian step, and it is cheap to approximate.** Summing
-   over subset configurations (vs hard selection) buys the small MRF-over-heuristic increment; almost
-   everything else billed "Bayesian" (parameter priors, posterior-as-UQ) is decorative or fails.
+3. **Marginalization is the one load-bearing Bayesian step — its payoff is robustness across
+   heterogeneous workloads.** Summing over subset configurations makes the posterior AUTO-GATE: it
+   degrades gracefully on single-hop (where hard diffusion hurts) and wins on multi-hop, with no
+   predictor. On mixed BIRD workloads always-MRF 0.803 > diffusion 0.751 > cosine 0.744, and explicit
+   hop-gating fails (hop-count predictor only 0.799). So the Bayesian object earns its keep precisely
+   where query types are heterogeneous and hard to classify; where they're easy to classify (RAG
+   bridge-vs-comparison, acc 0.936) a cheap explicit router matches it. Parameter priors and
+   posterior-as-UQ remain decorative or fail.
 
 ---
 
