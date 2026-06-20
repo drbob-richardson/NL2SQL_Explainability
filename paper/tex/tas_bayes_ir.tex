@@ -14,7 +14,7 @@
 \newtheorem{lesson}{Lesson}
 
 \title{\bf Can Bayes Help Information Retrieval for LLM Systems?\\
-\large Structure and Adaptation, Not Uncertainty: A Controlled Audit}
+\large A Controlled Audit: Structure and Adaptation, Not Uncertainty}
 \author{Anonymous}
 \date{\today}
 
@@ -22,307 +22,437 @@
 \maketitle
 
 \begin{abstract}
-Bayesian and ``uncertainty'' language pervades retrieval-augmented generation (RAG) and
-text-to-SQL, usually without a controlled check that it beats the trivial baselines practitioners
-already use. We run that check. Treating retrieval as a clean, executable testbed---schema linking
-for text-to-SQL, plus multi-hop and single-hop document retrieval---we instrument the five places a
-Bayesian idea can enter a retriever (calibrated relevance/uncertainty, signal fusion, structured
-joint selection, set-level diversity, and online adaptation) and compare each against simple
-heuristics (cosine top-$k$, reciprocal-rank fusion, a max-excluded-similarity confidence, fixed
-top-$k$ context). Across six datasets (BIRD, Spider, BEAVER, HotpotQA, 2WikiMultiHopQA, SciFact) the
-verdict is consistent and, we argue, generalizable. Bayes helps through exactly two mechanisms:
-\emph{structure}---a graph prior over the jointly-relevant subset, which improves multi-hop recall
-and downstream execution accuracy---and \emph{adaptation}---online posterior updating, which helps in
-correlated, repeated workloads. It helps \emph{only} when those conditions hold: a structural prior is
-neutral-to-harmful on single-hop queries and \emph{catastrophic} when imposed without genuine
-connectivity, and adaptation requires a workload that repeats. Crucially, Bayes \emph{fails} where it
-is most often invoked---as an uncertainty or decision signal---losing to one-line baselines at both
-abstention and context-budget selection. And where structure does help, it is the \emph{graph}, not
-the \emph{Bayes}: a shortest-path heuristic and a PageRank diffusion match the full subgraph
-posterior everywhere we test. We distill four lessons and a practitioner's decision guide, and
-identify the one place the full Bayesian object earns its keep: marginalization auto-gates structure
-across heterogeneous workloads.
+Bayesian and ``uncertainty'' language pervades retrieval-augmented generation (RAG) and text-to-SQL,
+usually without a controlled check that it beats the simple baselines practitioners already use. We
+run that check. Treating retrieval as a clean, executable testbed---schema linking for text-to-SQL,
+plus multi-hop and single-hop document retrieval---we instrument the five places a Bayesian idea can
+enter a retriever (calibrated relevance/uncertainty, signal fusion, structured joint selection,
+set-level diversity, and online adaptation) and compare each against simple controls (cosine top-$k$,
+reciprocal-rank fusion, a max-excluded-similarity confidence, fixed top-$k$ context). Across six
+controlled settings (BIRD, Spider, BEAVER, HotpotQA, 2WikiMultiHopQA, SciFact) a consistent pattern
+emerges. Two retrieval ideas that Bayesian modeling motivates help: \emph{structure}---a graph prior
+over the jointly-relevant subset, which improves multi-hop recall and downstream execution
+accuracy---and \emph{adaptation}---online updating, which helps in correlated, repeated workloads.
+Each helps only when its enabling condition holds: a structural prior is neutral-to-harmful on
+single-hop queries and can be actively harmful when imposed without genuine connectivity, and
+adaptation requires a workload that repeats. By contrast, the Bayesian object tends to \emph{fail}
+where it is most often invoked---as an uncertainty or decision signal---losing to one-line baselines
+at both abstention and context-budget selection. A recurring and, we think, clarifying finding is that
+in \emph{both} places the idea helps, it is the modeling idea, not the specific Bayesian apparatus,
+that does the work: a shortest-path heuristic and a diffusion match the full subgraph posterior to
+within a percentage point, and a non-Bayesian online counter matches the Bayesian one. We distill four
+lessons and a practitioner's decision guide, and identify the one regime where the full Bayesian
+object earns its keep: marginalization gates structure across heterogeneous workloads, providing
+robustness when one does not know in advance whether a query needs structure.
 \end{abstract}
 
 \section{Introduction}
 
 Retrieval is now a load-bearing component of large-language-model (LLM) systems. RAG pipelines
-retrieve passages before generating; text-to-SQL systems retrieve the relevant tables and columns
-(``schema linking'') before writing a query. In both, the literature is saturated with Bayesian and
-uncertainty-quantification (UQ) framing: posterior relevance, calibrated confidence, principled
-fusion of signals, diversity priors, abstention under uncertainty. Yet the field rarely asks the
-control question a statistician would ask first: \emph{does any of this beat the trivial baseline?}
-Cosine top-$k$, reciprocal-rank fusion, and a single held-out threshold on a transparent score are
-strong, cheap, and ubiquitous. If a Bayesian apparatus does not beat them, it is decoration.
+\citep{lewis2020rag} retrieve passages before generating; text-to-SQL systems retrieve the relevant
+tables and columns (``schema linking'') before writing a query \citep{wang2020ratsql}. In both, the
+literature increasingly reaches for Bayesian and uncertainty-quantification (UQ) language: posterior
+relevance, calibrated confidence, principled fusion of signals, diversity priors, abstention under
+uncertainty. Yet the field rarely asks the control question a statistician asks first: \emph{does any
+of this improve on the trivial baseline?} Cosine top-$k$, reciprocal-rank fusion, and a single
+held-out threshold on a transparent score are strong, cheap, and ubiquitous. If a Bayesian apparatus
+does not improve on these controls, its practical value is unclear.
 
-This article is that controlled audit. We are deliberately willing to report a boring answer. Our
-headline is nuanced rather than triumphant---and we think that is exactly the contribution. The
-answer is: \textbf{Bayes helps retrieval through \emph{structure} and \emph{adaptation}, but not
-through \emph{uncertainty} or \emph{decision} signals,} and each positive mechanism helps only under
-identifiable conditions that we map precisely.
+This article is that controlled audit. We are willing to report a conditional answer, and we think the
+nuance is the contribution. The pattern we find is: \textbf{Bayesian modeling helps retrieval through
+the ideas of \emph{structure} and \emph{adaptation}, but not as an \emph{uncertainty} or
+\emph{decision} signal,} and each positive mechanism helps only under identifiable conditions that we
+map.
 
-\paragraph{Why text-to-SQL, and why a multi-dataset sweep.} Text-to-SQL retrieval is an unusually
-clean testbed: the corpus (database tables) is finite and known, the gold relevant set is recoverable
-from the gold SQL, there is a \emph{true} relational graph (foreign keys), and success is checkable by
+\paragraph{What we mean by ``Bayesian.''} To avoid a definitional dispute, we use the term broadly: a
+\emph{Bayesian idea} is a retrieval procedure motivated by a prior, a posterior score, a probabilistic
+fusion of signals, a structured joint distribution over the retrieved set, a diversity (repulsion)
+prior, or online posterior updating. For each such idea we deliberately also evaluate a non-Bayesian
+control that tests the \emph{same structural intuition} (e.g., a shortest-path graph heuristic against
+a subgraph posterior; a max-similarity threshold against a posterior confidence; an online count
+against a Bayesian online update). This lets us separate the value of the \emph{idea} from the value
+of the \emph{Bayesian machinery}---a distinction that turns out to organize the results.
+
+\paragraph{Why text-to-SQL, and why a multi-setting sweep.} Text-to-SQL retrieval is an unusually clean
+testbed: the corpus (database tables) is finite and known, the gold relevant set is recoverable from
+the gold SQL, there is a \emph{true} relational graph (foreign keys), and success is checkable by
 execution. That lets us measure not just retrieval recall but downstream execution accuracy. We then
-test whether each finding generalizes to open-domain RAG by replicating on multi-hop QA (HotpotQA,
+test whether each finding recurs in open-domain RAG by replicating on multi-hop QA (HotpotQA,
 2WikiMultiHopQA), single-hop retrieval (SciFact), and a correlated enterprise warehouse (BEAVER). The
-result is a $5\times5$ matrix---five Bayesian entry points by five retrieval regimes---that pins down
-\emph{when} each mechanism helps.
+result is a $5\times5$ map---five Bayesian entry points by five retrieval regimes---summarized in
+Figure~\ref{fig:matrix} and Table~\ref{tab:master}.
 
 \paragraph{Contributions.}
 \begin{itemize}[leftmargin=1.4em,itemsep=2pt]
 \item A taxonomy of the five places a Bayesian idea enters an LLM retriever, each paired with the
-trivial baseline it must beat (\S\ref{sec:taxonomy}).
-\item A controlled, reproducible audit across six datasets and both domains (SQL, RAG), with the
-master evidence table as its spine (\S\ref{sec:results}).
-\item The central empirical finding: a \emph{connectivity boundary}. Structure's value is monotone in
-how connected the evidence is---negative on single-hop, growing with hop count and corpus
-correlation---and an imposed graph without real connectivity is actively harmful
-(\S\ref{sec:boundary}).
-\item A constructive positive: an adaptive, topology-routed retriever that beats every fixed prior,
-and the observation that the subgraph posterior's marginalization auto-gates structure across
-heterogeneous workloads (\S\ref{sec:constructive}).
-\item Four lessons and a practitioner's decision guide (\S\ref{sec:lessons}--\S\ref{sec:guidance}).
+control it must beat (\S\ref{sec:taxonomy}), and a one-page reading guide (\S\ref{sec:guide}).
+\item A controlled, reproducible audit across six settings and both domains (\S\ref{sec:results}).
+\item The organizing empirical finding: structure's value \emph{tracks the connectivity of the
+evidence}---negative or unnecessary on single-hop, increasing with hop depth and corpus correlation,
+and harmful when an unaligned graph is imposed (\S\ref{sec:boundary}).
+\item Evidence that the full Bayesian object earns its keep in exactly one regime---heterogeneous
+workloads, where marginalization gates structure automatically (\S\ref{sec:posterior})---and a simple
+conceptual account of all of the above (\S\ref{sec:account}).
+\item A constructive method (topology-routed retrieval) and a practitioner's decision guide
+(\S\ref{sec:constructive}, \S\ref{sec:guidance}).
 \end{itemize}
 
 \section{Background: ``Bayesian retrieval'' already exists}\label{sec:background}
 
-It is worth stating plainly that probabilistic and Bayesian retrieval is not new; much of what is
-proposed as ``Bayesian retrieval for LLMs'' reinvents a mature lineage. The probabilistic relevance
-framework \citep{robertson1976relevance} and its modern form BM25 \citep{robertson2009bm25} already
-\emph{is} a probability of relevance. Language-model IR \citep{ponte1998lm} with Dirichlet smoothing
-\citep{zhai2004smoothing} is a Bayesian predictive distribution over terms. Risk-minimization and
-decision-theoretic IR \citep{zhai2006risk} cast retrieval as expected-loss minimization, and diversity
-via determinantal point processes \citep{kulesza2012dpp} is an explicitly probabilistic repulsion
-model. Our question is therefore narrow and modern: granting that classical probabilistic IR works,
-does \emph{LLM-era} Bayes---posteriors over LLM outputs, graph priors over retrieved sets,
-posterior-as-uncertainty---add anything beyond cheap heuristics? That is what we instrument.
+Probabilistic and Bayesian retrieval is not new; much of what is proposed as ``Bayesian retrieval for
+LLMs'' reinvents a mature lineage. The probabilistic relevance framework
+\citep{robertson1976relevance} and its modern form BM25 \citep{robertson2009bm25} already \emph{are} a
+probability of relevance. Language-model IR \citep{ponte1998lm} with Dirichlet smoothing
+\citep{zhai2004smoothing} is a Bayesian predictive distribution over terms. Risk-minimization IR
+\citep{zhai2006risk} casts retrieval as expected-loss minimization, and diversity via determinantal
+point processes \citep{kulesza2012dpp} is an explicitly probabilistic repulsion model. The modern
+neighborhood our experiments touch includes dense and late-interaction retrieval
+\citep{khattab2020colbert}, graph- and multi-hop RAG \citep{edge2024graphrag,gutierrez2024hipporag},
+relation-aware schema linking \citep{wang2020ratsql}, adaptive/active retrieval \citep{jiang2023flare},
+and LLM uncertainty / selective prediction \citep{kuhn2023semantic,wang2023selfconsistency,
+angelopoulos2021ltt}. Our question is therefore narrow: granting that classical probabilistic IR
+works, does \emph{LLM-era} Bayes---posteriors over LLM outputs, graph priors over retrieved sets,
+posterior-as-uncertainty---add value beyond cheap controls, and when? We note where our findings
+agree with this literature (graphs help multi-hop) and where they sharpen it (\emph{when} they do not).
 
 \section{A taxonomy: five places Bayes can enter an LLM retriever}\label{sec:taxonomy}
 
 We organize the audit by where a Bayesian object could plausibly do work, and pair each with the
-baseline it must beat.
+control it must beat.
 
 \begin{enumerate}[leftmargin=1.6em,itemsep=3pt]
-\item \textbf{Calibrated relevance / uncertainty.} A posterior probability of relevance or of answer
-correctness, used to rank or to abstain. \emph{Baseline:} a held-out threshold on a transparent
-signal (max excluded similarity; a verifier).
-\item \textbf{Signal fusion.} A Bayesian combination of heterogeneous scores (lexical, dense, value
-overlap). \emph{Baseline:} reciprocal-rank fusion (RRF) or plain cosine.
+\item \textbf{Calibrated relevance / uncertainty.} A posterior probability of relevance or answer
+correctness, used to rank or to abstain. \emph{Control:} a held-out threshold on a transparent signal
+(max excluded similarity; a verifier).
+\item \textbf{Signal fusion.} A learned/Bayesian combination of heterogeneous scores. \emph{Control:}
+reciprocal-rank fusion (RRF) or plain cosine.
 \item \textbf{Structured joint selection.} A prior over the jointly-relevant \emph{subset}, coupling
-items through a relational graph (foreign keys, hyperlinks, entity links). \emph{Baseline:} independent
-top-$k$; a shortest-path connectivity heuristic.
+items through a relational graph (foreign keys, hyperlinks, entity links). \emph{Control:} independent
+top-$k$; a shortest-path connectivity heuristic; a diffusion.
 \item \textbf{Set-level diversity.} A repulsion prior (DPP) to avoid redundant retrievals.
-\emph{Baseline:} maximal marginal relevance (MMR).
-\item \textbf{Online adaptation.} A prior updated from feedback as queries arrive. \emph{Baseline:} a
-static retriever.
+\emph{Control:} maximal marginal relevance (MMR).
+\item \textbf{Online adaptation.} A prior updated from feedback as queries arrive. \emph{Control:} a
+static retriever; a non-Bayesian online counter.
 \end{enumerate}
 
-For each, the natural Bayesian object is well defined. The empirical question is whether it beats the
-baseline, and under what conditions.
+\section{How to read this paper}\label{sec:guide}
+
+Before the details, Figure~\ref{fig:matrix} gives the whole result. Rows are properties of the
+retrieval \emph{regime}; columns are the five Bayesian entry points. The reader who stops here should
+take away: structure helps when the evidence is connected (multi-hop) and hurts when it is not;
+diversity helps when multiple evidence items are independent; adaptation helps when the workload
+repeats; and uncertainty/decision uses of the posterior do not beat simple signals.
+
+\begin{figure}[t]
+\centering\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}l|ccccc@{}}
+\toprule
+\textbf{Regime} $\backslash$ \textbf{entry point} & UQ/decision & fusion & structure & diversity & adaptation\\
+\midrule
+single-item evidence (single-hop)      & ---      & $\approx$ & \textbf{hurts}      & $\approx$            & ---\\
+connected evidence (multi-hop)         & ---      & $\approx$ & \textbf{helps}      & neutral             & ---\\
+independent multi-evidence             & ---      & $\approx$ & neutral/hurts       & \textbf{helps}      & ---\\
+correlated, repeated workload          & ---      & $\approx$ & \textbf{helps more} & ---                 & \textbf{helps}\\
+heterogeneous (mixed) workload         & \emph{loses} & $\approx$ & helps (auto-gated) & ---            & ---\\
+\bottomrule
+\end{tabular}
+\caption{Reading guide. ``$\approx$'' = no improvement over the control; ``---'' = not the operative
+mechanism in that regime. Bold cells are the load-bearing findings. Full numbers in
+Table~\ref{tab:master}.}
+\label{fig:matrix}
+\end{figure}
 
 \section{Experimental setup}\label{sec:setup}
 
-\paragraph{Datasets and regimes.} We span five retrieval regimes:
-(S1) \emph{orthogonal SQL}---BIRD and Spider, whose databases cover unrelated domains;
-(S2) \emph{correlated SQL}---the BEAVER enterprise warehouse \citep{chen2024beaver} (97 tables sharing
-prefixes and keys, mean 4 gold tables per query);
-(S3) \emph{single-hop}---single-table SQL queries and SciFact \citep{wadden2020scifact} claim
-verification (5{,}183 abstracts, $\approx$1 gold doc);
-(S4) \emph{multi-hop RAG}---HotpotQA distractor \citep{yang2018hotpotqa} (10 passages, 2 gold);
-(S5) \emph{graph RAG}---2WikiMultiHopQA \citep{ho2020twowiki} with four reasoning types.
+\paragraph{Settings and sample sizes.} We span five regimes (Appendix~\ref{app:methods} gives full
+detail): (S1) \emph{orthogonal SQL}---BIRD \citep{li2023bird} and Spider \citep{yu2018spider}, whose
+databases cover unrelated domains (we use an 800-query BIRD sample and the four large-schema BIRD
+databases, 436 queries, for downstream execution); (S2) \emph{correlated SQL}---the BEAVER enterprise
+warehouse \citep{chen2024beaver} (97 tables, 120 multi-table queries, mean 4 gold tables);
+(S3) \emph{single-hop}---161 single-table BIRD queries and SciFact \citep{wadden2020scifact} (5{,}183
+abstracts, 300 test claims, mean 1.13 gold); (S4) \emph{multi-hop RAG}---HotpotQA distractor
+\citep{yang2018hotpotqa} (1{,}492 questions, 10 passages, 2 gold); (S5) \emph{graph RAG}---2WikiMultiHopQA
+\citep{ho2020twowiki} (1{,}500 questions, four reasoning types).
 
-\paragraph{Methods.} For structured selection we build, per query, a cross-fit logistic
-\emph{unary} relevance score over interpretable features (dense cosine, BM25, name/column overlap,
-max column cosine, value-token overlap), then couple items through the relational graph in three ways:
-(i) an Ising/MRF posterior over connected subsets with exact marginalization where tractable
-($\sum_{\text{subsets}} \exp(\sum_i a_i x_i + \beta\sum_{(i,j)\in E} x_i x_j)$), (ii) personalized
-PageRank diffusion seeded by the unary scores, and (iii) a shortest-path foreign-key closure
-heuristic. Hyperparameters ($\beta$, diffusion $\alpha$, closure bonus $\gamma$) are chosen on held-out
-queries. Diversity uses MMR and a $k=2$ DPP; UQ uses the LLM's softmax/posterior versus a
-max-excluded-similarity signal; adaptation uses online Beta-Bernoulli popularity and a naive-Bayes
-term$\rightarrow$table model updated prequentially. Baselines are cosine top-$k$, BM25, RRF, and
-fixed-$k$ context. We report recall at $|{\rm gold}|$, downstream execution accuracy (EX) for SQL, and
-AUROC for abstention; confidence intervals are paired bootstrap. All embeddings are
-\texttt{text-embedding-3-small}; generation/verification use small chat models. Total API spend was
-$\approx\$6$; all scripts and cached data are released.
+\paragraph{Methods.} For structured selection we build, per query, a cross-fit logistic \emph{unary}
+relevance score over interpretable features (dense cosine, BM25, name/column token overlap, max column
+cosine, value-token overlap), then couple items through the relational graph in three ways:
+(i) an Ising/MRF posterior over connected subsets with exact marginalization where tractable,
+$p(x)\propto\exp(\sum_i a_i x_i + \beta\sum_{(i,j)\in E} x_i x_j)$, scoring each item by its posterior
+marginal; (ii) personalized PageRank diffusion \citep{page1999pagerank} seeded by the unary scores;
+(iii) a shortest-path foreign-key closure heuristic. Hyperparameters ($\beta$, diffusion $\alpha$,
+closure bonus) are selected on held-out queries. Diversity uses MMR \citep{carbonell1998mmr} and a
+$k\!=\!2$ DPP; UQ contrasts the model posterior with a max-excluded-similarity signal; adaptation uses
+online Beta-Bernoulli popularity and a naive-Bayes term$\rightarrow$table model updated prequentially,
+each with a non-Bayesian (maximum-likelihood count) control. Baselines are cosine top-$k$, BM25, RRF
+\citep{cormack2009rrf}, and fixed-$k$ context. We report recall at $|{\rm gold}|$, downstream
+execution accuracy (EX) for SQL, and AUROC for abstention; intervals are paired bootstrap unless
+noted. Embeddings are \texttt{text-embedding-3-small}; generation/verification use small chat models.
+Total API spend was $\approx\$6$. Appendix~\ref{app:methods} gives exact definitions (recall@$|{\rm
+gold}|$, EX, ``bridge''/``comparison'', graph construction per dataset, split logic) and
+Appendix~\ref{app:sens} the sensitivity analyses.
 
 \section{Results, by taxonomy cell}\label{sec:results}
 
-Table~\ref{tab:master} is the spine of the paper. We summarize the cells in prose, then devote
-\S\ref{sec:boundary}--\S\ref{sec:constructive} to the two findings that organize everything.
+Table~\ref{tab:master} is the spine. We summarize in prose, then devote
+\S\ref{sec:boundary}--\S\ref{sec:account} to the findings that organize everything.
 
 \begin{table}[t]
 \centering\small
-\caption{Master evidence table. Each row is a (Bayesian object, baseline) contest in a given regime.
-Bold verdicts are the load-bearing results. Numbers are recall at $|{\rm gold}|$ unless noted.}
+\caption{Master evidence table. Each row is a (Bayesian object, control) contest in a given regime.
+Numbers are recall at $|{\rm gold}|$ unless noted; intervals are 95\% paired bootstrap.}
 \label{tab:master}
-\begin{tabular}{@{}p{3.5cm}p{3.3cm}cp{4.5cm}@{}}
+\begin{tabular}{@{}p{3.4cm}p{3.2cm}cp{4.6cm}@{}}
 \toprule
-\textbf{Cell / regime} & \textbf{Bayesian object vs.\ baseline} & \textbf{Verdict} & \textbf{Key numbers}\\
+\textbf{Cell / regime} & \textbf{Bayesian object vs.\ control} & \textbf{Verdict} & \textbf{Key numbers}\\
 \midrule
-Structured selection, SQL (S1) & FK-graph MRF vs.\ cosine; vs.\ FK-closure & \textbf{Bayes/structure helps} & MRF 0.805/0.822/0.787 vs.\ cosine 0.720/0.673/0.678; vs.\ closure $+$0.02--0.04; \textbf{EX $+$5.7pp} [2.1,9.4]\\
-Structured selection, correlated SQL (S2) & join-graph diffusion/MRF vs.\ cosine & \textbf{helps more} & cosine craters 0.425; PageRank 0.550, MRF 0.556 ($+$12--14pp)\\
-Structured selection, multi-hop RAG (S4) & passage-link graph vs.\ cosine & \textbf{helps (generalizes)} & MRF$-$cosine $+$0.104 [.090,.118]; bridge $+$17pp\\
-Graph RAG by reasoning type (S5) & entity-graph PageRank/MRF vs.\ cosine & \textbf{helps chained, hurts independent} & bridge $+$0.21, compositional $+$0.17, inference $+$0.13, \emph{comparison} $-$0.22; PageRank$\approx$MRF (0.805$\approx$0.804)\\
+Structured selection, SQL (S1) & FK-graph MRF vs.\ cosine; vs.\ FK-closure & \textbf{helps} & MRF 0.805/0.822/0.787 vs.\ cosine 0.720/0.673/0.678; vs.\ closure $+$0.02--0.04; \textbf{EX $+$5.7pp} [2.1,9.4]\\
+Structured selection, correlated SQL (S2) & join-graph diffusion/MRF vs.\ cosine & \textbf{helps more} & cosine drops to 0.425; PageRank 0.550, MRF 0.556 ($+$12--14pp)\\
+Structured selection, multi-hop RAG (S4) & passage-link graph vs.\ cosine & \textbf{helps} & MRF$-$cosine $+$0.104 [.090,.118]; bridge $+$0.17\\
+Graph RAG by reasoning type (S5) & entity-graph PageRank/MRF vs.\ cosine & \textbf{helps chained, hurts independent} & bridge $+$0.21, compositional $+$0.17, inference $+$0.13, \emph{comparison} $-$0.22; PageRank$\approx$MRF (0.805 vs 0.804)\\
 Single-hop control, SQL (S3) & FK diffusion/MRF vs.\ cosine & \textbf{structure hurts / MRF neutral} & PageRank 0.727 $<$ cosine 0.839 ($-$0.11); MRF 0.857\\
-Single-hop control, RAG (S3) & cosine-kNN graph diffusion vs.\ cosine & \textbf{structure destructive} & diffusion 0.016 vs.\ cosine 0.608 ($-$0.59)\\
+Single-hop control, RAG (S3) & cosine-kNN graph diffusion vs.\ cosine & \textbf{harmful} & diffusion 0.016 vs.\ cosine 0.608 ($-$0.59)\\
 \midrule
-Online adaptation, correlated (S2) & online naive-Bayes / popularity vs.\ static cosine & \textbf{Bayes wins} & naive-Bayes 0.510 vs.\ cosine 0.425 ($+$8.5pp); learning curve $+$0.07\\
+Online adaptation, correlated (S2) & online naive-Bayes vs.\ static cosine; \emph{vs.\ MLE count} & \textbf{helps (idea, not prior)} & naive-Bayes $+$0.085 [.062,.113]; MLE count $+$0.090 [.070,.112]; noise/feedback-robust\\
 \midrule
-Decision / context budget (S1) & posterior-threshold context vs.\ fixed-$k$; oracle & \textbf{opportunity real, rule fails} & oracle 0.562@2.2 tbl $>$ full 0.500@10; MRF-threshold 0.411 under-retrieves $<$ fixed-$k$ 0.495\\
-Calibrated relevance / UQ & posterior vs.\ cosine max-out & \textbf{Bayes loses} & abstention AUROC 0.700 vs.\ 0.763\\
-Signal fusion (clean text) & learned fusion vs.\ cosine/RRF & \textbf{no win} & fusion 0.734 $<$ cosine 0.778\\
-Set-level diversity & DPP/MMR vs.\ cosine & \textbf{conditional} & $+$7pp on comparison, $0$ on bridge; topology-routing $\approx$0.76\\
+Decision / context budget (S1) & posterior-threshold context vs.\ fixed-$k$; oracle & \textbf{opportunity real, rule fails} & oracle 0.562@2.2 tbl $>$ full 0.500@10; MRF-threshold 0.411 $<$ fixed-$k$ 0.495\\
+Calibrated relevance / UQ & posterior vs.\ cosine max-out & \textbf{loses} & abstention AUROC 0.700 vs.\ 0.763\\
+Signal fusion (clean text) & learned fusion vs.\ cosine/RRF & \textbf{no improvement} & fusion 0.734 $<$ cosine 0.778\\
+Set-level diversity & DPP/MMR vs.\ cosine & \textbf{conditional} & $+$0.07 on comparison, $\approx0$ on bridge; topology-routing $\approx$0.76\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Structured selection helps---across both domains.} On orthogonal SQL (S1) the FK-graph
-posterior lifts recall well above cosine and, more importantly, lifts downstream execution accuracy by
-$5.7$ points [2.1, 9.4]: recovering cosine-invisible ``bridge'' tables (join tables whose names share
-no tokens with the question) yields correct SQL. The same mechanism generalizes to multi-hop RAG (S4),
-where a passage-link graph beats cosine by $+0.104$ overall and $+0.17$ on bridge questions, and to a
-second multi-hop dataset (S5).
+\paragraph{Structure helps---across both domains.} On orthogonal SQL (S1) the FK-graph posterior
+lifts recall above cosine and, more importantly, lifts downstream execution accuracy by $5.7$ points
+[2.1, 9.4]: recovering cosine-invisible ``bridge'' tables (join tables whose names share no tokens with
+the question) yields correct SQL. The mechanism recurs in multi-hop RAG (S4), where a passage-link
+graph beats cosine by $+0.104$ overall and $+0.17$ on bridge questions, and in a second multi-hop
+dataset (S5).
 
-\paragraph{Adaptation helps---in repeated workloads.} Streaming the BEAVER queries and updating an
-online naive-Bayes term$\rightarrow$table model prequentially beats static cosine by $8.5$ points,
-with a genuine learning curve (recall rises from 0.455 early to 0.560 mid-stream). This is the most
-textbook-Bayesian win in the study---a prior updated to a posterior as data arrive---and it appears
-exactly where the corpus repeats.
+\paragraph{Adaptation helps---in repeated workloads, and it is robust.} Streaming the BEAVER queries
+and updating an online term$\rightarrow$table model prequentially beats static cosine by $8.5$ points,
+with a genuine learning curve (recall rises across stream quartiles, $+0.10$ from first to last). Over
+20 random stream orders the gain is stable (paired diff $+0.085$ [.062, .113]); it survives 20\% label
+noise and degrades gracefully under partial feedback (50\% feedback $\to +0.04$). Notably, a
+non-Bayesian online counter (no prior smoothing) matches the Bayesian version ($+0.090$ [.070, .112]):
+the operative ingredient is online updating, not the prior.
 
-\paragraph{Uncertainty and decision signals lose.} Using the LLM's posterior to abstain underperforms
-a max-excluded-similarity threshold (AUROC 0.700 vs.\ 0.763). Using the subgraph posterior's marginals
-to choose a variable-size context \emph{under}-retrieves and drops execution accuracy to 0.411, below a
-fixed top-5 (0.495)---even though the \emph{opportunity} is real, since the oracle gold context (2.2
-tables) beats the full schema (10 tables) by 6 points. The posterior is simply not calibrated for a
-threshold cutoff; the same failure mode appears at abstention and at budgeting, unifying the two.
+\paragraph{Uncertainty and decision uses lose.} Using the LLM posterior to abstain underperforms a
+max-excluded-similarity threshold (AUROC 0.700 vs.\ 0.763). Because abstention is scored by AUROC,
+which is invariant to any monotone recalibration (temperature scaling, isotonic regression), this gap
+is a deficit of \emph{discrimination}, not calibration; recalibrating the posterior cannot close it.
+Using the subgraph posterior's marginals to choose a variable-size context \emph{under}-retrieves and
+drops execution accuracy to 0.411, below a fixed top-5 (0.495)---even though the \emph{opportunity} is
+real, since the oracle gold context (2.2 tables) beats the full schema (10 tables) by 6 points. The raw
+posterior scores these models produce are not reliable decision scores without separate validation.
 
-\paragraph{Fusion and diversity are not free wins.} On clean text a learned fusion does not beat cosine;
-diversity helps only on independent-evidence (``comparison'') queries and is neutral or harmful on
-connected-evidence (``bridge'') queries---which sets up the constructive result below.
+\paragraph{Fusion and diversity are conditional.} On clean text a learned fusion does not improve on
+cosine; diversity helps only on independent-evidence (``comparison'') queries and is neutral on
+connected-evidence (``bridge'') queries---which motivates the routing result of \S\ref{sec:constructive}.
 
-\section{The connectivity boundary}\label{sec:boundary}
+\section{Structure's value tracks the connectivity of the evidence}\label{sec:boundary}
 
-The single most organizing finding is that structure's value is a monotone function of how
-\emph{connected} the relevant evidence is.
+The single most organizing finding is that the sign and size of structure's benefit track how
+\emph{connected} the relevant evidence is. We observe this in every regime we can stratify.
 
 \begin{itemize}[leftmargin=1.4em,itemsep=2pt]
-\item \textbf{Single-hop: structure hurts.} On single-table SQL queries, PageRank diffusion
-\emph{lowers} recall@1 from 0.839 to 0.727 ($-0.11$): with one relevant table, diffusion demotes the
-lone gold toward its graph neighbors. On single-hop SciFact the effect is extreme---an imposed
-cosine-kNN similarity graph collapses recall from 0.608 to 0.016 ($-0.59$), because diffusion spreads
-mass into dense clusters of topically-similar-but-irrelevant abstracts and buries the answer. Imposing
-structure where there is no genuine relevance-coupling is not merely unhelpful; it is destructive.
-\item \textbf{Multi-hop: structure helps, and more so the deeper the chain.} On 2WikiMultiHopQA the
-gain rises with reasoning depth and connectivity: $+0.13$ (inference), $+0.17$ (compositional),
-$+0.21$ (bridge-comparison), while the one \emph{independent}-evidence type (comparison) goes the other
-way, $-0.22$. The comparison type is a within-dataset negative control: same corpus, same method,
-opposite sign, determined entirely by whether the evidence is connected.
-\item \textbf{Correlation amplifies it.} On the correlated BEAVER warehouse, cosine craters to 0.425
+\item \textbf{Single-hop: structure hurts.} On single-table SQL queries, PageRank diffusion lowers
+recall@1 from 0.839 to 0.727 ($-0.11$): with one relevant table, diffusion demotes the lone gold
+toward its graph neighbors. On single-hop SciFact the effect is severe---an imposed cosine-kNN
+similarity graph lowers recall from 0.608 to 0.016 ($-0.59$), because diffusion spreads mass into dense
+clusters of topically-similar-but-irrelevant abstracts. Imposing a graph that is not aligned with
+relevance can be actively harmful.
+\item \textbf{Multi-hop: structure helps, more so with deeper chains.} On 2WikiMultiHopQA the gain
+increases with reasoning depth and connectivity: $+0.13$ (inference), $+0.17$ (compositional), $+0.21$
+(bridge-comparison), while the one \emph{independent}-evidence type (comparison) goes the other way,
+$-0.22$. Comparison is a within-dataset negative control: same corpus, same method, opposite sign,
+determined by whether the evidence is connected.
+\item \textbf{Correlation amplifies it.} On the correlated BEAVER warehouse, cosine drops to 0.425
 (versus $\approx$0.72 on orthogonal BIRD) and structure's advantage grows to $+$12--14pp. The harder
 the corpus is for similarity, the more a true relational graph is worth.
 \end{itemize}
 
 \paragraph{It is the graph, not the Bayes.} Wherever structure helps, a personalized-PageRank
-diffusion and a shortest-path closure heuristic match the full subgraph posterior: PageRank
-$\approx$ MRF on BIRD, BEAVER, HotpotQA, and 2WikiMultiHopQA (e.g., 0.805 vs.\ 0.804 on S5). The
-load-bearing ingredient is injecting the \emph{correct relational structure}, not the particular
-probabilistic machinery. A practitioner should reach for the cheap heuristic first.
+diffusion and a shortest-path closure match the full subgraph posterior: PageRank and MRF agree on
+BIRD, BEAVER, HotpotQA, and 2WikiMultiHopQA. On HotpotQA, where $n=1492$ gives power to detect small
+effects, the MRF's edge over PageRank is $+0.008$ [.0003, .016]---statistically detectable but
+practically negligible (Appendix~\ref{app:sens}). The load-bearing ingredient is injecting the
+\emph{correct relational structure}; the embedding-similarity graph is the wrong structure (connectors
+are dissimilar), which is why a correlation prior does not substitute and, on single-hop data, hurts.
+Bayesian modeling was useful here for \emph{clarifying which structure matters}, even though the final
+practical algorithm can be a one-line heuristic.
 
-\section{Constructive payoff: route the prior to the query}\label{sec:constructive}
+\section{Where the full posterior earns its keep}\label{sec:posterior}
+
+There is one regime where the Bayesian object beats the heuristic. On a \emph{mixed} workload of
+single- and multi-hop SQL queries, the subgraph posterior's marginalization gates structure
+automatically: it degrades gracefully on single-hop (where hard diffusion hurts) and wins on
+multi-hop, with no predictor. Always-MRF scores 0.803 versus always-PageRank 0.751 and cosine 0.744.
+An explicit hop-count gate cannot recover this, because hop count is hard to predict from the question
+(classifier accuracy 0.799, versus 0.936 for the RAG bridge-vs-comparison distinction of
+\S\ref{sec:constructive}). The interpretation is statistical rather than about raw accuracy:
+\emph{the full Bayesian object is not needed to improve accuracy in homogeneous regimes; its value is
+robustness under model uncertainty}---when one does not know whether a query needs structure,
+marginalizing over subset configurations is safer than committing to a hard structural bias.
+
+\section{A conceptual account}\label{sec:account}
+
+The results follow from three simple statements, which we state informally rather than as theorems.
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=2pt]
+\item \textbf{Independent retrieval misses bridge evidence.} If a necessary item has low semantic
+similarity to the query (a join table, a bridge passage), top-$k$ cosine ranks it low and misses it.
+\item \textbf{Graph structure helps only when relevance is connected.} If the gold set is connected in
+a relevance-aligned graph, diffusion / subgraph selection propagates score from high-similarity seeds
+to the connected bridge items and recovers them. If the gold set is a singleton or its items are
+independent, diffusion moves mass \emph{away} from the answer toward graph neighbors---so the same
+operation that helps the connected case hurts the disconnected one. This single mechanism predicts the
+sign flips of \S\ref{sec:boundary}.
+\item \textbf{A good ranking score need not be a good decision score.} A score that orders items well
+(useful for retrieval) can still be useless for a threshold decision (abstention, budgeting); and when
+the decision is evaluated by a rank-based metric, recalibration cannot help. This predicts the UQ and
+context-budget failures.
+\end{enumerate}
+
+\section{A constructive payoff: route the prior to the query}\label{sec:constructive}
 
 The audit is not only negative. Because the right bias is query-dependent---connectivity for
 connected-evidence queries, diversity for independent-evidence queries---a cheap classifier that reads
 the query can route between them. On HotpotQA a lexical logistic classifier predicts bridge
 vs.\ comparison at 0.936 accuracy; routing structure to bridge and diversity to comparison reaches
-recall@2 of 0.748, beating the best \emph{fixed} prior (0.703) by $+0.044$ [.036, .053] and nearly
+recall@2 of 0.748, improving on the best \emph{fixed} prior (0.703) by $+0.044$ [.036, .053] and nearly
 matching the oracle (0.761). The recommendation is not ``use a graph prior'' but \emph{match the prior
-to the query's evidence topology.}
-
-\paragraph{Where the full posterior earns its keep.} There is one place the Bayesian object beats the
-heuristic. On a \emph{mixed} workload of single- and multi-hop SQL queries, the subgraph posterior's
-marginalization auto-gates: it degrades gracefully on single-hop (where hard diffusion hurts) and wins
-on multi-hop, with no predictor. Always-MRF scores 0.803 versus always-PageRank 0.751 and cosine
-0.744; an explicit hop-count gate cannot recover this because hop count is hard to predict (classifier
-0.799, versus 0.936 for RAG topology). Marginalization buys robustness across heterogeneous query
-types precisely when those types are hard to classify---the one genuinely load-bearing use of the full
-Bayesian apparatus we found.
+to the query's evidence topology}---and, when the topology is hard to classify (mixed-hop SQL), let the
+posterior's marginalization gate it for you (\S\ref{sec:posterior}).
 
 \section{Four lessons}\label{sec:lessons}
 
 \begin{lesson}[Structure, not uncertainty]
-Bayes helps when it injects \emph{correct structure} a point estimate ignores---here, foreign-key
-connectivity that recovers cosine-invisible bridge tables. It is the graph, not the Bayes; the
-embedding-similarity graph is the \emph{wrong} structure (connectors are dissimilar), so a
-correlation prior does not substitute, and on single-hop data it is actively harmful.
+Bayesian modeling helps when it injects \emph{correct structure} a point estimate ignores---here,
+foreign-key connectivity that recovers cosine-invisible bridge items. It is the graph, not the
+apparatus: a one-line heuristic matches the posterior, and the embedding-similarity graph (the wrong
+structure) does not substitute and can hurt.
 \end{lesson}
 
 \begin{lesson}[The LLM distribution is a proposal, not a posterior]
-LLM output distributions are mode-collapsed (near-certain even on ambiguous inputs), so calibrated
-uncertainty cannot be read off them. Abstention should use a separate, transparent signal; simple
-signals win. The same miscalibration sinks posterior-as-decision (context budgeting), unifying the
-uncertainty and decision failures.
+LLM output distributions are typically over-confident, so a calibrated decision score cannot be read
+off them; abstention should use a separate transparent signal. Because we evaluate ranking-style
+decisions by AUROC, the failure is one of discrimination, not calibration---recalibration provably
+cannot fix it. The same miscalibration sinks posterior-as-decision (context budgeting).
 \end{lesson}
 
-\begin{lesson}[Adaptation is the other real win, and it is conditional]
-Online posterior updating beats a static retriever---but only in correlated, repeated workloads where
-there is structure across queries to learn. On one-shot orthogonal benchmarks there is nothing to
-adapt to.
+\begin{lesson}[Adaptation is the other real win, and it too is the idea, not the prior]
+Online updating beats a static retriever in correlated, repeated workloads---but a non-Bayesian online
+counter matches the Bayesian one, so the value is in updating from feedback, not in the prior. On
+one-shot orthogonal benchmarks there is nothing to adapt to.
 \end{lesson}
 
 \begin{lesson}[Marginalization buys robustness, not accuracy]
 The one place the full posterior beats the heuristic is heterogeneous workloads: marginalizing over
-subset configurations auto-gates structure on and off without a predictor. Where query types are easy
-to classify, a cheap explicit router matches it.
+subset configurations gates structure on and off without a predictor. Where query types are easy to
+classify, a cheap explicit router matches it.
 \end{lesson}
 
 \section{Practitioner guidance}\label{sec:guidance}
 
-\begin{itemize}[leftmargin=1.4em,itemsep=2pt]
-\item \textbf{Reach for graph-aware retrieval} when corpora are large, queries are multi-hop, and a
-\emph{true} relational graph (foreign keys, citations, hyperlinks, entity links) aligned with relevance
-is available. Expect larger gains as the graph densifies and the corpus correlates.
-\item \textbf{Do not} impose structure when queries are single-hop or the only ``graph'' is embedding
-similarity---it ranges from useless to destructive.
-\item \textbf{Start with the cheap heuristic} (shortest-path closure or PageRank diffusion); only reach
-for the subgraph posterior on heterogeneous workloads where graceful auto-gating matters.
-\item \textbf{Do not trust posterior uncertainty for abstention or budgeting}; calibrate a held-out
-threshold on a transparent signal instead.
-\item \textbf{Adapt online} when the workload repeats; route the prior to the query's evidence topology
-when it does not.
-\end{itemize}
+A short decision procedure (Figure-style):
+\begin{enumerate}[leftmargin=1.6em,itemsep=1pt]
+\item \textbf{Is the answer supported by a single item?} Use independent retrieval (cosine/BM25); do
+not impose a graph.
+\item \textbf{Are multiple evidence items connected by a true relational graph} (foreign keys,
+citations, hyperlinks, entity links)? Use a connectivity method---start with shortest-path closure or
+PageRank diffusion; reach for the subgraph posterior only on heterogeneous workloads where graceful
+auto-gating matters. Expect larger gains as the graph densifies and the corpus correlates.
+\item \textbf{Are multiple evidence items independent facets?} Use diversity (MMR/DPP).
+\item \textbf{Does the workload repeat?} Add online adaptation; a simple online counter suffices.
+\item \textbf{Need to abstain or budget context?} Calibrate a held-out threshold on a transparent
+signal; do not threshold the model's posterior.
+\end{enumerate}
 
 \section{Scope and limitations}\label{sec:limits}
 
-Our own experiments are retrieval-centric and lean on text-to-SQL, where the gold set and the graph are
+Our experiments are retrieval-centric and lean on text-to-SQL, where the gold set and the graph are
 unambiguous; we treat open-domain RAG through HotpotQA, 2WikiMultiHopQA, and SciFact rather than
-web-scale corpora, and we mark SQL-specific claims as such. The adaptation result uses simulated
-feedback (gold revealed after each query) on a modest stream (120 queries); it demonstrates the
-mechanism and learning curve but not large-scale online deployment. UQ is evaluated with black-box
-signals and small models; a dedicated reasoning verifier does better than both the posterior and the
-cosine signal, consistent with our Lesson 2. None of these caveats touch the central, repeatedly
-replicated finding: the connectivity boundary and the structure-not-Bayes equivalence.
+web-scale corpora, and we mark SQL-specific claims as such. The patterns we report are consistent
+across these controlled settings; we do not claim they exhaust all of IR for LLMs. The adaptation
+result uses simulated feedback (gold revealed after each query) on a modest stream (120 queries); we
+report it with confidence bands over 20 orders and robustness to partial/noisy feedback, but not
+large-scale online deployment. UQ is evaluated with black-box signals and small models; a dedicated
+reasoning verifier does better than both the posterior and the cosine signal, consistent with Lesson 2.
+Initial retrieval is dense (cosine) and lexical (BM25); we did not benchmark against late-interaction or
+learned rerankers, which is the natural next step before strong absolute claims. None of these caveats
+affects the central, repeatedly observed pattern: the connectivity dependence of structure and the
+idea-versus-apparatus distinction.
 
 \section{Conclusion}
 
-Can Bayes help retrieval for LLM systems? Barely and sometimes---but the \emph{when} is sharp and
-useful. It helps through structure (a graph prior, when evidence is genuinely connected and the
-corpus is hard for similarity) and through adaptation (online updating, when the workload repeats). It
-does not help as an uncertainty or decision signal, where one-line baselines win. And where it does
-help, a cheap heuristic usually suffices, with the full posterior reserved for the one job only it does
-well: gracefully gating structure across heterogeneous queries. For a field reaching reflexively for
-Bayesian and uncertainty language around retrieval, the disciplined answer is to inject the right
-structure, adapt when you can, and calibrate decisions with simple, transparent signals.
+Can Bayesian modeling help retrieval for LLM systems? The practical answer is conditional rather than
+uniformly positive. It helps through structure (a graph prior, when evidence is genuinely connected
+and the corpus is hard for similarity) and through adaptation (online updating, when the workload
+repeats). It does not help as an uncertainty or decision signal, where simple baselines win. And where
+it does help, a cheap version of the same idea usually suffices, with the full posterior reserved for
+the one job only it does well: gracefully gating structure across heterogeneous queries. For a field
+reaching reflexively for Bayesian and uncertainty language around retrieval, the disciplined
+recommendation is to inject the right structure, adapt when the workload allows, and make decisions
+with simple, validated signals.
 
 \section*{Reproducibility}
-All experiments are scripted and use cached data; the scripts (\texttt{s1a\_graphgp.py},
-\texttt{s2\_beaver.py}, \texttt{s3\_sql\_singlehop.py}, \texttt{s3\_sql\_hopgate.py},
-\texttt{s3\_scifact.py}, \texttt{s4\_hotpot.py}, \texttt{s4\_diversity\_uq.py},
-\texttt{s4\_adaptive.py}, \texttt{s5\_twowiki.py}, \texttt{s\_adapt\_beaver.py},
-\texttt{downstream\_ex.py}) regenerate every number. API use was safe-by-default (dry-run with cost
-estimate; explicit \texttt{--run}; call caps) and totaled $\approx\$6$.
+All experiments are scripted and run on cached data; a public repository (URL withheld for review)
+contains the scripts named in Appendix~\ref{app:methods}, an environment file, random seeds, a cached
+data manifest, and the exact command to regenerate each table. We use only public benchmarks under
+their respective licenses and redistribute derived caches, not raw corpora where licenses preclude it.
+API use was safe-by-default (dry-run cost estimate; explicit run flag; call caps) and totaled
+$\approx\$6$.
+
+\appendix
+\section{Detailed methods and definitions}\label{app:methods}
+
+\paragraph{Recall at $|{\rm gold}|$.} For a query with gold set $G$, retrieve the top $|G|$ items under
+the method's score and report $|G \cap \widehat{G}|/|G|$, averaged over queries. For single-hop
+($|G|\!=\!1$) this is recall@1.
+
+\paragraph{Downstream execution accuracy (EX).} For the four large-schema BIRD databases, we prune the
+schema shown to the generator to a method's selected tables, generate SQL with a small chat model, and
+execute against the full database; EX is the fraction whose result set matches the gold query's,
+guarded by an execution timeout.
+
+\paragraph{Evidence types.} ``Bridge''/``compositional''/``inference'' questions require chained
+evidence (item B is found via item A); ``comparison'' questions require independent evidence about two
+entities. For HotpotQA we use the provided type label; for 2WikiMultiHopQA the four native types. A
+query is ``connected'' if its gold items form a connected subgraph of the relevance graph.
+
+\paragraph{Graph construction.} SQL: nodes are tables, edges are foreign keys (BEAVER: declared join
+keys collapsed to table-table edges). HotpotQA / 2WikiMultiHopQA: nodes are candidate passages, with a
+directed edge $i\!\to\!j$ when passage $j$'s title is mentioned in passage $i$ (a title-mention link
+graph). SciFact: no native graph; we construct a cosine-$k$NN graph ($k\!=\!8$) purely to test whether
+an \emph{imposed} similarity graph helps single-hop retrieval (it does not).
+
+\paragraph{Unary score and splits.} The unary relevance model is logistic regression on the features in
+\S\ref{sec:setup}, fit with two-fold cross-fitting at the query level (no item from a test query
+informs its own score); hyperparameters ($\beta$, $\alpha$, closure bonus) are chosen on the training
+fold. Bootstrap CIs resample queries (paired across methods) 2{,}000--3{,}000 times.
+
+\paragraph{Scripts.} \texttt{s1a\_graphgp.py} (S1; diffusion vs.\ MRF), \texttt{s2\_beaver.py} (S2),
+\texttt{s3\_sql\_singlehop.py} and \texttt{s3\_sql\_hopgate.py} (single-hop SQL and the mixed-workload
+auto-gating result), \texttt{s3\_scifact.py} (single-hop RAG), \texttt{s4\_hotpot.py} and
+\texttt{s4\_diversity\_uq.py} (S4 structure, diversity, UQ), \texttt{s4\_adaptive.py} (topology
+routing), \texttt{s5\_twowiki.py} (S5), \texttt{s\_adapt\_beaver.py} (adaptation),
+\texttt{downstream\_ex.py} (EX and context budget), \texttt{s\_sensitivity.py} (Appendix~\ref{app:sens}).
+
+\section{Sensitivity and robustness}\label{app:sens}
+
+\textbf{Diffusion strength.} On HotpotQA, recall@2 is stable across the PageRank restart parameter:
+$0.710$ at $\alpha\!=\!0.3$ to $0.703$ at $\alpha\!=\!0.85$.
+\textbf{Retrieval depth.} Structure helps at $k\!\ge\!2$ (recall@3: cosine $0.780$, PageRank $0.803$,
+MRF $0.808$) but slightly hurts at $k\!=\!1$ (cosine $0.435$ vs.\ PageRank $0.397$), consistent with
+the connectivity account.
+\textbf{MRF vs.\ heuristic.} The paired MRF$-$PageRank difference in recall@2 is $+0.008$ [.0003, .016]
+at $n\!=\!1492$: detectable but $\approx 1$ point.
+\textbf{Adaptation.} Over 20 stream orders the online gain is $+0.085$ [.062, .113] (Bayesian) and
+$+0.090$ [.070, .112] (non-Bayesian MLE count); under 20\% label noise the all-stream recall is
+unchanged ($0.510$); under 50\%/25\% feedback it falls gracefully to $0.469$/$0.437$.
 
 \bibliographystyle{plainnat}
 \bibliography{tas_refs}
