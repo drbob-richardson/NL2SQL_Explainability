@@ -95,7 +95,9 @@ worth the trouble, and offer practitioner guidance.
 | **Correctness UQ (Paper 1 context)** | agreement / structure | reasoning verifier | **Bayes/agreement loses** | black-box ≤0.68 AUROC; verifier 0.77; ensemble 0.82 |
 | **Ambiguity detection (context)** | sampling posterior / reserve | — | **fails** | coverage-both 1%; divergence AUROC 0.475 |
 
-Cross-cutting: structure's gain **grows with relational complexity** (FK density, query hop count);
+| **Structured selection (correlated enterprise SQL, BEAVER)** | join-graph diffusion/MRF | cosine | **Bayes/structure helps MORE** | cosine CRATERS 0.42 (vs BIRD 0.72); PageRank/MRF +12-14pp — gain grows with correlation |
+
+Cross-cutting: structure's gain **grows with relational complexity AND corpus correlation** (FK/join density, query hop count, near-duplicate distractors);
 `oracle > full` (+6pp EX) shows precise retrieval beats showing-everything (distractors hurt).
 
 ---

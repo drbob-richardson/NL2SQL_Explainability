@@ -304,3 +304,21 @@ MMR-all 0.684, **adaptive 0.748**, oracle-routed 0.761. **ADAPTIVE − best-fixe
 (significant). The topology complementarity is EXPLOITABLE with a cheap classifier → match the
 inductive bias to the query's evidence topology beats any single fixed bias. A constructive method
 (not just an audit finding); generalizes the conditional "structure helps when structure exists."
+
+## S2: correlated enterprise SQL (BEAVER dw) — orthogonality critique CONFIRMED (`scripts/s2_beaver.py`)
+97 correlated tables (shared FCLT_/SUBJECT_ prefixes), 120 multi-table queries (mean gold 4.0),
+sparse join graph (127 table-edges). recall@|gold|:
+
+| method | ≥2 | ≥4 |
+|---|---|---|
+| cosine | 0.425 | 0.368 |
+| unary fusion | 0.511 | 0.485 |
+| FK-closure heuristic | 0.511 | 0.485 |
+| PageRank diffusion | 0.550 | 0.509 |
+| MRF (top-15 pool) | 0.556 | 0.522 |
+
+**Cosine CRATERS (0.425 vs BIRD 0.72)** on a correlated enterprise schema, and **structure's gain is
+LARGER under correlation (+12–14pp vs +8.6pp on BIRD)** → structure's value grows with corpus
+correlation + multi-hop depth (the orthogonality critique, measured). Methods cluster (PageRank≈MRF≈
+unary; sparse graph → no MRF-over-heuristic separation). Caveats: 120 queries (wide CIs); recall-only
+(no warehouse data → no EX); ~0.55 best leaves big headroom (realistic enterprise difficulty).

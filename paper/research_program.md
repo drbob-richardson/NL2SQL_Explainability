@@ -49,7 +49,7 @@ Columns below = the five families (a→structure, b→decision/cost, c→adaptat
 | setting | a structure | b decision/cost | c adaptation | d diversity | e UQ |
 |---|---|---|---|---|---|
 | **S1 SQL orthogonal** (BIRD/Spider) | **done: WINS** (FK-MRF +5.7pp EX) | untested (oracle>full motivates) | untested | done: loses* | done: loses (maxout 0.763 > post 0.700) |
-| **S2 SQL correlated** (BEAVER/Spider 2.0) | — | — | — | — | — |
+| **S2 SQL correlated** (BEAVER dw) | **done: WINS bigger** (cosine craters 0.42; struct +12-14pp) | — | — | — | — |
 | **S3 RAG single-hop** (chunked Wiki/docs) | — | — | — | — | — |
 | **S4 RAG multi-hop** (HotpotQA distractor) | **done: WINS bridge** (+10-13pp) | — | — | **done: helps COMPARISON** (+7pp; topology-dependent) | done: loses (cos-margin 0.744 > post 0.692) |
 | **S5 Graph RAG** (entity/KG graph) | — | — | — | — | — |
@@ -142,3 +142,6 @@ may sharpen into "it depends on corpus correlation and hop-count," which is a st
 - [variation] ADAPTIVE topology-routed retriever (predict bridge-vs-comparison from question, apply structure-prior vs diversity-prior) -> beats both fixed; query-type classifier is easy. HIGH PRIORITY new method idea.
 
 - [done] S4 ADAPTIVE topology-routed retriever: type classifier acc 0.936; adaptive recall@2 0.748 beats best-fixed (PageRank 0.703) by +0.044 [.036,.053], ~oracle 0.761. POSITIVE METHOD: route structure-prior(bridge) vs diversity-prior(comparison). The audit's constructive payoff.
+
+- [done] S2 BEAVER (correlated enterprise SQL): cosine 0.425 (vs BIRD 0.72) -> CORRELATION makes retrieval hard; structure (PageRank/MRF) +12-14pp, LARGER gain than BIRD -> orthogonality critique CONFIRMED. Methods cluster (sparse join graph; no MRF>heuristic separation). 120 qs, recall-only.
+- [variation] BEAVER join graph sparse -> densify with cosine-sim edges to test MRF>heuristic; dev_nw.json (88 qs, multi-DB) = cross-DB routing cell; no warehouse data = metadata-prior-only regime.

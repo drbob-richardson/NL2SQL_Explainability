@@ -48,3 +48,5 @@ data/bird_value_tokens.json
 data/downstream_sql.json
 data/hotpot/
 data/hotpot_emb.json
+data/beaver/
+data/beaver_emb.json
