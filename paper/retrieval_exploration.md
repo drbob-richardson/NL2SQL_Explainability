@@ -206,3 +206,27 @@ generation, so precise retrieval exceeds full-schema and there's headroom above 
 where hardest: formula_1 +13.6pp (MRF beats full-schema), superhero +8.2, student_club +4.5; ANOMALY:
 financial −3.8pp (MRF worse downstream despite higher recall; n=106). **Verdict: the structured
 retrieval win translates to end-task accuracy — Phase 1 is a complete applied result.**
+
+## DECISIVE: FK-heuristic vs MRF — is it "just adding bridge tables"? (`scripts/phase1_fkbaseline.py`)
+Held-out hyperparams, recall@|gold|:
+
+| method | ≥2 | ≥3 | ≥4 |
+|---|---|---|---|
+| cosine | 0.720 | 0.673 | 0.678 |
+| unary fusion | 0.782 | 0.761 | 0.670 |
+| FK-1hop heuristic | 0.782 | 0.763 | 0.678 |
+| FK-closure (shortest-path) heuristic | 0.786 | 0.779 | 0.760 |
+| MRF (subgraph posterior) | 0.805 | 0.822 | 0.787 |
+
+MRF − FK-closure (bootstrap): ≥2 +0.018 [+0.004,+0.033], ≥3 +0.043 [+0.018,+0.070], ≥4 +0.027
+[−0.015,+0.077]. **A shortest-FK-path closure heuristic captures MOST of the structural win**; the
+full MRF adds a small *significant* increment on ≥2/≥3 (not ≥4, n=30). Honest implication: the win is
+mostly *connectivity* (a cheap heuristic realizes it); the MRF's defense is the small increment + a
+principled reason to scale better where hard closure over-includes (large/dense schemas — UNTESTED).
+
+**Reframed contribution:** lead with *connectivity-aware structured retrieval helps multi-hop schema
+linking* (heuristic + downstream EX); position the Bayesian subgraph posterior honestly as the
+principled, evidence-weighted, distractor-selective version that adds a modest gain and should widen on
+large schemas. Theory: bridge/connectivity (#1) = dominant grounded mechanism (heuristic embodies it);
+distractor/selectivity (#3) = the MRF's extra. Large-schema validation now tests BOTH scale AND whether
+MRF pulls ahead of the heuristic.
