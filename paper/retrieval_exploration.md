@@ -187,3 +187,22 @@ structural prior — so a table-count gate can't fix it. **Conclusion: keep fixe
 significant and concentrates where retrieval is HARD (financial 0.61→0.81, formula_1 0.47→0.66);
 regressions only on tiny schemas where cosine was already ~0.9 (low-stakes). Defensible as-is;
 smarter per-schema adaptation not worth it over fixed β.
+
+## Downstream end-to-end — better retrieval → better SQL (`scripts/downstream_ex.py`)
+Prune schema to top-K=5 tables under each retriever, generate SQL (gpt-4o-mini), execute. BIRD
+schemas ≥8 tables (financial, formula_1, student_club, superhero; 436 Qs). Retrieval recall@5:
+cosine 0.849 vs MRF 0.958.
+
+| schema shown | EX |
+|---|---|
+| full (no prune) | 0.500 |
+| cosine top-5 | 0.438 |
+| **MRF top-5** | **0.495** |
+| oracle (gold tables) | 0.562 |
+
+**EX(MRF) − EX(cosine) = +0.057 [+0.021,+0.094] (significant).** MRF-pruning ≈ full-schema (prune to
+5 tables with ~no loss) while cosine-pruning costs −6pp. Oracle > full (+6pp) → distractor tables hurt
+generation, so precise retrieval exceeds full-schema and there's headroom above MRF. Per-DB strongest
+where hardest: formula_1 +13.6pp (MRF beats full-schema), superhero +8.2, student_club +4.5; ANOMALY:
+financial −3.8pp (MRF worse downstream despite higher recall; n=106). **Verdict: the structured
+retrieval win translates to end-task accuracy — Phase 1 is a complete applied result.**

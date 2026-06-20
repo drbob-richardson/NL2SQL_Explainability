@@ -45,3 +45,4 @@ data/ambrosia_interp_gen_ctl_*.json
 data/retrieval_emb.json
 data/bridge_emb.json
 data/bird_value_tokens.json
+data/downstream_sql.json
