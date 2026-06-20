@@ -393,3 +393,15 @@ Settings: S1 SQL-orthogonal (BIRD/Spider), S2 SQL-correlated (BEAVER), S3 single
 RAG SciFact), S4 multi-hop RAG (HotpotQA), S5 graph RAG (2Wiki). Families: 1 structure (WINS, grows
 with hops+correlation, hurts single-hop/independent), 2 decision (opportunity real, posterior-rule
 fails), 3 adaptation (WINS, correlated/repeated), 4 diversity (conditional/topology), 5 UQ (loses).
+
+## TAS-review hardening experiments (2026-06-20)
+**Adaptation strengthened** (`s_adapt_beaver.py`, 20 stream orders): naive-Bayes +0.085 [+.062,+.113]
+vs cosine; **MLE counts (no prior) +0.090 [+.070,+.112] = IDENTICAL** -> adaptation helps but it's the
+online COUNTING, not the Bayesian smoothing (symmetric with "structure not the specific Bayes").
+Robust: 20% label noise 0.510 (no drop); graceful with partial feedback (50%->0.469, 25%->0.437).
+**Sensitivity** (`s_sensitivity.py`, HotpotQA 1492 q): PageRank recall@2 stable across alpha
+(0.710@.3 -> 0.703@.85); structure helps k>=2 but HURTS k=1 (cosine 0.435 > PR 0.397) -- boundary
+again; MRF-PageRank = +0.0077 [+.0003,+.0158] (detectable at n=1492 but ~1pp = practically negligible).
+**UQ calibration rebuttal (free, rigorous):** abstention is scored by AUROC, which is invariant to any
+monotone recalibration (temperature/isotonic) -> the posterior's 0.700 vs 0.763 deficit is
+DISCRIMINATION not calibration; recalibration provably cannot fix it.
