@@ -44,3 +44,27 @@ openings: (1) **conformal/guaranteed coverage for text-to-SQL schema retrieval**
 **EIG/Bayesian-experimental-design set selection under budget** (open framing) — and both need the
 **large-schema setting** to demonstrate value. Decision: pursue only with Spider-2.0-scale data;
 otherwise the accessible benchmarks are too easy to show a win.
+
+## Addendum — text-to-SQL schema/DB retrieval landscape (5th scan agent)
+- **Large-schema benchmarks exist and are the right testbed:** Spider 2.0 (ICLR 2025, >3000 cols,
+  enterprise, frontier ~17–21% EX; arXiv:2411.07763), BEAVER (enterprise logs, 812 tables, names
+  "multi-table retrieval" as a subtask; arXiv:2409.02038), BIRD (95 DBs; arXiv:2305.03111).
+- **Schema-selection / table-retrieval is heavily worked:** CRUSH4SQL hallucinate-then-retrieve
+  (arXiv:2311.01173), RESDSQL schema ranking (2302.05965), CHESS schema selector/pruning
+  (2405.16755), MURRE multi-hop table retrieval (2402.10666), ARM (2501.18539), **LinkAlign — the
+  first to frame "database retrieval: select the target DB from a large pool" = explicit multi-DB
+  routing** (arXiv:2503.18596).
+- **Calibrated/UQ table selection is occupied by ONE method:** RTS / Adaptive Abstention (conformal
+  prediction on hidden layers for schema linking + abstention; arXiv:2501.10858). Query-level
+  calibration exists (sub-clause 2505.23804; node-level 2511.13984; TrustSQL 2403.15879).
+- **CONFIRMED GAP:** no *Bayesian* method for table selection/DB routing, and **nothing applying
+  calibrated UQ at the multi-database routing layer.** Multi-DB routing itself is emerging, not yet a
+  standardized task.
+
+## Refined verdict
+The **space** (large-schema SQL retrieval) is crowded with strong methods; the **niche** —
+*Bayesian/calibrated UQ + a decision layer (route / abstain / ask) for table-selection AND multi-DB
+routing* — is genuinely open (only conformal RTS is adjacent) and directly reuses our Paper-1
+LTT/conformal machinery. Catch (from the probe): value only appears in the **large-schema regime**
+(Spider 2.0-Lite / BEAVER) where cosine degrades; easy benchmarks (Spider-multi) are saturated by
+cosine. Viability gate = stand up Spider 2.0-Lite or BEAVER and re-run the probe there.
