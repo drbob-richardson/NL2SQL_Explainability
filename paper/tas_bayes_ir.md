@@ -100,6 +100,15 @@ Cross-cutting: structure's gain **grows with relational complexity** (FK density
 
 ---
 
+
+## 4b. Constructive payoff — adaptive topology-routed retrieval (a positive method, not just an audit)
+The audit isn't only negative. The clearest positive: the right structural bias is query-topology-
+dependent (structure/connectivity for connected-evidence "bridge" queries; diversity/repulsion for
+independent-evidence "comparison" queries). A cheap query classifier (acc 0.936) routes between them
+and BEATS every fixed bias: recall@2 0.748 (adaptive) vs 0.703 (best fixed), +0.044 [.036,.053],
+~oracle 0.761 (HotpotQA). Generalizes across SQL (FK structure) and RAG. This is the article's
+constructive recommendation: don't pick one prior — *match the prior to the query's evidence topology.*
+
 ## 5. The three lessons (the intellectual payoff)
 
 1. **Structure, not uncertainty.** Bayes helps when it injects *correct structure* a point estimate

@@ -140,3 +140,5 @@ may sharpen into "it depends on corpus correlation and hop-count," which is a st
 
 - [done] S4-d/e: diversity helps COMPARISON under redundancy (+7pp) but hurts bridge; structure mirror -> TOPOLOGY-DEPENDENT complementarity (structure|bridge, diversity|comparison; oracle-routing ~0.76 beats all fixed). UQ posterior loses to cosine-margin again.
 - [variation] ADAPTIVE topology-routed retriever (predict bridge-vs-comparison from question, apply structure-prior vs diversity-prior) -> beats both fixed; query-type classifier is easy. HIGH PRIORITY new method idea.
+
+- [done] S4 ADAPTIVE topology-routed retriever: type classifier acc 0.936; adaptive recall@2 0.748 beats best-fixed (PageRank 0.703) by +0.044 [.036,.053], ~oracle 0.761. POSITIVE METHOD: route structure-prior(bridge) vs diversity-prior(comparison). The audit's constructive payoff.

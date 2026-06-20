@@ -296,3 +296,11 @@ method to build (query-type is easily predicted).
 S4-e UQ: predicting "both gold in top-2" — cosine margin 0.744 > softmax-pair posterior 0.692 >
 cosine max-out 0.625. **Family-5 (UQ) keeps losing in RAG too** (simple cosine signal beats the
 posterior) — lesson #2 replicates across domains.
+
+## S4 adaptive topology-routed retriever — a POSITIVE method result (`scripts/s4_adaptive.py`)
+Predict query topology (bridge vs comparison) from lexical cues (cross-fit logistic, acc 0.936), route:
+bridge→PageRank(structure), comparison→MMR(diversity). recall@2: cosine 0.685, PageRank-all 0.703,
+MMR-all 0.684, **adaptive 0.748**, oracle-routed 0.761. **ADAPTIVE − best-fixed +0.044 [+0.036,+0.053]**
+(significant). The topology complementarity is EXPLOITABLE with a cheap classifier → match the
+inductive bias to the query's evidence topology beats any single fixed bias. A constructive method
+(not just an audit finding); generalizes the conditional "structure helps when structure exists."
