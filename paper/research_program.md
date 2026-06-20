@@ -119,3 +119,18 @@ cosine≠FK structure, conditional on schema richness.
 Week-by-week: stand up one setting's harness, run the battery, log results into the matrix + master
 table, update `tas_bayes_ir.md`. Revisit the thesis after each row; the "barely and sometimes" answer
 may sharpen into "it depends on corpus correlation and hop-count," which is a stronger TAS finding.
+
+## Noted variations (mark-and-try as they arise)
+- Diffusion/MRF on the COSINE-similarity graph vs the FK graph (test smoothing on the "wrong"
+  structure; expect failure → confirms cosine≠FK at the diffusion level). [from S1-a]
+- PageRank seed = raw cosine vs learned unary (does the learned unary matter, or does diffusion from
+  cosine suffice?). [from S1-a]
+- unary + PageRank-score + MRF-marginal as features in a small meta-ranker (does diffusion add as a
+  feature beyond being a ranker?). [from S1-a]
+- "Structure-exploitability" meta-predictor: per-DB/query, predict whether structure will help from
+  FK-density × hop-count × distractor-count → adaptively gate the structural prior. [from per-DB + S1-a]
+- Restart rate / coupling strength as a function of unary confidence (strong seeds → less diffusion).
+
+## Progress log (executing the program)
+- [done] S1-a structure: graph-GP/diffusion. PageRank≈MRF≫cosine; Laplacian-GP over-smooths.
+  Verdict: structural win robust to method; MRF not uniquely needed (2nd simple baseline matches it).

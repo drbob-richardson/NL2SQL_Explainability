@@ -250,3 +250,11 @@ payoff can't show in recall and would be dominated by the recall loss → downst
 structures*; only FK carries the signal (connectors are cosine-*dissimilar*) — justifies the FK prior
 and rules out a metadata-free correlation shortcut. Model elaboration on BIRD is now at diminishing
 returns; the decisive open question is large-schema validation.
+
+## S1-a: graph-GP / diffusion priors (`scripts/s1a_graphgp.py`)
+Personalized PageRank (diffusion from unary over the FK graph) ≈ MRF: 0.812/0.810/0.810 vs MRF
+0.806/0.829/0.820 (≥2/≥3/≥4), both ≫ cosine 0.720/0.673/0.678. Graph-GP Laplacian smoothing
+UNDERPERFORMS (0.756/0.723/0.728): symmetric smoothing dilutes the unary signal; PageRank's restart
+preserves seeds. **Structural win is robust to modeling choice — a 3-line diffusion matches the Ising
+MRF (its edge is negligible, only ≥3/≥4). Two simple structural baselines (FK-closure, PageRank) now
+match the MRF.** Not all graph priors work (Laplacian over-smooths) — the diffusion form matters.
