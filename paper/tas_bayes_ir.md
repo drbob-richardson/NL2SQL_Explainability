@@ -90,6 +90,7 @@ worth the trouble, and offer practitioner guidance.
 | **Calibrated relevance / UQ** | posterior `P(complete\|R)`; PYP reserve | cosine max-out; reasoning verifier | **Bayes loses** | abstention AUROC: posterior 0.700 vs cosine-maxout 0.763; PYP-reserve ambiguity-detection 0.557 ≈ chance |
 | **Signal fusion** | learned/Bayesian per-query fusion | RRF / cosine | **no win on clean text** | fusion 0.734 < cosine 0.778 (Spider easy regime); per-query adaptive already exists (DAT, MoR) |
 | **Structured joint selection** | FK-graph MRF posterior over subgraphs | shortest-path FK closure | **Bayes helps (modestly)** | recall@\|gold\| MRF 0.805/0.822/0.787 vs cosine 0.720/0.673/0.678; vs FK-closure heuristic Δ +0.018/+0.043/+0.027; downstream EX +5.7pp [+2.1,+9.4] |
+| **Structured joint selection (multi-hop RAG)** | passage-link graph prior | cosine; PageRank | **Bayes/structure helps** (generalizes!) | recall@2 +10-13pp (bridge +17pp); PageRank≈MRF≫cosine on HotpotQA |
 | **Set-level diversity** | cosine-repulsion / DPP term | MMR | **no win for tables** | repulsion hurts multi-hop recall (0.829→0.790); cosine-coupling can't substitute for FK |
 | **Correctness UQ (Paper 1 context)** | agreement / structure | reasoning verifier | **Bayes/agreement loses** | black-box ≤0.68 AUROC; verifier 0.77; ensemble 0.82 |
 | **Ambiguity detection (context)** | sampling posterior / reserve | — | **fails** | coverage-both 1%; divergence AUROC 0.475 |

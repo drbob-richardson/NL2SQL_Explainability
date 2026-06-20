@@ -258,3 +258,20 @@ UNDERPERFORMS (0.756/0.723/0.728): symmetric smoothing dilutes the unary signal;
 preserves seeds. **Structural win is robust to modeling choice — a 3-line diffusion matches the Ising
 MRF (its edge is negligible, only ≥3/≥4). Two simple structural baselines (FK-closure, PageRank) now
 match the MRF.** Not all graph priors work (Laplacian over-smooths) — the diffusion form matters.
+
+## S4: multi-hop RAG (HotpotQA distractor) — the structural win GENERALIZES (`scripts/s4_hotpot.py`)
+1492 questions (1205 bridge, 287 comparison), 10 passages each, structural prior = title-mention link
+graph. recall@2 of the 2 supporting passages:
+
+| method | all | bridge | comparison |
+|---|---|---|---|
+| cosine | 0.685 | 0.642 | 0.866 |
+| unary fusion | 0.749 | 0.718 | 0.876 |
+| **PageRank (title graph)** | **0.814** | **0.812** | 0.822 |
+| MRF (title graph, β=1) | 0.789 | 0.772 | 0.861 |
+
+MRF−cosine +0.104 [+0.090,+0.118] (all), +0.130 [+0.114,+0.146] (bridge). **The SQL structural win
+replicates in text RAG**: graph prior beats cosine +10–13pp, concentrated on BRIDGE (the multi-hop
+analog of FK bridges; +17pp), ~tie/slight-hurt on COMPARISON (no bridge to recover) — same conditional
+as SQL. PageRank≈MRF again (structure, not the specific Bayes). Scope: distractor *rerank* (10
+candidates, clean Wikipedia title-links), not full-corpus first-stage retrieval.
