@@ -4,7 +4,9 @@
 **Alternatives:** "When Does Bayes Help Retrieval in the LLM Era?" · "Structure, Not Uncertainty:
 A Bayesian Audit of Retrieval for Large Language Models."
 
-**Status:** scaffold/outline. Built from the full exploration in `CHECKPOINT.md`,
+**Status:** FULL DRAFT written -> `paper/tex/tas_bayes_ir.tex` (+ `tas_refs.bib`), compiles to 8pp. This .md is the planning scaffold/evidence ledger; the .tex is the manuscript.
+
+**Status (orig):** scaffold/outline. Built from the full exploration in `CHECKPOINT.md`,
 `retrieval_exploration.md`, `paper2_*`. This is the stats-venue track; the CS-conference track
 (structured retrieval method) and Paper 1 (correctness) proceed in parallel.
 
