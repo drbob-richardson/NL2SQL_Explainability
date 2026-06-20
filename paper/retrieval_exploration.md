@@ -108,3 +108,24 @@ genuine Bayesian posterior, not a heuristic. Caveats: β swept on all data (need
 — effect robust enough that tuned β≈1–2); BIRD ≥4 slice is small (n=30). Validation regime = large
 multi-hop schemas. Next: held-out β-CV + value-match/column features; then Spider 2.0/BEAVER; then the
 calibrated-posterior → conformal coverage + abstain/route layer (reuse Paper 1).
+
+## Phase-1 hardened — held-out β + richer features (`scripts/bayes_subgraph_v2.py`)
+Added max question↔column cosine + value-match (LIMIT-500 stored-value scan); β selected on the
+held-out fold. BIRD, 639 multi-table Qs.
+
+| method | recall@\|gold\| ≥2 | ≥3 | ≥4 |
+|---|---|---|---|
+| cosine | 0.720 | 0.673 | 0.678 |
+| unary fusion, old feats (β=0) | 0.749 | 0.710 | 0.670 |
+| unary fusion, rich feats (β=0) | 0.782 | 0.761 | 0.670 |
+| **MRF, held-out β (1, 0.5)** | **0.805** | **0.822** | **0.787** |
+
+Rich features lift unary +3.3/+5.1pp (≥2/≥3); **MRF beats rich unary fusion out-of-sample by
++2.3/+6.1/+11.7pp** (structure gain honest, not β-overfit), net +8.5/+14.9/+10.9pp over cosine, gain
+growing with join complexity. **Phase-1 core is hardened and solid.** Caveats: ≥4 slice small (n=30);
+modest BIRD schemas — large-schema validation (Phase 2) is the headline test.
+
+Next: **Phase 3** (the methodological novelty, doable on BIRD now) — turn the subgraph-posterior
+marginals into a calibrated P(gold ⊆ retrieved) coverage signal, conformal/LTT threshold →
+abstain / ask-for-schema / route; show a risk-coverage frontier and that the posterior beats a
+cosine-margin abstention baseline. **Phase 2** (parallel) — Spider 2.0-Lite / BEAVER scaling.
