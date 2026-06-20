@@ -49,7 +49,7 @@ Columns below = the five families (a→structure, b→decision/cost, c→adaptat
 | setting | a structure | b decision/cost | c adaptation | d diversity | e UQ |
 |---|---|---|---|---|---|
 | **S1 SQL orthogonal** (BIRD/Spider) | **done: WINS** (FK-MRF +5.7pp EX) | done: opportunity real (oracle>full) but posterior-threshold FAILS (0.411) | untested | done: loses* | done: loses (maxout 0.763 > post 0.700) |
-| **S2 SQL correlated** (BEAVER dw) | **done: WINS bigger** (cosine craters 0.42; struct +12-14pp) | — | — | — | — |
+| **S2 SQL correlated** (BEAVER dw) | **done: WINS bigger** (cosine craters 0.42; struct +12-14pp) | — | **done: WINS** (online +8.5pp, learning curve) | — | — |
 | **S3 single-hop** (SQL |gold|=1; RAG next) | **done(SQL): structure HURTS** (PageRank -0.11; MRF neutral) | — | — | — | — |
 | **S4 RAG multi-hop** (HotpotQA distractor) | **done: WINS bridge** (+10-13pp) | — | — | **done: helps COMPARISON** (+7pp; topology-dependent) | done: loses (cos-margin 0.744 > post 0.692) |
 | **S5 Graph RAG** (entity/KG graph) | — | — | — | — | — |
@@ -152,3 +152,5 @@ may sharpen into "it depends on corpus correlation and hop-count," which is a st
 - [done] Hop-gated SQL: on mixed workload (800 qs), always-MRF 0.803 > always-PageRank 0.751 > cosine 0.744; oracle-gate rescues PageRank (0.791) but real gate fails (hop predictor 0.799 too weak). MRF MARGINALIZATION = predictor-free implicit hop-gate -> the MRF's genuine niche (graceful degradation on heterogeneous workloads). Contrast: RAG topology predictable (explicit routing wins); SQL hop-count not (implicit MRF wins).
 
 - [done] Decision/cost (BIRD downstream EX): oracle 0.562@2.2tbls > full 0.500@10 (opportunity real, distractors hurt) BUT MRF-posterior-threshold 0.411 UNDER-RETRIEVES (< fixed-k MRF 0.495). Posterior-as-decision FAILS like posterior-as-UQ -> families 2 & 5 unified: posterior is not a usable decision/uncertainty signal; structure-as-ranking is the only robust win.
+
+- [done] Family 3 ADAPTATION (BEAVER online learning curve): naive-Bayes term->table online 0.510 (+8.5pp vs static cosine 0.425), RISES with feedback (Q1->Q3 0.455->0.560). GENUINE Bayes win, regime-specific (correlated/repeated). Second robust win after structure; the textbook-Bayesian one. Validates the user's naive-Bayes-online idea. 120 qs (short), simulated feedback.

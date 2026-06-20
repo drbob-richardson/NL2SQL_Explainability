@@ -353,3 +353,22 @@ calibrated for a budget cutoff — same failure as the UQ family. → family-2 c
 **the posterior is not a usable decision/uncertainty signal** (threshold-for-budget and
 threshold-for-abstention both lose); value comes from better RANKING (structure → fixed-k), not the
 posterior threshold. UNIFIES families 2 & 5: posterior-as-decision loses; structure-as-ranking wins.
+
+## Family 3 (adaptation): online Bayesian updating on BEAVER — a GENUINE WIN (`scripts/s_adapt_beaver.py`)
+Prequential learning-curve (120 dw queries, avg 8 stream orders), recall@|gold| by quartile:
+| model | Q1 | Q4 | all | Q4−Q1 |
+|---|---|---|---|---|
+| cosine (static) | 0.440 | 0.405 | 0.425 | −0.035 |
+| popularity (online Beta-Bernoulli) | 0.399 | 0.469 | 0.456 | +0.070 |
+| **naive-Bayes term→table (online)** | 0.455 | 0.525 | **0.510** | +0.070 |
+
+**Online adaptation WORKS in the correlated/repeated regime:** both online models RISE with feedback
+(learning curve +0.070) and beat static cosine (naive-Bayes +8.5pp). Validates the "naive Bayes,
+update posterior as data comes in" idea — but ONLY here (correlated warehouse, recurring tables/terms);
+it would do nothing on orthogonal one-off benchmarks. **Second robust Bayes win (after structure), and
+the most textbook-Bayesian.** Caveats: 120 queries (short curve, 8-order avg); simulated feedback
+(gold revealed) assumes a label-accumulating deployment. (pop+structure combo broken — z-scale bug.)
+
+### UPDATED THESIS: Bayes helps retrieval via STRUCTURE (ranking) and ADAPTATION (online updating) —
+not via uncertainty/decision. Structure: all regimes, grows with hops+correlation. Adaptation:
+correlated/repeated workloads. Diversity: conditional (topology). Posterior-as-decision/UQ: loses.
