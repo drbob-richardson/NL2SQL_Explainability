@@ -115,29 +115,31 @@ def main():
     for (qi, t), av, xr in zip(keys, a, rows):
         a_by.setdefault(qi, {})[t] = av; cos_by.setdefault(qi, {})[t] = xr[0]
 
+    def mrf_marg(db, qi):
+        tbls = sch[db][1]; edges = sch[db][5]; n = len(tbls); av = np.array([a_by[qi][t] for t in tbls])
+        masks = np.arange(1 << n); bits = ((masks[:, None] >> np.arange(n)) & 1).astype(float)
+        score = bits @ av
+        if edges:
+            ec = np.zeros(len(masks))
+            for (i, j) in edges:
+                ec += bits[:, i] * bits[:, j]
+            score = score + BETA * ec
+        score -= score.max(); p = np.exp(score); p /= p.sum(); m = (p[:, None] * bits).sum(0)
+        return {t: m[i] for i, t in enumerate(tbls)}
+
     def topk(db, qi, which):
         tbls = sch[db][1]
-        if which == "cos":
-            sc = cos_by[qi]
-        else:
-            edges = sch[db][5]; n = len(tbls); av = np.array([a_by[qi][t] for t in tbls])
-            masks = np.arange(1 << n); bits = ((masks[:, None] >> np.arange(n)) & 1).astype(float)
-            score = bits @ av
-            if edges:
-                ec = np.zeros(len(masks))
-                for (i, j) in edges:
-                    ec += bits[:, i] * bits[:, j]
-                score = score + BETA * ec
-            score -= score.max(); p = np.exp(score); p /= p.sum(); m = (p[:, None] * bits).sum(0)
-            sc = {t: m[i] for i, t in enumerate(tbls)}
+        sc = cos_by[qi] if which == "cos" else mrf_marg(db, qi)
         return sorted(tbls, key=lambda x: -sc[x])[:K]
 
     # build conditions: which table-set shown
     conds = {}
     for qi, (db, q, ev, goldsql, gold) in enumerate(items):
         tbls = sch[db][1]
+        marg = mrf_marg(db, qi)
+        thresh = [t for t in sorted(tbls, key=lambda x: -marg[x]) if marg[t] >= 0.5][:8] or [max(tbls, key=lambda x: marg[x])]
         conds[qi] = {"full": tbls, "cosine": topk(db, qi, "cos"), "mrf": topk(db, qi, "mrf"),
-                     "oracle": sorted(gold)}
+                     "oracle": sorted(gold), "mrf_thresh": thresh}
 
     # recall@K of the retrievers (sanity)
     rc = np.mean([len(items[qi][4] & set(conds[qi]["cosine"])) / len(items[qi][4]) for qi in range(len(items))])
@@ -147,7 +149,7 @@ def main():
 
     # generation cache
     cache_sql = json.load(open(CACHE)) if os.path.exists(CACHE) else {}
-    todo = [(qi, c) for qi in range(len(items)) for c in ("full", "cosine", "mrf", "oracle")
+    todo = [(qi, c) for qi in range(len(items)) for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh")
             if f"{qi}|{c}" not in cache_sql]
     est = len(todo) * (count_tokens(" ".join(sch[items[0][0]][2].values())) + 80) / 1e6 * PRICE_IN + len(todo) * 80 / 1e6 * PRICE_OUT
     print(f"  generations to run: {len(todo)};  est ${est:.2f}")
@@ -184,7 +186,7 @@ def main():
 
     # execute + EX
     conns = {db: open_db(f"{DBDIR}/{db}.sqlite") for db in dbs}
-    ex_by = {c: [] for c in ("full", "cosine", "mrf", "oracle")}
+    ex_by = {c: [] for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh")}
     perdb = {db: {c: [] for c in ex_by} for db in dbs}
     def safe_match(pred, goldsql, conn, timeout=4.0):
         if not pred:
@@ -202,8 +204,9 @@ def main():
             ex_by[c].append(ok); perdb[db][c].append(ok)
     print(f"\nExecution accuracy (EX):")
     print(f"  {'condition':<10}{'EX':>8}")
-    for c in ("full", "cosine", "mrf", "oracle"):
-        print(f"  {c:<10}{np.mean(ex_by[c]):>8.3f}")
+    for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh"):
+        avgt = np.mean([len(conds[qi][c]) for qi in range(len(items))])
+        print(f"  {c:<12}{np.mean(ex_by[c]):>8.3f}   avg_tables {avgt:.1f}")
     print(f"\n  per-DB (cosine -> mrf, full, oracle):")
     for db in dbs:
         d = perdb[db]

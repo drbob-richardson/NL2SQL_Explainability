@@ -343,3 +343,13 @@ rescues PageRank toward MRF, but REAL gating fails (hop-count too hard to predic
 to "heuristic matches MRF, why Bayes?": **on realistic mixed-hop workloads the MRF's marginalization is
 a predictor-free implicit gate** the heuristic can't match. Honest contrast: RAG topology IS
 predictable (explicit routing wins there); SQL hop-count is not (implicit MRF gating wins here).
+
+## Decision/cost family — opportunity real, Bayesian decision-rule FAILS (`scripts/downstream_ex.py` mrf_thresh)
+BIRD downstream EX, context-budget view: full 0.500 (10 tables), cosine@5 0.438, MRF@5 0.495,
+**oracle 0.562 (2.2 tables)**, **MRF-threshold(marginal≥0.5) 0.411 (3.2 tables)**. The opportunity is
+real (oracle beats full +6pp at 1/5 context — distractors hurt), but the **posterior-threshold decision
+rule UNDER-RETRIEVES** (drops gold → EX 0.411 < fixed-k MRF 0.495 < oracle). The posterior isn't
+calibrated for a budget cutoff — same failure as the UQ family. → family-2 collapses into the pattern:
+**the posterior is not a usable decision/uncertainty signal** (threshold-for-budget and
+threshold-for-abstention both lose); value comes from better RANKING (structure → fixed-k), not the
+posterior threshold. UNIFIES families 2 & 5: posterior-as-decision loses; structure-as-ranking wins.

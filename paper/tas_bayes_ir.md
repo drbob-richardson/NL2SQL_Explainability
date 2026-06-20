@@ -87,6 +87,7 @@ worth the trouble, and offer practitioner guidance.
 
 | Taxonomy cell | Bayesian object | Trivial baseline | Verdict | Key numbers |
 |---|---|---|---|---|
+| **Decision/cost (context budget)** | posterior-threshold variable context | fixed top-k; oracle | **opportunity real, posterior rule fails** | oracle 0.562@2.2tbls > full 0.500@10 (distractors hurt); but MRF-threshold 0.411 under-retrieves < fixed-k 0.495 |
 | **Calibrated relevance / UQ** | posterior `P(complete\|R)`; PYP reserve | cosine max-out; reasoning verifier | **Bayes loses** | abstention AUROC: posterior 0.700 vs cosine-maxout 0.763; PYP-reserve ambiguity-detection 0.557 ≈ chance |
 | **Signal fusion** | learned/Bayesian per-query fusion | RRF / cosine | **no win on clean text** | fusion 0.734 < cosine 0.778 (Spider easy regime); per-query adaptive already exists (DAT, MoR) |
 | **Structured joint selection** | FK-graph MRF posterior over subgraphs | shortest-path FK closure | **Bayes helps (modestly)** | recall@\|gold\| MRF 0.805/0.822/0.787 vs cosine 0.720/0.673/0.678; vs FK-closure heuristic Δ +0.018/+0.043/+0.027; downstream EX +5.7pp [+2.1,+9.4] |
