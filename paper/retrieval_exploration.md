@@ -68,3 +68,23 @@ routing* — is genuinely open (only conformal RTS is adjacent) and directly reu
 LTT/conformal machinery. Catch (from the probe): value only appears in the **large-schema regime**
 (Spider 2.0-Lite / BEAVER) where cosine degrades; easy benchmarks (Spider-multi) are saturated by
 cosine. Viability gate = stand up Spider 2.0-Lite or BEAVER and re-run the probe there.
+
+## Idea-1 first test — structured (FK-graph) retrieval vs cosine (`scripts/bridge_probe.py`)
+BIRD, 639 multi-table questions. Connector = articulation point of the gold FK-subgraph.
+
+- Blind spot is MILD on BIRD: connector gold tables rank only slightly worse than leaves (cosine
+  rank 2.90 vs 2.61); connectors are 11% of misses = their 11% base rate (NOT over-represented).
+- BUT structure beats cosine at matched budget, and the lift GROWS with join complexity:
+
+| query size | n | cosine@\|gold\| | graph-closure | cosine@matched | structure lift |
+|---|---|---|---|---|---|
+| ≥2 | 639 | 0.720 | 0.780 | 0.746 | +0.035 |
+| ≥3 | 156 | 0.673 | 0.658 | 0.606 | +0.052 |
+| ≥4 | 30 | 0.678 | 0.768 | 0.652 | **+0.117** |
+
+**Verdict: weak-positive on BIRD, but the right trend.** First method in the exploration to beat the
+strong cosine baseline at matched budget, with lift monotonically increasing in #gold-tables — the
+predicted mechanism (more hops → FK graph recovers what cosine misses). BIRD dilutes it (mostly 2–3
+table queries); the regime where it dominates is large multi-hop schemas (Spider 2.0 / BEAVER).
+This is the seed worth building: replace the Steiner heuristic with a proper Bayesian posterior over
+connected subgraphs, and validate where multi-hop is the norm.
