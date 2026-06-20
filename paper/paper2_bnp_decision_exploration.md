@@ -388,3 +388,27 @@ The arc supports a coherent Paper 2 thesis: **decision-aware text-to-SQL under a
 Recommended next decision: either (a) replicate AMBROSIA's few-shot realization to lift r toward
 ~0.5–0.65 and instantiate the full discover→realize→decide pipeline, or (b) pursue the
 lower-dependency open-world-novelty BNP paper. Total exploration spend ≈ $4.2.
+
+---
+
+## 11. Equivalence-class gate — does the open-world tail survive quotienting? (`scripts/bnp_equivclass.py`, no API)
+
+The whole BNP-novelty story rests on the motif tail being real, not a syntactic/granularity artifact.
+We re-fit the PYP on a canonicalization ladder and added a power-law diagnostic (species-accumulation
+exponent: PYP => K_n ~ n^d power law; closed/DP world => saturates).
+
+| level | K | singletons (of queries) | top-1 | d | θ | discovery | accum b | R² |
+|---|---|---|---|---|---|---|---|---|
+| skeleton (probe-2) | 909 | 49% | 0.7% | 0.160 | 1110 | 0.523 | 0.887 | 0.998 |
+| **canon (semantic-ish)** | 332 | 14% | 12.3% | **0.490** | 30.3 | **0.146** | 0.676 | 0.997 |
+| clause-set (closed ref.) | 46 | 1% | 21.9% | 0.000 | 9.1 | 0.007 | 0.326 | 0.989 |
+
+Denotational inflation (BIRD model samples): 1.29 distinct skeletons / distinct result-set.
+
+**Verdict: passes, with deflation.** The skeleton fit was degenerate (θ=1110≫N, accumulation b=0.887
+≈ linear — the "nearly all unique" curation/granularity signature; probe 2's 52% was the
+artifact-prone read). The **canon** level is the credible one and does *not* collapse to clause-set:
+a genuine power law (d=0.49, real head top-1 12.3%, accumulation b=0.676, R²=0.997), with **~15%**
+semantic-motif discovery — deflated 3–4× from 52% but robustly nonzero and load-bearing. *Caveat:*
+quotienting removes syntactic inflation, not **curation** inflation; ~15% remains an upper bound vs a
+repetitive production workload — the real-workload check is the next gate and we lack the data.

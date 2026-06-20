@@ -250,7 +250,7 @@ least "yours."
 
 ## 10. Open questions to resolve before committing
 
-- Does the motif power-law tail survive denotational quotienting? (Step 1 — make-or-break for BNP.)
+- ~~Does the motif power-law tail survive denotational quotienting?~~ **ANSWERED (Exp, §11 of findings):** yes — at the semantic 'canon' level it is a clean power law (d=0.49, accumulation b=0.68, R²=1.0) with ~15% discovery (deflated from the inflated skeleton-level 52%). Syntactic inflation removed; **curation inflation (real-workload check) is now the open co-gate.**
 - Is theorem #1 actually provable, or only heuristic? (Step 3.)
 - Can we get *any* repetitive real-world SQL workload? (Decides whether the open-world story is
   benchmark-bound or production-credible.)
