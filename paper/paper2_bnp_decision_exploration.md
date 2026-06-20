@@ -441,3 +441,30 @@ materiality-filtered detector might survive but inherits the realization gate (n
 - **Option A (decision layer): valid applied work**, but depends on a detector/realization that we do
   not currently have. Exp 5 stands as a "what it would enable" ceiling result.
 - **Total exploration spend ≈ $4.8.**
+
+---
+
+## 13. Option B downstream gate — does motif novelty predict error? (`scripts/bnp_novelty_value.py`)
+
+Detecting novel motifs (§11) is only useful if novel queries are harder. Tested on BIRD with the
+canon motif of the PREDICTED modal query (inference-realistic).
+
+| predicted-motif frequency | n | accuracy |
+|---|---|---|
+| singleton (count=1) | 240 | 0.329 |
+| mid (2–4) | 172 | 0.459 |
+| common (≥5) | 346 | 0.587 |
+
+Error-prediction AUROC: **novelty 0.628**, verifier (1−v4o) 0.755; verifier+novelty 0.715 vs verifier
+alone 0.701 (+0.014). Risk-coverage @25% coverage: novelty 0.598, verifier 0.767, random 0.519.
+
+**Verdict: passes, with caveats.** Novel-motif queries are ~26pp less accurate; novelty is a real,
+**cheap (no LLM/execution)** abstention/triage signal — but weaker than and largely subsumed by the
+verifier. Open question: is it just complexity? (rare=complex=hard). Need novelty-beyond-complexity
+control. Edge: it flags *unfamiliarity*/OOD, which the correctness verifier does not.
+
+### Option B now clears its gates on benchmark data
+Tail is a real power law (§11, d=0.49) AND novelty has downstream value (§13). Coherent methods paper:
+*a cheap, calibrated, execution-free open-world novelty signal for text-to-SQL (hierarchical
+equivalence-class Pitman–Yor) for triage/abstention, complementary to a verifier.* Remaining gates:
+(1) novelty-beyond-complexity control (free); (2) real workload (curation inflation).
