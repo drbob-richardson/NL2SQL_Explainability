@@ -162,3 +162,19 @@ text-to-SQL retrieval contribution (crowded field: CHESS/CRUSH4SQL/RESDSQL/LinkA
 by the explicit FK-graph MRF posterior and the complexity-scaling. The Bayesian-UQ/decision novelty
 did not materialize. To be a strong paper it needs large-schema validation (Phase 2); to be a *methods*
 paper, the UQ angle would need a different signal than the posterior.
+
+## Phase-1 validation — significance + per-DB (`scripts/phase1_validate.py`)
+Paired bootstrap 95% CIs (recall@|gold|), all exclude 0:
+
+| | MRF − cosine | MRF − unary fusion |
+|---|---|---|
+| ≥2 (n=639) | +0.086 [+0.064,+0.107] | +0.024 [+0.007,+0.040] |
+| ≥3 (n=156) | +0.155 [+0.120,+0.192] | +0.067 [+0.037,+0.097] |
+| ≥4 (n=30) | +0.141 [+0.083,+0.200] | +0.149 [+0.100,+0.200] |
+
+Pure structure effect (MRF−unary) significant and grows with complexity. **Per-DB: the win is
+CONDITIONAL on schema richness** — financial +0.203, student_club +0.195, formula_1 +0.187,
+superhero +0.125, debit_card +0.044 (rich/large schemas) vs thrombosis −0.029, california_schools
+−0.057, toxicology −0.093 (tiny 3–4 table schemas, where coupling over-includes). Clean mechanism:
+structure helps ∝ available structure. Refinement: adaptive β gated by schema size/FK-density
+(β→0 for tiny schemas). Large-schema regime (all schemas rich) is the natural home.
