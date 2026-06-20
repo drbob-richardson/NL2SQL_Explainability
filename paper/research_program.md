@@ -14,20 +14,59 @@ a single company's many overlapping tables; one document chunked into similar ad
 under correlation.** Testing correlated + multi-hop settings is where the Bayesian-structure story has
 its best (and untested) shot.
 
-## The matrix (settings × Bayes angles)
+## The Bayes-angle FAMILIES (consolidated from a long method menu)
 
-Angles: (a) calibrated relevance/UQ, (b) signal fusion, (c) structured/graph joint selection,
-(d) set-level diversity/DPP, (e) adaptive/online updating.
+A wide method list (PRF, BMA, active retrieval, stopping rules, multi-fidelity, graph-GP, hierarchical
+priors, DPP, metadata priors, negative-evidence, latent intent, causal, BED, ...) collapses into FIVE
+families. The thesis question is *which family lets Bayes beat the trivial baseline*.
 
-| setting | a UQ | b fusion | c structured | d diversity | e adaptive |
+1. **Structure** — generalize the one win. Methods: FK-MRF (done); **graph-GP / diffusion prior**
+   (ADD; brings the PageRank/diffusion baseline = the "is it just diffusion?" check); metadata/authority
+   priors (variant, for real corpora). Trivial baselines: shortest-path closure, PageRank.
+2. **Decision & cost under budget** — posterior *allocates/decides*, not calibrates (sidesteps the UQ
+   failure). Methods: **context-window utility** (ADD; retrieval as E[utility]−λ·tokens; oracle>full
+   already motivates it); **cost-aware sequential retrieval** (ADD; active scoring + stopping/VOI +
+   multi-fidelity as one cell); coverage/credible sets (skeptical variant — posterior-completeness
+   already failed). Trivial baselines: top-k, fixed budget, score-gap stopping.
+3. **Adaptation** — genuinely Bayesian; load-bearing only under correlation/repeated workloads.
+   Methods: **hierarchical priors across DB/user/corpus** (ADD); online feedback updating; BMA-over-
+   retrievers; PRF/query-model updating (variant — don't claim novelty over RM3/Indri). Trivial
+   baselines: fixed retriever, fine-tune-on-feedback.
+4. **Diversity / precision under redundancy** — the orthogonality-artifact retest family. Methods:
+   **DPP / repulsion** (retest under redundancy, S3/S4); **negative-evidence / facet-completeness**
+   (ADD; models absence/contradiction, not just positive relevance). Trivial baseline: MMR.
+5. **Uncertainty / calibration** — the family that keeps losing. Methods: posterior UQ (done, loses);
+   calibration splits doc/set/answer-level (variant). Trivial baseline: cosine max-out / verifier.
+
+**Predicted outcome (to test):** families 1–2 deliver; 3–4 deliver only under correlation; 5 loses.
+That prediction *is* the TAS spine.
+
+## The matrix (settings × the 5 families)
+
+Columns below = the five families (a→structure, b→decision/cost, c→adaptation, d→diversity, e→UQ).
+(Earlier "fusion" folds into adaptation/structure; earlier "structured" = family a.)
+
+| setting | a structure | b decision/cost | c adaptation | d diversity | e UQ |
 |---|---|---|---|---|---|
-| **S1 SQL orthogonal** (BIRD/Spider) | done: loses (cosine-maxout 0.763 > post 0.700) | done: loses on clean text | **done: WINS** (FK-MRF +5.7pp EX) | done: loses* | untested |
+| **S1 SQL orthogonal** (BIRD/Spider) | **done: WINS** (FK-MRF +5.7pp EX) | untested (oracle>full motivates) | untested | done: loses* | done: loses (maxout 0.763 > post 0.700) |
 | **S2 SQL correlated** (BEAVER/Spider 2.0) | — | — | — | — | — |
 | **S3 RAG single-hop** (chunked Wiki/docs) | — | — | — | — | — |
 | **S4 RAG multi-hop** (HotpotQA/2Wiki/MuSiQue) | — | — | — | — | — |
 | **S5 Graph RAG** (entity/KG graph) | — | — | — | — | — |
 
 \* likely an **orthogonality artifact** — re-test under correlation (S2/S3).
+
+## Future directions (deferred — interesting but premature / poor benchmark fit / overlapping)
+- **Causal / intervention-aware retrieval** (Bayesian-network/causal-graph priors for "what caused X"):
+  genuinely different, but too big and no clean dataset yet.
+- **BNP intent discovery** (CRP/PYP over query intents): we found BNP-intent is for corpus
+  diagnostics/novelty, not retrieval wins — keep as workload characterization, not a core cell.
+- **Bayesian experimental design for query reformulation** (pick the rewrite maximizing EIG): strong
+  concept, overlaps active retrieval; revisit if the decision/cost family pays off.
+- **Latent-intent mixtures / subquestion coverage**: overlaps multi-hop structured retrieval; test as a
+  variant there, not standalone.
+- **Coverage / credible context sets**: posterior-as-completeness already failed (Phase 3); keep only a
+  single skeptical conformal test under family b.
 
 ## Settings to add (datasets + setup notes)
 
