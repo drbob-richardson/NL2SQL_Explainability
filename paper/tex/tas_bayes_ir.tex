@@ -263,6 +263,15 @@ drops execution accuracy to 0.411, below a fixed top-5 (0.495)---even though the
 real, since the oracle gold context (2.2 tables) beats the full schema (10 tables) by 6 points. The raw
 posterior scores these models produce are not reliable decision scores without separate validation.
 
+\paragraph{The UQ failure is not confined to retrieval.} The same posterior-as-uncertainty failure
+recurs one layer down, at \emph{generation}. Used to predict whether a generated SQL query is correct,
+black-box LLM-confidence signals reach AUROC $\le 0.68$, below a separate reasoning verifier ($0.77$)
+and an ensemble ($0.82$); and for detecting genuinely ambiguous questions, a sampling-posterior
+divergence signal is no better than chance (AUROC $\approx 0.48$, with both interpretations jointly
+covered only $1\%$ of the time). We report these only to show the pattern is consistent across the
+stack---ranking, abstention, budgeting, and generation correctness---and refer the reader to a
+companion study for the generation-layer analysis in full.
+
 \paragraph{Fusion and diversity are conditional.} On clean text a learned fusion does not improve on
 cosine; diversity helps only on independent-evidence (``comparison'') queries and is neutral on
 connected-evidence (``bridge'') queries---which motivates the routing result of \S\ref{sec:constructive}.
