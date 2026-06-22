@@ -405,3 +405,12 @@ again; MRF-PageRank = +0.0077 [+.0003,+.0158] (detectable at n=1492 but ~1pp = p
 **UQ calibration rebuttal (free, rigorous):** abstention is scored by AUROC, which is invariant to any
 monotone recalibration (temperature/isotonic) -> the posterior's 0.700 vs 0.763 deficit is
 DISCRIMINATION not calibration; recalibration provably cannot fix it.
+
+## STRONG-BASELINE GATE: structure survives a cross-encoder reranker (`s_reranker.py`)
+HotpotQA, recall@2: cosine 0.685, cross-encoder (ms-marco-MiniLM-L-6-v2) 0.720 (real strong baseline),
+CE+PageRank 0.743 (bridge 0.753), CE+MRF 0.737. **Structure on top of CE: bridge +0.067 [.050,.084],
+ALL +0.023 [.006,.039]** (CIs exclude 0). Connectivity dichotomy REPLICATES on CE (PageRank helps
+bridge 0.753, hurts comparison 0.700); MRF auto-gates again (comparison 0.822 > PageRank 0.700).
+=> the structure finding is NOT a weak-baseline artifact; structure is COMPLEMENTARY to deep
+cross-attention, not subsumed. Kills the #1 TAS reviewer objection AND is the ML gate (real claim:
+graph prior adds to strong rerankers). text-embedding-3-small + local CE, no API.

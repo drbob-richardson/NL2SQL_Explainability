@@ -409,8 +409,9 @@ result uses simulated feedback (gold revealed after each query) on a modest stre
 report it with confidence bands over 20 orders and robustness to partial/noisy feedback, but not
 large-scale online deployment. UQ is evaluated with black-box signals and small models; a dedicated
 reasoning verifier does better than both the posterior and the cosine signal, consistent with Lesson 2.
-Initial retrieval is dense (cosine) and lexical (BM25); we did not benchmark against late-interaction or
-learned rerankers, which is the natural next step before strong absolute claims. None of these caveats
+Initial retrieval is dense (cosine) and lexical (BM25); we additionally verify that the structural gain
+survives a strong cross-encoder reranker (Appendix~\ref{app:sens}), so it is not an artifact of a weak
+dense baseline, but we do not exhaustively benchmark every modern retriever. None of these caveats
 affects the central, repeatedly observed pattern: the connectivity dependence of structure and the
 idea-versus-apparatus distinction.
 
@@ -478,6 +479,13 @@ MRF $0.808$) but slightly hurts at $k\!=\!1$ (cosine $0.435$ vs.\ PageRank $0.39
 the connectivity account.
 \textbf{MRF vs.\ heuristic.} The paired MRF$-$PageRank difference in recall@2 is $+0.008$ [.0003, .016]
 at $n\!=\!1492$: detectable but $\approx 1$ point.
+\textbf{Strong reranker.} The structural gain is not an artifact of a weak base ranker. Replacing the
+cosine seed with an ms-marco cross-encoder (\texttt{ms-marco-MiniLM-L-6-v2}) on HotpotQA, the
+cross-encoder alone reaches recall@2 $0.720$ (vs.\ cosine $0.685$); adding PageRank structure on top
+raises bridge-question recall by $+0.067$ [.050, .084] and overall by $+0.023$ [.006, .039], and the
+MRF again degrades more gracefully on comparison questions ($0.822$ vs.\ PageRank $0.700$). Structure is
+complementary to deep cross-attention, not subsumed by it.
+
 \textbf{Adaptation.} Over 20 stream orders the online gain is $+0.085$ [.062, .113] (Bayesian) and
 $+0.090$ [.070, .112] (non-Bayesian MLE count); under 20\% label noise the all-stream recall is
 unchanged ($0.510$); under 50\%/25\% feedback it falls gracefully to $0.469$/$0.437$.
