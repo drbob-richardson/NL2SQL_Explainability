@@ -23,6 +23,13 @@ CQA = ["android", "english", "gaming", "gis", "mathematica", "physics", "program
 REG = {d: (os.path.join(ROOT, "data", "beir", d), "parquet") for d in ["nfcorpus", "arguana", "scidocs", "fiqa", "scifact"]}
 REG.update({"cqa_" + f: (os.path.join(ROOT, "data", "cqa", f), "jsonl") for f in CQA})
 DOMAINS = list(REG.keys())
+# oracle topical grouping for the cluster-structure test (does ANY grouping beat the flat hierarchy?)
+GROUPS = {
+    "prog": ["cqa_android", "cqa_unix", "cqa_tex", "cqa_programmers", "cqa_gis", "cqa_wordpress", "cqa_webmasters"],
+    "sci": ["cqa_physics", "cqa_stats", "cqa_mathematica", "scidocs", "scifact", "nfcorpus"],
+    "gen": ["cqa_english", "cqa_gaming", "arguana", "fiqa"],
+}
+DOM2GRP = {d: g for g, ds in GROUPS.items() for d in ds}
 K_LIST = [2, 5, 10, 25, 50]
 SEEDS = 12
 EVAL_FRAC = 0.4
@@ -56,7 +63,7 @@ def fit_head(X, y, mu, lam, iters=400, lr=0.3):
 
 
 def main():
-    doms = [d for d in DOMAINS if os.path.exists(os.path.join(ROOT, "data", "beir", d, "features.npz"))]
+    doms = [d for d in DOMAINS if os.path.exists(os.path.join(REG[d][0], "features.npz"))]
     data = {d: load(d) for d in doms}
     print(f"domains: {[(d, len(data[d])) for d in doms]}")
 
@@ -83,13 +90,19 @@ def main():
         ys = np.concatenate([data[d][i][1] for i in qidx])
         return Xs, ys
 
-    def hierarchical(train, iters=6):
-        w = {d: np.zeros(F) for d in train}; bs = {d: 0.0 for d in train}; mu = np.zeros(F); tau2 = 1.0
+    def hierarchical(train, dom2grp=None, iters=6):
+        # partial pooling within groups; dom2grp=None -> single shared prior (flat hierarchy)
+        if dom2grp is None:
+            dom2grp = {d: "all" for d in train}
+        grps = sorted(set(dom2grp[d] for d in train))
+        w = {d: np.zeros(F) for d in train}; bs = {d: 0.0 for d in train}
+        mu = {g: np.zeros(F) for g in grps}; tau2 = {g: 1.0 for g in grps}
         for _ in range(iters):
             for d in train:
-                w[d], bs[d] = fit_head(train[d][0], train[d][1], mu, lam=min(50.0, 1.0 / tau2))
-            W = np.stack([w[d] for d in train]); mu = W.mean(0)
-            tau2 = max(1e-3, ((W - mu) ** 2).mean())
+                g = dom2grp[d]; w[d], bs[d] = fit_head(train[d][0], train[d][1], mu[g], lam=min(50.0, 1.0 / tau2[g]))
+            for g in grps:
+                Wg = np.stack([w[d] for d in train if dom2grp[d] == g]); mu[g] = Wg.mean(0)
+                tau2[g] = max(1e-3, ((Wg - mu[g]) ** 2).mean())
         return w, bs
 
     def dp_mixture(train, iters=6, alpha=1.0, iters_crp=15):
@@ -119,13 +132,14 @@ def main():
             W2 = np.stack([w[d] for d in train]); gm = W2.mean(0)
             tau2 = max(1e-3, np.mean([((w[d] - mu[d]) ** 2).mean() for d in train]))
         nclust = len(set(z.tolist()))
-        return w, bs, nclust
+        return w, bs, nclust, list(train), z
 
     print(f"\n  nDCG@10, mean over {SEEDS} seeds and {len(doms)} domains:")
-    print(f"  {'k':>4}{'zeroshot':>10}{'no-pool':>9}{'complete':>10}{'hier-EB':>9}{'BNP-DP':>8}{'  hier-max(a,b) [CI]':>24}")
+    print(f"  {'k':>4}{'zeroshot':>9}{'no-pool':>8}{'complete':>9}{'hier':>8}{'oracle':>8}{'BNP-DP':>7}   [hier-best] / [oracle-flat]")
     floor = np.mean([eval_head(d, np.eye(F)[CE_COL], 0.0) for d in doms])
+    last_clusters = [None]
     for k in K_LIST:
-        per = {m: [] for m in ("nopool", "complete", "hier", "bnp")}
+        per = {m: [] for m in ("nopool", "complete", "hier", "oracle", "bnp")}
         nclusters = []
         for s in range(SEEDS):
             rs = np.random.RandomState(1000 + s)
@@ -139,19 +153,31 @@ def main():
             wc, bc = fit_head(Xc, yc, np.zeros(F), lam=1.0)
             # (a) no pooling
             wa = {d: fit_head(train[d][0], train[d][1], np.zeros(F), lam=1.0) for d in doms}
-            # (c) hierarchical
+            # (c) hierarchical (flat) and oracle-grouped hierarchical
             wh, bh = hierarchical(train)
+            wo, bo = hierarchical(train, dom2grp={d: DOM2GRP[d] for d in doms})
             # (d) BNP
-            wd, bd, ncl = dp_mixture(train); nclusters.append(ncl)
+            wd, bd, ncl, dl_, z_ = dp_mixture(train); nclusters.append(ncl)
+            if k == 25 and s == 0:
+                groups = {}
+                for name, c in zip(dl_, z_.tolist()):
+                    groups.setdefault(c, []).append(name)
+                last_clusters[0] = list(groups.values())
             per["complete"].append(np.mean([eval_head(d, wc, bc) for d in doms]))
             per["nopool"].append(np.mean([eval_head(d, *wa[d]) for d in doms]))
             per["hier"].append(np.mean([eval_head(d, wh[d], bh[d]) for d in doms]))
+            per["oracle"].append(np.mean([eval_head(d, wo[d], bo[d]) for d in doms]))
             per["bnp"].append(np.mean([eval_head(d, wd[d], bd[d]) for d in doms]))
         m = {k2: np.mean(v) for k2, v in per.items()}
-        # bootstrap hier - max(nopool, complete) over seeds
+        # bootstrap hier - max(nopool, complete); and oracle-group - flat (cluster-structure test)
         h = np.array(per["hier"]); base = np.maximum(np.array(per["nopool"]), np.array(per["complete"]))
-        d_ = h - base; ci = f"{d_.mean():+.3f} [{np.percentile(d_,2.5):+.3f},{np.percentile(d_,97.5):+.3f}]"
-        print(f"  {k:>4}{floor:>10.3f}{m['nopool']:>9.3f}{m['complete']:>10.3f}{m['hier']:>9.3f}{m['bnp']:>8.3f}{ci:>24}  (DP k~{np.mean(nclusters):.1f})")
+        d_ = h - base; ci = f"{d_.mean():+.3f}[{np.percentile(d_,2.5):+.3f},{np.percentile(d_,97.5):+.3f}]"
+        og = np.array(per["oracle"]) - h; oci = f"{og.mean():+.3f}[{np.percentile(og,2.5):+.3f},{np.percentile(og,97.5):+.3f}]"
+        print(f"  {k:>4}{floor:>9.3f}{m['nopool']:>8.3f}{m['complete']:>9.3f}{m['hier']:>8.3f}{m['oracle']:>8.3f}{m['bnp']:>7.3f}  hier-best {ci}  orc-flat {oci}")
+    if last_clusters[0]:
+        print(f"\n  DP-mixture clusters at k=25 (seed 0): {len(last_clusters[0])} groups")
+        for g in last_clusters[0]:
+            print(f"    - {sorted(g)}")
     print("\nWin criteria: hier/BNP > max(no-pool, complete) at small k (CI excludes 0); gap shrinks as k grows.")
 
 
