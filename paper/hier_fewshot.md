@@ -65,3 +65,24 @@ suffices OR the latent structure is absent. Here we explained the BNP null, not 
 **Implication:** the partial-pooling win is a real positive to FOLD INTO TAS (Bayes helps in its textbook
 shrinkage regime too), with the rigorous BNP-null as the capstone of "the idea, not the apparatus." Not a
 top-tier ML method (empirical-Bayes partial pooling is known), but a clean, honest IR-venue-worthy result.
+
+## UQ / selective retrieval under distribution shift (`beir_uq.py`) -- bulletproof negative
+Fixed predictor = ensemble-mean reranker (deep ensemble of per-domain heads); success = hit@1; compare
+confidence signals at predicting success. AUROC (AURC):
+| signal | in-domain | weak-OOD | STRONG-shift (4 src -> 13 tgt) |
+|---|---|---|---|
+| ce_margin (point) | 0.641 | 0.634 | 0.697 (AURC .402) |
+| pool_margin (point) | 0.669 | 0.664 | 0.731 (.378) |
+| max-softmax (point) | 0.683 | 0.673 | **0.755** (.384) |
+| bayes_std / variance | 0.415 | 0.451 | 0.424 (.641) |
+| bayes_agree / vote | 0.684 | 0.683 | 0.681 (.482) |
+
+Under genuine shift the POINT signals IMPROVE (max-softmax 0.683->0.755) and the BAYESIAN signals lose
+decisively; ensemble-variance (epistemic) is ANTI-PREDICTIVE everywhere (<0.5). Pre-registered "Bayes
+UQ helps and grows under shift" FALSIFIED -- it reverses. Mechanism (ties to BNP-null): reranking policy
+is domain-universal, so per-domain heads are near-identical -> ensemble disagreement is noise not
+epistemic signal (all-agree often = confidently-wrong distractor -> low disagreement predicts FAILURE);
+and the reranker transfers well, so shift doesn't induce the overconfidence Bayesian UQ exists to catch.
+COMPLETES the UQ department: (1) in-dist abstention loses (0.700 vs 0.763); (2) deficit is discrimination
+not calibration (AUROC recalibration-invariant); (3) under shift, deep-ensemble posterior-predictive
+still loses to point max-softmax, epistemic variance anti-predictive. Same meta-thesis in the UQ dept.
