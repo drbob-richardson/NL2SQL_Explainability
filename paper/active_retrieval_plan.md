@@ -58,3 +58,15 @@ acquisition, hierarchical prior, BAGEL comparison). If no, diagnose kernel/prior
 ## Venue
 SIGIR 2027 (full; ~late Jan 2027) if the story lands; else SIGIR-AP / CIKM / ECIR. Genuinely Bayesian,
 showcases GP/BNP expertise, on the one hill where Bayes wins in retrieval.
+
+## FEASIBILITY GATE RESULT (2 pilots)
+Pilot 1 (BEIR single-hop, cosine kernel) — FAILED: coupled GP-UCB -0.32 vs passive. Diagnosis: (a) ranking
+bug (judged non-rel floated instead of sank), (b) wrong regime — when dense prior already tops the gold,
+"verify top-B" is near-optimal and exploration only hurts; cosine kernel explores away from the good cluster.
+Pilot 2 (HotpotQA multi-hop, GRAPH kernel, bug fixed) — GREEN: on BRIDGE questions graph-GP beats passive
+verify-top AND cosine-GP at low budget (recall@2 B=1: 0.742 vs 0.671 passive / 0.680 cosine-GP; B=2:
+graph-GP - passive = +0.071 [+0.059,+0.083]). Neutral on COMPARISON (independent evidence, no bridge). The
+GRAPH kernel specifically wins (graph-GP > cosine-GP > passive) => distinct from BAGEL; connectivity
+dichotomy reappears in ACQUISITION. "Structure as covariance not prior" CONFIRMED. Caveats: 10-cand pool,
+oracle judge, one dataset -> big runs fix these. Scripts: active_pilot.py (pilot 1), active_pilot2.py (pilot 2).
+GO for big runs.
