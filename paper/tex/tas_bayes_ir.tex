@@ -128,6 +128,38 @@ outputs, graph priors over retrieved sets, and posterior-as-uncertainty, add val
 controls, and when? We note where our findings agree with this literature, in that graphs help
 multi-hop, and where they sharpen it, by saying when they do not.
 
+\subsection*{What the recent literature believes versus what it shows}
+
+The 2023--2026 literature largely reaches, from different angles, the reading we arrive at by controlled
+experiment. There are surveys of uncertainty quantification for large language models
+\citep{uqsurvey2025} and a steady stream of ``Bayesian RAG'' and uncertainty-aware retrieval methods,
+and the field broadly believes such machinery improves retrieval. What the head-to-head results show is
+narrower. The estimators that actually win are consistency- or perturbation-based, sampling several
+answers or reasoning paths, or simple discriminative signals, rather than distinctively Bayesian
+posteriors. On retrieval-augmented reasoning, white-box token-probability and entropy estimators are the
+weakest performers while a consistency estimator leads, and the gain is attributed to explicit
+perturbation rather than probability aggregation \citep{soudani2025uqrar}. Semantic entropy does beat
+naive token entropy for confabulation detection \citep{farquhar2024semantic}, yet entropy alone admits
+confidently-wrong low-entropy errors, so a separate discriminative signal is needed for safe abstention.
+Retrieval-augmented model confidence is not robustly calibrated: under irrelevant context it becomes
+both over-confident and over-refusing, no single estimator wins across settings, and improving refusal
+does not improve calibration \citep{ralm2025know}. Where a probabilistic reranker wins, the gain is an
+efficiency trade-off rather than accuracy, and a non-uncertainty static variant already captures most of
+it \citep{acurank2025}. Several systems described as probabilistic are not Bayesian at all: conformal RAG
+certifies risk with distribution-free frequentist guarantees, and probing-based retrieval decisions are
+learned point classifiers. Reports of large gains from ``Bayesian'' retrieval are typically measured
+against weak baselines such as BM25 rather than a strong reranker. The consistent picture is that the
+field believes Bayes helps, while what is shown is that simple frequentist and consistency baselines are
+hard to beat, which is the pattern our audit makes precise.
+
+There is one credible exception, and it is instructive. A query-specific Gaussian-process active-learning
+reranker, guided by LLM relevance scores, genuinely beats strong LLM reranking baselines under a matched
+query budget \citep{bagel2026}. The value appears exactly where decision theory predicts: when each
+relevance judgment is expensive, the useful question is not how to score a fixed set but which candidate
+to evaluate next. This is retrieval as Bayesian experimental design, and it is the one regime where our
+audit and the literature agree a Bayesian treatment is genuinely worthwhile; we return to it in
+\S\ref{sec:limits}.
+
 \section{A taxonomy: five places Bayes can enter an LLM retriever}\label{sec:taxonomy}
 
 We organize the audit by where a Bayesian object could plausibly do work, and pair each with the
@@ -450,6 +482,15 @@ structural gain survives a strong cross-encoder reranker (Appendix~\ref{app:sens
 artifact of a weak dense baseline, although we do not exhaustively benchmark every modern retriever.
 None of these caveats affects the central, repeatedly observed pattern: the connectivity dependence of
 structure and the distinction between the idea and the apparatus.
+
+Finally, one regime we do not study is the strongest remaining case for a Bayesian treatment, and both
+our reasoning and the recent literature point to it: budgeted active retrieval. When each relevance
+judgment is expensive, for example an LLM call, the operative decision is which candidate to evaluate
+next, and treating this as Bayesian experimental design (a posterior over relevance that guides
+acquisition) beats fixed-budget reranking under a matched call budget \citep{bagel2026}. This is the
+decision layer rather than the ranking or uncertainty layer, and it is where we would expect, and the
+evidence supports, that the Bayesian object earns its keep. A controlled audit of budgeted active
+retrieval against strong non-Bayesian acquisition rules is the natural sequel to this paper.
 
 \section{Conclusion}
 
