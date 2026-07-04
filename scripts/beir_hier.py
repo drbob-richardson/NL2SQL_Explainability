@@ -40,11 +40,14 @@ def ndcg(scores, graded, k=10):
     return dcg / idcg if idcg > 1e-9 else 0.0
 
 
-def fit_head(X, y, mu, lam, iters=300, lr=0.5):
+def fit_head(X, y, mu, lam, iters=400, lr=0.3):
+    # proximal gradient: data step then closed-form L2-to-mu shrink (stable for any lam)
     w = mu.copy(); b = 0.0; n = len(y) + 1e-9
     for _ in range(iters):
-        p = 1 / (1 + np.exp(-(X @ w + b))); g = p - y
-        w -= lr * (X.T @ g / n + lam * (w - mu)); b -= lr * g.mean()
+        z = np.clip(X @ w + b, -30, 30); p = 1 / (1 + np.exp(-z)); g = p - y
+        w = w - lr * (X.T @ g / n)
+        w = (w + lr * lam * mu) / (1.0 + lr * lam)
+        b -= lr * g.mean()
     return w, b
 
 
