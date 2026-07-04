@@ -414,3 +414,15 @@ bridge 0.753, hurts comparison 0.700); MRF auto-gates again (comparison 0.822 > 
 => the structure finding is NOT a weak-baseline artifact; structure is COMPLEMENTARY to deep
 cross-attention, not subsumed. Kills the #1 TAS reviewer objection AND is the ML gate (real claim:
 graph prior adds to strong rerankers). text-embedding-3-small + local CE, no API.
+
+## Graph-posterior marginalization: NEGATIVE (`s_graph_posterior.py`)
+Hypothesis: marginalizing over an uncertain latent graph beats committing to a point graph. FALSIFIED.
+HotpotQA, recall@2 by edge-drop noise (hard=threshold-then-PageRank, soft=MC-marginalize, same p_ij):
+drop 0.0: hard 0.703 = trueG 0.703, soft 0.649 (-0.054); drop 0.3: hard 0.657 soft 0.556 (-0.101);
+drop 0.6: hard 0.627 soft 0.498 (-0.130); drop 0.9: hard 0.616 soft 0.399 (-0.217). Marginalizing is
+WORSE, increasingly so with noise. Mechanism: gold structure is sparse; a true bridge edge at p=0.7 gets
+sampled away 30% of the time, and averaging PageRank over graphs missing the bridge dilutes it; the
+threshold restores it to full strength. As p sharpens to its MAP, soft->hard, so the MAP graph is optimal
+within the family. => Bayes does not win at ranking at ANY layer (relevance, structure, graph). Reinforces
+the audit; the framework's only remaining shot is the DECISION layer, not ranking. This closed the door
+that motivated the pivot to the hierarchical few-shot (low-data) regime -- Bayes's actual home turf.
