@@ -51,3 +51,5 @@ data/hotpot_emb.json
 data/beaver/
 data/beaver_emb.json
 data/cqa/
+*.zip
+paper-overleaf-tas/
