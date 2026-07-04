@@ -30,17 +30,21 @@ Bayesian idea can enter a retriever, namely calibrated relevance or uncertainty,
 structured joint selection, set-level diversity, and online adaptation. Each is compared against a
 simple control such as cosine top-$k$, reciprocal-rank fusion, a max-excluded-similarity confidence, or
 a fixed top-$k$ context. Across six controlled settings (BIRD, Spider, BEAVER, HotpotQA,
-2WikiMultiHopQA, SciFact) a consistent pattern emerges. Two retrieval ideas that Bayesian modeling
-motivates do help. The first is structure, a graph prior over the jointly relevant subset, which
-improves multi-hop recall and downstream execution accuracy. The second is adaptation, online updating,
-which helps in correlated, repeated workloads. Each helps only when its enabling condition holds. A
-structural prior is neutral to harmful on single-hop queries, and it can be actively harmful when
-imposed without genuine connectivity; adaptation requires a workload that repeats. The Bayesian object
-tends to fail where it is most often invoked, as an uncertainty or decision signal, losing to one-line
-baselines at both abstention and context-budget selection. A further finding runs through both positive
-cases: the work is done by the modeling idea, not by the specific Bayesian apparatus. A shortest-path
-heuristic and a diffusion match the full subgraph posterior to within a percentage point, and a
-non-Bayesian online counter matches the Bayesian one. We give four lessons and a practitioner's
+2WikiMultiHopQA, SciFact, and 17 reranking domains) a consistent pattern emerges. Three retrieval ideas
+that Bayesian modeling motivates do help. The first is structure, a graph prior over the jointly
+relevant subset, which improves multi-hop recall and downstream execution accuracy. The second is
+adaptation, online updating, which helps in correlated, repeated workloads. The third is partial
+pooling, a hierarchical prior that shares relevance information across domains, which helps in the
+scarce-label many-domain regime. Each helps only when its enabling condition holds. A structural prior
+is neutral to harmful on single-hop queries, and it can be actively harmful when imposed without genuine
+connectivity; adaptation requires a workload that repeats; pooling requires scarce labels. The Bayesian
+object tends to fail where it is most often invoked, as an uncertainty or decision signal, losing to
+one-line baselines at abstention and context-budget selection, and losing even under distribution shift.
+A further finding runs through all three positive cases: the work is done by the modeling idea, not by
+the specific Bayesian apparatus. A shortest-path heuristic and a diffusion match the full subgraph
+posterior to within a percentage point, a non-Bayesian online counter matches the Bayesian update, and a
+frequentist empirical-Bayes matches the hierarchical pooling while a nonparametric escalation over
+domains adds nothing. We give four lessons and a practitioner's
 decision guide, and we identify the one regime in which the full Bayesian object is worthwhile:
 marginalization gates structure across heterogeneous workloads, which provides robustness when one does
 not know in advance whether a query needs structure.
@@ -163,6 +167,7 @@ single-item evidence (single-hop)      & ---      & $\approx$ & \textbf{hurts}  
 connected evidence (multi-hop)         & ---      & $\approx$ & \textbf{helps}      & neutral             & ---\\
 independent multi-evidence             & ---      & $\approx$ & neutral/hurts       & \textbf{helps}      & ---\\
 correlated, repeated workload          & ---      & $\approx$ & \textbf{helps more} & ---                 & \textbf{helps}\\
+scarce labels, many domains            & loses    & $\approx$ & ---                 & ---                 & \textbf{helps (pool)}\\
 heterogeneous (mixed) workload         & loses    & $\approx$ & helps (auto-gated)  & ---                 & ---\\
 \bottomrule
 \end{tabular}
@@ -230,9 +235,11 @@ Single-hop control, SQL (S3) & FK diffusion/MRF vs.\ cosine & \textbf{structure 
 Single-hop control, RAG (S3) & cosine-kNN graph diffusion vs.\ cosine & \textbf{harmful} & diffusion 0.016 vs.\ cosine 0.608 ($-$0.59)\\
 \midrule
 Online adaptation, correlated (S2) & online naive-Bayes vs.\ static cosine; vs.\ MLE count & \textbf{helps; idea, not prior} & naive-Bayes $+$0.085 [.062,.113]; MLE count $+$0.090 [.070,.112]; noise- and feedback-robust\\
+Few-shot pooling, 17 domains & hierarchical EB vs.\ per-domain/pooled; vs.\ DP-mixture & \textbf{pooling helps; BNP null} & hier beats both extremes each $k$ (CI excludes 0); DP finds 1 cluster; oracle grouping worse than flat\\
 \midrule
 Decision / context budget (S1) & posterior-threshold context vs.\ fixed-$k$; oracle & \textbf{opportunity real, rule fails} & oracle 0.562@2.2 tbl $>$ full 0.500@10; MRF-threshold 0.411 $<$ fixed-$k$ 0.495\\
 Calibrated relevance / UQ & posterior vs.\ cosine max-out & \textbf{loses} & abstention AUROC 0.700 vs.\ 0.763\\
+Selective retrieval under shift & deep-ensemble posterior-predictive vs.\ max-softmax & \textbf{loses} & point 0.683$\to$0.755 AUROC under shift; ensemble variance anti-predictive ($<$0.5)\\
 Signal fusion (clean text) & learned fusion vs.\ cosine/RRF & \textbf{no improvement} & fusion 0.734 $<$ cosine 0.778\\
 Set-level diversity & DPP/MMR vs.\ cosine & \textbf{conditional} & $+$0.07 on comparison, about 0 on bridge; topology-routing $\approx$0.76\\
 \bottomrule
@@ -254,6 +261,21 @@ gracefully under partial feedback, falling to a gain of 0.04 at 50\% feedback. A
 counter without prior smoothing matches the Bayesian version, with gain 0.090 [.070, .112], so the
 operative ingredient is online updating rather than the prior.
 
+\paragraph{Partial pooling helps in the few-shot, many-domain regime; nonparametric structure does not.}
+The regime that most favors a Bayesian treatment is scarce labels across many related tasks, where
+shrinkage should beat a point estimate. We test it with reranking across 17 retrieval domains (five BEIR
+datasets and twelve CQADupStack forums), giving each only $k$ labeled queries. A hierarchical
+(empirical-Bayes) reranker that partially pools weights across domains beats both a per-domain estimate,
+which overfits and falls below the zero-shot cross-encoder at $k\!=\!2$, and a fully pooled estimate, at
+every $k$, with the advantage largest at small $k$ and shrinking as labels accumulate: the shrinkage
+signature. This is the clearest case in our study of a Bayesian treatment beating a point estimate. Its
+distinctively-Bayesian escalation, however, adds nothing. A Dirichlet-process mixture over the domain
+weights infers a single cluster, and even an oracle topical grouping of the domains is worse than the
+flat hierarchy. Given good shared features, the optimal reranking policy is nearly domain-universal, so
+there is no cluster structure to exploit and the nonparametric model correctly collapses to the simple
+one. As with structure and adaptation, the useful ingredient is the pooling idea, which a frequentist
+empirical-Bayes also captures, not the Bayesian apparatus.
+
 \paragraph{Uncertainty and decision uses lose.} Using the LLM posterior to abstain underperforms a
 max-excluded-similarity threshold, with AUROC 0.700 against 0.763. Abstention is scored by AUROC, which
 is invariant to any monotone recalibration such as temperature scaling or isotonic regression, so the
@@ -262,6 +284,19 @@ close it. Using the subgraph posterior's marginals to choose a variable-size con
 and drops execution accuracy to 0.411, below a fixed top-5 at 0.495. The opportunity is real, since the
 oracle gold context of 2.2 tables beats the full schema of 10 tables by 6 points, but the raw posterior
 scores these models produce are not reliable decision scores without separate validation.
+
+\paragraph{Bayesian uncertainty does not help even under distribution shift.} The usual defense of a
+Bayesian treatment is that its value appears out of distribution, where a point confidence is
+overconfident. We test this directly. Using a deep ensemble of per-domain reranking heads over the 17
+domains above, we predict whether the top retrieved document is relevant (selective retrieval), and
+compare a point max-softmax confidence against the ensemble's posterior-predictive uncertainty, in
+domain and under a strong shift in which an ensemble built from four source domains is applied to
+thirteen distant targets. The point signal improves under shift, from AUROC 0.683 to 0.755, while the
+ensemble's epistemic uncertainty is anti-predictive throughout (AUROC below 0.5) and its vote agreement
+loses decisively under shift, 0.68 against 0.76. The reason follows from the pooling result: because the
+optimal reranking policy is nearly domain-universal, the ensemble members are near-identical, so their
+disagreement is noise rather than epistemic signal, and the reranker transfers well enough that shift
+does not induce the overconfidence a Bayesian treatment exists to catch.
 
 \paragraph{The UQ failure is not confined to retrieval.} The same posterior-as-uncertainty failure
 recurs one layer down, at generation. Used to predict whether a generated SQL query is correct,
