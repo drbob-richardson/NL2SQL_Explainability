@@ -18,7 +18,11 @@ import os, sys
 import numpy as np
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-DOMAINS = ["nfcorpus", "arguana", "scidocs", "fiqa", "scifact"]
+CQA = ["android", "english", "gaming", "gis", "mathematica", "physics", "programmers", "stats",
+       "tex", "unix", "webmasters", "wordpress"]
+REG = {d: (os.path.join(ROOT, "data", "beir", d), "parquet") for d in ["nfcorpus", "arguana", "scidocs", "fiqa", "scifact"]}
+REG.update({"cqa_" + f: (os.path.join(ROOT, "data", "cqa", f), "jsonl") for f in CQA})
+DOMAINS = list(REG.keys())
 K_LIST = [2, 5, 10, 25, 50]
 SEEDS = 12
 EVAL_FRAC = 0.4
@@ -26,7 +30,7 @@ CE_COL = 1
 
 
 def load(dom):
-    z = np.load(os.path.join(ROOT, "data", "beir", dom, "features.npz"), allow_pickle=True)
+    z = np.load(os.path.join(REG[dom][0], "features.npz"), allow_pickle=True)
     X, y, qptr = z["X"], z["y"], z["qptr"]
     return [(X[qptr[i]:qptr[i + 1]], (y[qptr[i]:qptr[i + 1]] > 0).astype(float),
              y[qptr[i]:qptr[i + 1]].astype(float)) for i in range(len(qptr) - 1)]

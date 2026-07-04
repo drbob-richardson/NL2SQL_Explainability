@@ -18,7 +18,11 @@ import torch
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-DOMAINS = ["nfcorpus", "arguana", "scidocs", "fiqa", "scifact"]
+CQA = ["android", "english", "gaming", "gis", "mathematica", "physics", "programmers", "stats",
+       "tex", "unix", "webmasters", "wordpress"]
+REG = {d: (os.path.join(ROOT, "data", "beir", d), "parquet") for d in ["nfcorpus", "arguana", "scidocs", "fiqa", "scifact"]}
+REG.update({"cqa_" + f: (os.path.join(ROOT, "data", "cqa", f), "jsonl") for f in CQA})
+DOMAINS = list(REG.keys())
 POOL = 100          # dense candidate pool per query
 QMAX = 220          # cap eval queries per domain (few-shot uses a slice; rest for eval)
 PROJ = 32           # random-projection dims of the q*d embedding product
@@ -37,20 +41,27 @@ def main():
     R = rng.randn(384, PROJ).astype(np.float32) / math.sqrt(384)   # shared projection across domains
 
     for dom in DOMAINS:
-        dd = os.path.join(ROOT, "data", "beir", dom)
+        dd, fmt = REG[dom]
         out = os.path.join(dd, "features.npz")
         if os.path.exists(out):
             print(f"[{dom}] cached, skipping"); continue
-        corpus = pq.read_table(os.path.join(dd, "corpus.parquet")).to_pylist()
-        qtab = pq.read_table(os.path.join(dd, "queries.parquet")).to_pylist()
-        qtext = {str(q["_id"]): q["text"] for q in qtab}
         qrels = defaultdict(dict)
-        with open(os.path.join(dd, "qrels_test.tsv")) as f:
-            next(f)
-            for line in f:
-                a = line.split()
-                if len(a) >= 3 and int(a[2]) > 0:
-                    qrels[a[0]][a[1]] = int(a[2])
+        if fmt == "parquet":
+            corpus = pq.read_table(os.path.join(dd, "corpus.parquet")).to_pylist()
+            qtext = {str(q["_id"]): q["text"] for q in pq.read_table(os.path.join(dd, "queries.parquet")).to_pylist()}
+            with open(os.path.join(dd, "qrels_test.tsv")) as f:
+                next(f)
+                for line in f:
+                    a = line.split()
+                    if len(a) >= 3 and int(a[2]) > 0:
+                        qrels[a[0]][a[1]] = int(a[2])
+        else:
+            corpus = [json.loads(l) for l in open(os.path.join(dd, "corpus.jsonl"))]
+            qtext = {str(json.loads(l)["_id"]): json.loads(l)["text"] for l in open(os.path.join(dd, "queries.jsonl"))}
+            for l in open(os.path.join(dd, "qrels", "test.jsonl")):
+                r = json.loads(l)
+                if int(r["score"]) > 0:
+                    qrels[str(r["query-id"])][str(r["corpus-id"])] = int(r["score"])
         docids = [str(c["_id"]) for c in corpus]
         did2i = {d: i for i, d in enumerate(docids)}
         dtexts = [((c.get("title") or "") + ". " + (c.get("text") or "")).strip() for c in corpus]
