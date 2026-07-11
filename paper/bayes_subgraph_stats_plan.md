@@ -89,3 +89,30 @@ The phase transition matches the theorem -> the connectivity boundary, as a prov
   constructive centerpiece of the audit/RSS paper -- NOT a standalone methods breakthrough. Whether it
   merits its own paper hinges on the recovery-theorem novelty. If subsumed, fold the model+figure+theorem
   into the audit paper as the "what a Bayesian should do here" section (still a strong addition).
+
+## 9. FULL SWEEP VERDICT (wf_22c4d0df-a46, 101/102 agents, adversarially verified) -- GO
+- MODEL: established prior art (Li & Zhang 2010 JASA; Stingo & Vannucci 2011; Peterson/Stingo/Vannucci 2016
+  Stat.Med.; Chang/Kundu/Long 1604.07264). Exact form p(gamma|G) ∝ exp(a·1'gamma + b·gamma'G·gamma). BUILD ON
+  IT, cite it; do not claim as new.
+- RECOVERY THEOREM: LIKELY GENUINELY NOVEL. Verified NOT subsumed by any of the four candidate literatures:
+  (a) MRF-selection "phase transition" = prior pathology (model-size explosion), not recovery;
+  (b) Ising selection-consistency (Santhanam-Wainwright 0905.2639; Anandkumar et al. AoS 2012) = edge-structure
+      recovery from i.i.d. samples, frequentist, n=Omega(J_min^-2 log p) -- different problem;
+  (c) SBM/planted-clique thresholds (Kesten-Stigum, Chernoff-Hellinger, Gaussian-SBM SNR=1) = planted-community
+      detection from graph observations -- different setup;
+  (d) nearest Bayesian neighbors: Peterson (sim only, no theorem); Chang (oracle under beta-min, signals bounded
+      AWAY from zero = antithesis of recovering a low-signal connected node).
+- APPLICATION: unoccupied as formal Bayesian structured selection. EviLink (2605.29670) = per-item INDEPENDENT
+  Beta-Binomial (marginal) -- exactly the selector the theorem beats (perfect foil). SchemaGraphSQL (2505.18363)
+  = deterministic FK pathfinding. Cite both.
+- FRAMING (recommended): LEAD WITH THE RECOVERY THEOREM as the statistical contribution; NL2SQL schema linking as
+  motivating application/case study; EviLink-style marginal selector = the incumbent the theorem improves on.
+- VENUE: JASA (Applications & Case Studies, or Theory & Methods if the theory is developed) or Annals of Applied
+  Statistics; Bayesian Analysis alternative; TAS only if lightened. A step above TAS.
+- HONEST CAVEATS: (1) "likely novel" per sweep != proven; needs a rigorous written proof + expert check
+  (Vannucci/Stingo lineage). (2) The deterministic theorem (recover iff beta>delta/k) is SIMPLE; teeth require
+  the probabilistic phase transition (random a_t -> smooth recovery, sim already shows it), the joint-MRF marginal
+  version, and proper conditions/minimax framing. That development = "note" vs "methods paper".
+- DECISION: promote to a standalone stats-paper CANDIDATE (lead paper). Next spine step: formalize the theorem
+  (deterministic recovery window + probabilistic phase transition + joint-MRF version) as 2-3 propositions with
+  proofs. If the proofs hold and survive expert review, this outranks the ECIR structure paper.
