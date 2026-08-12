@@ -141,6 +141,54 @@ def main():
         conds[qi] = {"full": tbls, "cosine": topk(db, qi, "cos"), "mrf": topk(db, qi, "mrf"),
                      "oracle": sorted(gold), "mrf_thresh": thresh}
 
+    # calibrated (intercept-compensated) field for the containment decision rule, cross-fit ML of (alpha,beta)
+    Q = {}
+    for qi in range(len(items)):
+        db = items[qi][0]; gold = items[qi][4]; tbls = sch[db][1]; edges = sch[db][5]; n = len(tbls)
+        av = np.array([a_by[qi][t] for t in tbls])
+        bits = ((np.arange(1 << n)[:, None] >> np.arange(n)) & 1).astype(float)
+        ecv = np.zeros(1 << n)
+        for (i, j) in edges:
+            ecv += bits[:, i] * bits[:, j]
+        gm = 0
+        for t in gold:
+            gm |= (1 << tbls.index(t))
+        Q[qi] = dict(base=bits @ av, Nsel=bits.sum(1), ec=ecv, gm=gm, n=n, tbls=tbls)
+
+    def fit_field(train):
+        al, be = 0.0, float(BETA)
+        for _ in range(200):
+            ga = gb = 0.0
+            for qi in train:
+                q = Q[qi]; s = q["base"] + al * q["Nsel"] + be * q["ec"]; s = s - s.max()
+                p = np.exp(s); p /= p.sum()
+                ga += q["Nsel"][q["gm"]] - float(p @ q["Nsel"]); gb += q["ec"][q["gm"]] - float(p @ q["ec"])
+            al += 0.1 * ga / len(train); be = max(0.0, be + 0.05 * gb / len(train))
+        return al, be
+
+    ab = {}
+    for te in (0, 1):
+        al, be = fit_field([qi for qi in range(len(items)) if foldq[qi] != te])
+        for qi in range(len(items)):
+            if foldq[qi] == te:
+                ab[qi] = (al, be)
+    print(f"  fitted calibrated field (alpha,beta) per fold: {sorted(set(ab.values()))}")
+
+    def containment(qi, eta):
+        q = Q[qi]; al, be = ab[qi]; n = q["n"]
+        s = q["base"] + al * q["Nsel"] + be * q["ec"]; s = s - s.max(); p = np.exp(s); p /= p.sum()
+        f = p.copy(); idx = np.arange(1 << n)
+        for i in range(n):
+            bit = 1 << i; mk = (idx & bit) > 0
+            f[mk] += f[idx[mk] ^ bit]
+        feas = np.where(f >= eta)[0]
+        best = int(feas[np.argmin(q["Nsel"][feas])]) if len(feas) else int(np.argmax(f))
+        return [q["tbls"][i] for i in range(n) if (best >> i) & 1]
+
+    for qi in range(len(items)):
+        conds[qi]["cont80"] = containment(qi, 0.80)
+        conds[qi]["cont90"] = containment(qi, 0.90)
+
     # recall@K of the retrievers (sanity)
     rc = np.mean([len(items[qi][4] & set(conds[qi]["cosine"])) / len(items[qi][4]) for qi in range(len(items))])
     rm = np.mean([len(items[qi][4] & set(conds[qi]["mrf"])) / len(items[qi][4]) for qi in range(len(items))])
@@ -149,7 +197,7 @@ def main():
 
     # generation cache
     cache_sql = json.load(open(CACHE)) if os.path.exists(CACHE) else {}
-    todo = [(qi, c) for qi in range(len(items)) for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh")
+    todo = [(qi, c) for qi in range(len(items)) for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh", "cont80", "cont90")
             if f"{qi}|{c}" not in cache_sql]
     est = len(todo) * (count_tokens(" ".join(sch[items[0][0]][2].values())) + 80) / 1e6 * PRICE_IN + len(todo) * 80 / 1e6 * PRICE_OUT
     print(f"  generations to run: {len(todo)};  est ${est:.2f}")
@@ -186,7 +234,7 @@ def main():
 
     # execute + EX
     conns = {db: open_db(f"{DBDIR}/{db}.sqlite") for db in dbs}
-    ex_by = {c: [] for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh")}
+    ex_by = {c: [] for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh", "cont80", "cont90")}
     perdb = {db: {c: [] for c in ex_by} for db in dbs}
     def safe_match(pred, goldsql, conn, timeout=4.0):
         if not pred:
@@ -204,7 +252,7 @@ def main():
             ex_by[c].append(ok); perdb[db][c].append(ok)
     print(f"\nExecution accuracy (EX):")
     print(f"  {'condition':<10}{'EX':>8}")
-    for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh"):
+    for c in ("full", "cosine", "mrf", "oracle", "mrf_thresh", "cont80", "cont90"):
         avgt = np.mean([len(conds[qi][c]) for qi in range(len(items))])
         print(f"  {c:<12}{np.mean(ex_by[c]):>8.3f}   avg_tables {avgt:.1f}")
     print(f"\n  per-DB (cosine -> mrf, full, oracle):")
@@ -216,6 +264,12 @@ def main():
     for _ in range(3000):
         s = r.randint(0, len(a1), len(a1)); d.append(a1[s].mean() - a0[s].mean())
     print(f"\n  EX(mrf) - EX(cosine): {np.mean(d):+.3f} [{np.percentile(d,2.5):+.3f},{np.percentile(d,97.5):+.3f}]")
+    for cc in ("cont80", "cont90"):
+        ac = np.array(ex_by[cc], float); r2 = np.random.RandomState(2); dd = []
+        for _ in range(3000):
+            s = r2.randint(0, len(ac), len(ac)); dd.append(ac[s].mean() - a0[s].mean())
+        avgt = np.mean([len(conds[qi][cc]) for qi in range(len(items))])
+        print(f"  EX({cc})={np.mean(ac):.3f} avg_tables {avgt:.1f};  minus cosine {np.mean(dd):+.3f} [{np.percentile(dd,2.5):+.3f},{np.percentile(dd,97.5):+.3f}]")
     print("Reading: mrf>cosine in EX (toward oracle) => better retrieval -> better SQL. If cosine~mrf~full,")
     print("pruning didn't bind / generator coped, and retrieval gains don't translate downstream.")
 

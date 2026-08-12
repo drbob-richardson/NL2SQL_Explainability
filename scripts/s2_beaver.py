@@ -168,6 +168,53 @@ def main():
     line("FK-closure heuristic", heldout(lambda qi, g: closure(qi, g), [0.1, 0.3, 0.5, 1.0]))
     line("PageRank diffusion", heldout(lambda qi, g: pagerank(qi, g), [0.3, 0.5, 0.7, 0.85]))
     line("MRF (top-15 pool)", heldout(lambda qi, g: mrf_pool(qi, g), [0.5, 1, 2]))
+
+    # ---- review item 1: paired bootstrap CIs over queries; item 2: candidate-pool sensitivity ----
+    import numpy.random as npr
+
+    def pq_fixed(scorer):
+        r = {}
+        for qi in range(len(items)):
+            q, gold = items[qi]; ranked = sorted(dw, key=lambda k: -scorer(qi)[k])
+            r[qi] = len(gold & set(ranked[:len(gold)])) / len(gold)
+        return r
+
+    def pq_tuned(factory, grid):
+        r = {}
+        for te in (0, 1):
+            tr = [qi for qi in range(len(items)) if qfm[qi] != te]; ts = [qi for qi in range(len(items)) if qfm[qi] == te]
+            best, br = grid[0], -1
+            for hh in grid:
+                m = np.mean(recall_by(lambda qi, hh=hh: factory(qi, hh), tr)[2])
+                if m > br:
+                    br, best = m, hh
+            for qi in ts:
+                q, gold = items[qi]; ranked = sorted(dw, key=lambda k: -factory(qi, best)[k])
+                r[qi] = len(gold & set(ranked[:len(gold)])) / len(gold)
+        return r
+
+    rc = {"cosine": pq_fixed(lambda qi: cos_by[qi]),
+          "unary fusion": pq_fixed(lambda qi: a_by[qi]),
+          "FK-closure": pq_tuned(lambda qi, g: closure(qi, g), [0.1, 0.3, 0.5, 1.0]),
+          "PageRank": pq_tuned(lambda qi, g: pagerank(qi, g), [0.3, 0.5, 0.7, 0.85]),
+          "MRF top-15": pq_tuned(lambda qi, g: mrf_pool(qi, g), [0.5, 1, 2])}
+    ids = list(range(len(items))); B = 3000; rng = npr.RandomState(0)
+    bidx = [rng.choice(ids, len(ids), replace=True) for _ in range(B)]
+    print("\n  paired bootstrap 95% CIs over queries (recall@|gold|, B=3000):")
+    for name, d in rc.items():
+        arr = np.array([d[qi] for qi in ids]); bs = np.array([arr[bi].mean() for bi in bidx])
+        print(f"    {name:<14} {arr.mean():.3f}  [{np.percentile(bs,2.5):.3f}, {np.percentile(bs,97.5):.3f}]")
+    dm = np.array([rc['MRF top-15'][qi] for qi in ids]) - np.array([rc['PageRank'][qi] for qi in ids])
+    bd = np.array([dm[bi].mean() for bi in bidx])
+    print(f"    MRF - PageRank paired diff: {dm.mean():+.3f}  [{np.percentile(bd,2.5):+.3f}, {np.percentile(bd,97.5):+.3f}]")
+
+    print("\n  candidate-pool sensitivity (MRF, beta tuned; gold_in_pool = frac queries with all gold in the top-K unary pool):")
+    print(f"    {'K':>4}{'recall@|gold|':>14}{'gold_in_pool':>14}")
+    for K in (8, 10, 12, 15):
+        rr = pq_tuned(lambda qi, g, K=K: mrf_pool(qi, g, K), [0.5, 1, 2])
+        rec = np.mean([rr[qi] for qi in ids])
+        gip = np.mean([1.0 if items[qi][1] <= set(dw[i] for i in np.argsort(-avec(qi))[:K]) else 0.0 for qi in ids])
+        print(f"    {K:>4}{rec:>14.3f}{gip:>14.3f}")
     print("\nReading: cosine LOW here (97 correlated candidates, ~4 gold) vs BIRD 0.72 => correlation")
     print("makes retrieval hard. If structure beats cosine by MORE than on BIRD, the orthogonality")
     print("critique holds: structure's value grows with corpus correlation + multi-hop depth.")
