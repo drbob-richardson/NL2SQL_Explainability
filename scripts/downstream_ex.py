@@ -29,6 +29,8 @@ BETA = 1.0
 BIG = {"financial", "formula_1", "superhero", "student_club"}   # >=8 tables
 CACHE = os.path.join(ROOT, "data", "downstream_sql.json")
 PRICE_IN, PRICE_OUT = 0.150, 0.600
+# per-1M-token (in, out) USD prices, for the dry-run cost estimate only
+PRICES = {"gpt-4o-mini": (0.150, 0.600), "gpt-4o": (2.50, 10.0), "gpt-4.1-mini": (0.40, 1.60)}
 
 
 def schema_prompt(db, tables):
@@ -49,9 +51,13 @@ def count_tokens(t):
 
 
 def main():
-    global sch
+    global sch, CACHE, PRICE_IN, PRICE_OUT
     ap = argparse.ArgumentParser(); ap.add_argument("--run", action="store_true")
-    ap.add_argument("--max-calls", type=int, default=2000); args = ap.parse_args()
+    ap.add_argument("--max-calls", type=int, default=2000)
+    ap.add_argument("--model", default="gpt-4o-mini"); args = ap.parse_args()
+    if args.model != "gpt-4o-mini":
+        CACHE = os.path.join(ROOT, "data", f"downstream_sql_{args.model.replace('.', '').replace('-', '')}.json")
+    PRICE_IN, PRICE_OUT = PRICES.get(args.model, (PRICE_IN, PRICE_OUT))
     samp = list(json.load(open(os.path.join(ROOT, "data", "bird_samples.json"))).values())
     dbs = sorted(set(e["db_id"] for e in samp) & BIG)
     sch = {db: schema(db) for db in dbs}
@@ -192,7 +198,7 @@ def main():
     # recall@K of the retrievers (sanity)
     rc = np.mean([len(items[qi][4] & set(conds[qi]["cosine"])) / len(items[qi][4]) for qi in range(len(items))])
     rm = np.mean([len(items[qi][4] & set(conds[qi]["mrf"])) / len(items[qi][4]) for qi in range(len(items))])
-    print(f"downstream EX test: {len(items)} questions on {sorted(dbs)} (K={K})")
+    print(f"downstream EX test [{args.model}]: {len(items)} questions on {sorted(dbs)} (K={K})")
     print(f"  retrieval recall@{K} of gold tables: cosine {rc:.3f}  MRF {rm:.3f}")
 
     # generation cache
@@ -217,7 +223,7 @@ def main():
             usr = f"Schema:\n{sp}\n\n" + (f"Evidence: {ev}\n\n" if ev else "") + f"Question: {q}\n\nSQL:"
             for at in range(5):
                 try:
-                    r = cl.chat.completions.create(model="gpt-4o-mini", temperature=0, max_tokens=256,
+                    r = cl.chat.completions.create(model=args.model, temperature=0, max_tokens=256,
                         messages=[{"role": "system", "content": sys_p}, {"role": "user", "content": usr}])
                     return f"{qi}|{c}", r.choices[0].message.content.strip().strip("`").removeprefix("sql").strip()
                 except Exception:

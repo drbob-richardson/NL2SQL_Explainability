@@ -46,6 +46,8 @@ data/retrieval_emb.json
 data/bridge_emb.json
 data/bird_value_tokens.json
 data/downstream_sql.json
+data/downstream_sql*.json
+data/downstream_*.log
 data/hotpot/
 data/hotpot_emb.json
 data/beaver/
@@ -53,3 +55,4 @@ data/beaver_emb.json
 data/cqa/
 *.zip
 paper-overleaf-tas/
+paper-overleaf-subgraph/
