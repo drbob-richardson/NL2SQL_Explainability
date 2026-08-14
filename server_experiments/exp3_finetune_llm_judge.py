@@ -145,7 +145,7 @@ def main():
                 m = max(ly, ln)
                 p = np.exp(ly - m) / (np.exp(ly - m) + np.exp(ln - m))
                 scores.append(float(p)); ys.append(r["label"])
-        return auroc(scores, ys)
+        return auroc(scores, ys), scores, ys
 
     def train_eval(train_rows, test_rows, tagx):
         model = fresh_model()
@@ -179,11 +179,11 @@ def main():
             print(f"    [{tagx}] epoch {ep+1}/{args.epochs} done ({steps} steps)")
         opt.step(); opt.zero_grad()
 
-        au = eval_model(model, test_rows)
+        au, sc, ys = eval_model(model, test_rows)
         del model
         if dev == "cuda":
             torch.cuda.empty_cache()
-        return au
+        return au, sc, ys
 
     result = {"model": args.model, "epochs": args.epochs, "n_rows": len(rows),
               "baselines": {"frozen_verifier_gpt4o": 0.770, "encoder_indist": 0.785,
@@ -208,10 +208,10 @@ def main():
         if dev == "cuda":
             base = base.to(torch.bfloat16)
         if do_indist:
-            result["zeroshot_indist_auroc"] = eval_model(base, te_id)
+            result["zeroshot_indist_auroc"], _, _ = eval_model(base, te_id)
             print(f"  ZERO-SHOT in-distribution AUROC = {result['zeroshot_indist_auroc']:.3f}")
         if do_lodo:
-            zper = {d: eval_model(base, [r for r in rows if r["db_id"] == d]) for d in lodo_dbs}
+            zper = {d: eval_model(base, [r for r in rows if r["db_id"] == d])[0] for d in lodo_dbs}
             result["zeroshot_lodo_per_db"] = zper
             result["zeroshot_lodo_mean_auroc"] = float(np.mean(list(zper.values())))
             print(f"  ZERO-SHOT per-DB mean AUROC = {result['zeroshot_lodo_mean_auroc']:.3f}")
@@ -222,18 +222,23 @@ def main():
     # FINE-TUNED (LoRA)
     if do_indist:
         t0 = time.time()
-        result["indist_auroc"] = train_eval(tr_id, te_id, "indist")
+        result["indist_auroc"], _sc, _ys = train_eval(tr_id, te_id, "indist")
+        result["indist_scores"] = [float(x) for x in _sc]          # for post-hoc bootstrap CIs
+        result["indist_labels"] = [int(v) for v in _ys]
         print(f"\n  FINE-TUNED IN-DISTRIBUTION AUROC = {result['indist_auroc']:.3f}   "
               f"({time.time()-t0:.0f}s)")
 
     if do_lodo:
-        per = {}
+        per = {}; per_scores = {}; per_labels = {}
         for held in lodo_dbs:
             tr = [r for r in rows if r["db_id"] != held]
             te = [r for r in rows if r["db_id"] == held]
-            per[held] = train_eval(tr, te, f"lodo:{held}")
+            au, sc, ys = train_eval(tr, te, f"lodo:{held}")
+            per[held] = au; per_scores[held] = [float(x) for x in sc]; per_labels[held] = [int(v) for v in ys]
             print(f"    LODO held-out {held}: AUROC {per[held]:.3f}")
         result["lodo_per_db"] = per
+        result["lodo_per_db_scores"] = per_scores
+        result["lodo_per_db_labels"] = per_labels
         result["lodo_mean_auroc"] = float(np.mean(list(per.values()))) if per else None
         print(f"\n  FINE-TUNED LEAVE-ONE-DB-OUT (transfer) mean AUROC = {result['lodo_mean_auroc']}")
 

@@ -153,21 +153,27 @@ def main():
         tr = [r for r in rows if (r["db_id"], r["question_id"]) not in test_q]
         te = [r for r in rows if (r["db_id"], r["question_id"]) in test_q]
         t0 = time.time()
-        au, _ = train_eval(tr, te, args, "indist")
+        au, sc = train_eval(tr, te, args, "indist")
         result["indist_auroc"] = au
+        result["indist_scores"] = [float(x) for x in sc]           # for post-hoc bootstrap CIs
+        result["indist_labels"] = [int(r["label"]) for r in te]
         print(f"\n  IN-DISTRIBUTION AUROC = {au:.3f}   ({time.time()-t0:.0f}s)")
 
     if args.mode in ("lodo", "both"):
-        per_db = {}
+        per_db = {}; per_db_scores = {}; per_db_labels = {}
         for held in dbs[:args.max_dbs]:
             tr = [r for r in rows if r["db_id"] != held]
             te = [r for r in rows if r["db_id"] == held]
             if not te or len(set(r["label"] for r in te)) < 2:
                 continue
-            au, _ = train_eval(tr, te, args, f"lodo:{held}")
+            au, sc = train_eval(tr, te, args, f"lodo:{held}")
             per_db[held] = au
+            per_db_scores[held] = [float(x) for x in sc]           # for per-db + pooled bootstrap CIs
+            per_db_labels[held] = [int(r["label"]) for r in te]
             print(f"    LODO held-out {held}: AUROC {au:.3f}")
         result["lodo_per_db"] = per_db
+        result["lodo_per_db_scores"] = per_db_scores
+        result["lodo_per_db_labels"] = per_db_labels
         result["lodo_mean_auroc"] = float(np.mean(list(per_db.values()))) if per_db else None
         print(f"\n  LEAVE-ONE-DB-OUT (transfer) mean AUROC = {result['lodo_mean_auroc']}")
 
