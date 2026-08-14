@@ -83,3 +83,16 @@ the win is the STRUCTURE, not "any GP." Core contribution validated beyond the p
 NEXT (big runs): larger pools (N=100 full-wiki retrieval, not the 10-passage distractor set), real LLM-as-judge on
 a subset, hierarchical cross-query prior ablation, DOWNSTREAM multi-hop QA (retrieval win -> answer accuracy),
 BAGEL head-to-head, MuSiQue as a 3rd dataset, and a continuous connectivity-boundary curve (gain vs bridge-buriedness).
+
+## CONNECTIVITY-BOUNDARY CURVE + PRIOR ABLATION (cache)  [scripts/graphrag_active_analysis.py]
+(1) The chained/independent dichotomy is a continuous LAW. graph-GP - passive recall@k @B=2 on chained questions
+(2373, both datasets pooled), by cosine rank of the hardest gold x golds-connected:
+  gold in top-2: ~0 (found already). rank 3: slightly - (passive verify-top-2 already surfaces it). rank 4:
+  **+0.272 [+0.238,+0.305] connected** vs +0.071 not. rank 5+: **+0.190 [+0.174,+0.206] connected** vs +0.020 not.
+  => gain concentrates sharply where a gold is BURIED (rank>=4, beyond verify-top reach) AND CONNECTED (a bridge to
+  propagate along); connected is 4-10x not-connected at every buried bin. The mechanism made law, self-explaining
+  (rank-3 golds are reached by passive verify-top-2, so no gain there).
+(2) Prior ablation: graph-GP with the cross-query-pooled calibrated prior (0.658->0.903 over B=0..4) vs a flat
+  base-rate prior (0.224->0.574) => the calibrated prior mean and the graph covariance are COMPLEMENTARY (propagation
+  alone is far weaker). CAVEAT: does NOT isolate the HIERARCHICAL (pooled-cross-query vs per-query) value, since
+  pooled-calibrated and per-query-raw-cosine share a B=0 ranking -> needs the few-shot cold-start setup (big-run item).
