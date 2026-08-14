@@ -70,3 +70,16 @@ GRAPH kernel specifically wins (graph-GP > cosine-GP > passive) => distinct from
 dichotomy reappears in ACQUISITION. "Structure as covariance not prior" CONFIRMED. Caveats: 10-cand pool,
 oracle judge, one dataset -> big runs fix these. Scripts: active_pilot.py (pilot 1), active_pilot2.py (pilot 2).
 GO for big runs.
+
+## SCALED GATE (2 datasets, cache, oracle judge) — GREEN, REPLICATED  [scripts/graphrag_active_scale.py]
+recall@k vs budget B; graph-GP (ours, GMRF kernel inv(I+lambda L)) vs passive verify-top-B vs cosine-GP (BAGEL-lite):
+- HotpotQA CHAINED (bridge): graph-GP - passive **+0.071 [+0.059,+0.083]** @B=2; - cosine-GP +0.046 @B=2.
+- 2Wiki CHAINED (compositional/inference/bridge_comparison, 1168q): graph-GP - passive **+0.106 [+0.095,+0.118]** @B=2;
+  - cosine-GP +0.077 @B=2 (STRONGER than HotpotQA -> richer multi-hop helps more).
+- INDEPENDENT (comparison), BOTH datasets: graph-GP - passive ~0 (CI includes 0) -> the connectivity boundary,
+  now razor-sharp and symmetric across two datasets.
+The GRAPH kernel specifically beats the embedding kernel (graph-GP > cosine-GP > passive) => distinct from BAGEL;
+the win is the STRUCTURE, not "any GP." Core contribution validated beyond the pilot.
+NEXT (big runs): larger pools (N=100 full-wiki retrieval, not the 10-passage distractor set), real LLM-as-judge on
+a subset, hierarchical cross-query prior ablation, DOWNSTREAM multi-hop QA (retrieval win -> answer accuracy),
+BAGEL head-to-head, MuSiQue as a 3rd dataset, and a continuous connectivity-boundary curve (gain vs bridge-buriedness).
