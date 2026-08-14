@@ -56,3 +56,4 @@ data/cqa/
 *.zip
 paper-overleaf-tas/
 paper-overleaf-subgraph/
+data/gen_gpt4o.log
