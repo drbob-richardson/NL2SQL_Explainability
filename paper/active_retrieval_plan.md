@@ -106,5 +106,26 @@ answers cached data/graphrag_qa_answers.json, actual cost $0.05). graph-GP - pas
   B=3: EM +0.047 [+0.013,+0.080], F1 +0.053 [+0.023,+0.085]  (recall +0.067).
 Every CI at B>=1 excludes 0. The EM/F1 gain TRACKS the recall gain (answer gain ~= 2/3-3/4 x recall gain) =>
 clean causal chain retrieval->answer. graph-GP > cosine-GP on answers too (B=1 EM 0.433 vs 0.387); BAGEL-lite
-does NOT convert (cosine-GP ~ passive at B=1). The GraphRAG-first end-task headline, CONFIRMED. Same oracle-judge /
-10-passage-pool caveats as the retrieval runs -> N=100 full-wiki + real LLM judge are the remaining credibility levers.
+does NOT convert (cosine-GP ~ passive at B=1). End-task headline CONFIRMED **UNDER THE ORACLE JUDGE ONLY** --
+does NOT survive an off-the-shelf real judge (see RED stress test next).
+
+## REAL LLM-JUDGE STRESS TEST -- RED: the oracle win does NOT survive an off-the-shelf judge  [scripts/graphrag_llm_judge.py, graphrag_judge_fix.py]
+Replaced the oracle judge in the active loop with gpt-4o-mini relevance verdicts (yes/no per candidate,
+cached data/graphrag_judge_labels.json). Judge quality vs gold: precision 0.643, **recall 0.350**, acc 0.809,
+says-yes 0.123 vs gold 0.227 -- CONSERVATIVE and BRIDGE-BLIND (asked 'does it help answer', it says no to
+intermediate/bridge passages, exactly what multi-hop needs). Result, two layers:
+(1) HARD-pin design (current) COLLAPSES: graph-GP - passive recall -0.043 / EM -0.057 / F1 -0.067 @B=3 (all
+  significant NEGATIVE). Reckless trust in a noisy judge sinks gold; graph-GP amplifies via propagation.
+  Passive recall itself craters 0.657 -> 0.37.
+(2) SOFT/Bayesian fix (judge label as noisy evidence: rank by GP posterior mean, obs-noise sn2 ~ judge
+  reliability) removes the collapse -- graph-GP recovers to ~0.62-0.65 recall. BUT fair robustified compare
+  (sn2=1.0, under the real judge): graph-cosine +0.017..+0.025 (CI INCLUDES 0, n.s.); graph-prior -0.037..-0.007
+  (acting on this judge is NO BETTER than ignoring it and using the cosine prior 0.657).
+VERDICT: the oracle end-task win is an ORACLE artifact; a realistic off-the-shelf judge is too weak/bridge-blind
+to realize it. Silver linings (real but modest): the Bayesian soft design is robust where naive hard-pin self-
+destructs; structure damps judge noise. Genuine finding either way: off-the-shelf answer-relevance judges are
+bridge-blind -> naive LLM-judged active retrieval fails multi-hop.
+DECISIVE NEXT TEST: a HOP-AWARE judge (graded 0-2 / 'relevant to any step incl. supplying a linking entity' /
+gpt-4o, ~$0.15). If higher judge recall restores an honest margin, the story lives ('needs a hop-aware judge');
+if not, the paper is ABOUT the failure mode. (Also: 10-passage/strong-prior regime gives active retrieval little
+room; N=100 full-wiki has more -- not leaned on to rescue.)
