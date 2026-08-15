@@ -129,3 +129,20 @@ DECISIVE NEXT TEST: a HOP-AWARE judge (graded 0-2 / 'relevant to any step incl. 
 gpt-4o, ~$0.15). If higher judge recall restores an honest margin, the story lives ('needs a hop-aware judge');
 if not, the paper is ABOUT the failure mode. (Also: 10-passage/strong-prior regime gives active retrieval little
 room; N=100 full-wiki has more -- not leaned on to rescue.)
+
+## HOP-AWARE JUDGE -- RED #2: fixing the judge does NOT rescue the structure win  [scripts/graphrag_judge_hopaware.py]
+Graded 0-2 hop-aware prompt (explicitly credits linking/intermediate passages), gpt-4o-mini, soft sn2=1.0,
+graded label g -> soft target g/2. It FIXED bridge-blindness: judge recall on gold 0.350 -> **0.751** (g>=1,
+precision 0.534; g==2 recall 0.494). BUT the structure win still did not return -- fair margins under the
+hop-aware judge: graph-cosine recall +0.013/-0.003/+0.000 (CIs include 0), graph-cosine F1 -0.030/-0.021/-0.020
+(B=1 significantly NEGATIVE), graph-prior recall ~0 (paying to judge+retrieve via the graph ~= just using the
+cosine prior 0.657). graph beats HARD passive (+0.05..+0.09) only because hard-passive self-destructs.
+DEEPER FINDING (now across TWO judge designs): the graph-kernel advantage over the embedding kernel is an
+ORACLE artifact -- under realistic label noise the discrete-connectivity signal washes out and graph ~= cosine
+~= prior. Judge quality is NOT the bottleneck anymore (0.75 recall is fine) so gpt-4o escalation won't help
+(doesn't address the failure). WHAT SURVIVES: (i) the oracle result as a clean controlled UPPER BOUND (real,
+oracle-only); (ii) the Bayesian soft design as NECESSARY to avoid self-destruction; (iii) judge findings
+(off-the-shelf judges bridge-blind; graded hop-aware prompt fixes recall 0.35->0.75). The 'structure beats
+BAGEL under budget' HEADLINE does not survive a real judge. Last untested positive shot: N=100 full-wiki
+(weak prior -> structure has room). Else reframe to the honest 'when does structure help active retrieval'
+characterization (oracle upper bound + why it collapses under real judges).
