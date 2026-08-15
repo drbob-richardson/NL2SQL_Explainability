@@ -146,3 +146,14 @@ oracle-only); (ii) the Bayesian soft design as NECESSARY to avoid self-destructi
 BAGEL under budget' HEADLINE does not survive a real judge. Last untested positive shot: N=100 full-wiki
 (weak prior -> structure has room). Else reframe to the honest 'when does structure help active retrieval'
 characterization (oracle upper bound + why it collapses under real judges).
+
+## N=100 ORACLE DIAGNOSTIC (cache, $0)  [scripts/graphrag_n100.py]
+Corpus = all encoded dev passages (Hotpot 14549, 2Wiki 9062); retrieve top-100 per chained question (>=2 golds
+in pool: kept 150/167 Hotpot, 150/188 2Wiki). PRIOR recall@k over the top-100 pool = 0.632 -- NOT much weaker
+than N=10 (0.66): the >=2-golds-in-pool filter re-selects cosine-findable golds, so the hoped 'weak prior'
+regime only partially materialized. Oracle margins at N=100: graph-cosine +0.060[+0.033,+0.087] @B=1, +0.039
+@B=2, +0.016 @B=3 (n.s.); graph-passive +0.06..+0.07. => structure signal PRESENT + significant but NOT amplified
+vs N=10 (+0.05..+0.08). Since the N=10 real-judge washout erased a similar-sized oracle margin, expectation for a
+real-judge N=100 run is GUARDED -- though the deeper burial (bridge at rank 20-90, where cosine propagation can't
+reach but a title-mention edge can) is a mechanism the margin-size may understate. Decision surfaced to Robert
+(2026-08-15): spend ~$1 on the definitive real hop-aware-judge N=100 run, or reframe now.
