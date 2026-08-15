@@ -96,3 +96,15 @@ BAGEL head-to-head, MuSiQue as a 3rd dataset, and a continuous connectivity-boun
   base-rate prior (0.224->0.574) => the calibrated prior mean and the graph covariance are COMPLEMENTARY (propagation
   alone is far weaker). CAVEAT: does NOT isolate the HIERARCHICAL (pooled-cross-query vs per-query) value, since
   pooled-calibrated and per-query-raw-cosine share a B=0 ranking -> needs the few-shot cold-start setup (big-run item).
+
+## DOWNSTREAM MULTI-HOP QA -- the retrieval win becomes an ANSWER win  [scripts/graphrag_downstream_qa.py]
+Feed the budget-B top-k retrieved passages to gpt-4o-mini, score EM/F1 vs gold (300 chained Qs, both datasets,
+answers cached data/graphrag_qa_answers.json, actual cost $0.05). graph-GP - passive, paired bootstrap 95% CI:
+  B=0 (shared prior baseline, identical retrieval): +0.000 all metrics.
+  B=1: EM +0.040 [+0.007,+0.073], F1 +0.052 [+0.020,+0.084]  (recall +0.076).
+  B=2: EM +0.050 [+0.013,+0.087], F1 +0.059 [+0.024,+0.096]  (recall +0.083).
+  B=3: EM +0.047 [+0.013,+0.080], F1 +0.053 [+0.023,+0.085]  (recall +0.067).
+Every CI at B>=1 excludes 0. The EM/F1 gain TRACKS the recall gain (answer gain ~= 2/3-3/4 x recall gain) =>
+clean causal chain retrieval->answer. graph-GP > cosine-GP on answers too (B=1 EM 0.433 vs 0.387); BAGEL-lite
+does NOT convert (cosine-GP ~ passive at B=1). The GraphRAG-first end-task headline, CONFIRMED. Same oracle-judge /
+10-passage-pool caveats as the retrieval runs -> N=100 full-wiki + real LLM judge are the remaining credibility levers.
