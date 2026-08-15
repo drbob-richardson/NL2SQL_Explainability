@@ -175,3 +175,15 @@ REVISED STORY: not 'structure always wins' (false) nor 'structure never survives
 it's 'structure-as-covariance helps budget-limited active retrieval PRECISELY in the deep-multi-hop regime, with
 a hop-aware judge and a noise-aware design; it washes out when the bridge is shallow or the judge is bridge-blind
 or the design hard-trusts the judge.' A bounded, mechanistic, defensible contribution.
+
+## N=100 DOWNSTREAM QA (payoff) -- recall win does NOT yet convert to a significant ANSWER win  [scripts/graphrag_n100_qa.py]
+Same top-100 pools + cached hop-aware labels; soft retrieval; gpt-4o-mini reader; $0.02 (357 new answers).
+POOLED n=240 EM/F1 margins: graph-cosine EM +0.008/+0.013/-0.004, F1 +0.018/+0.014/-0.009 (all CIs include 0);
+graph-prior EM +0.004/+0.008/+0.008, F1 +0.014/+0.020/+0.018 (all n.s. but consistently +). The recall win
+(+0.03-0.04) is too small to produce a significant end-task gain at n=240 -- unlike N=10 where recall +0.076-0.083
+converted to F1 +0.05-0.06. Directionally positive, statistically INCONCLUSIVE. => the modest revival is a
+RECALL-level result; the END-TASK payoff is NOT established at this scale. Strongest defensible claim right now =
+the recall result + the regime boundary (N=10 washout vs N=100 separation) + the mechanistic story (bridge-
+blindness, noise-washout, deep-burial, Bayesian-soft necessity). KEY LEVER to resolve it = more questions (bigger
+n) -> tightens both the per-dataset recall CIs AND the QA CIs; tells us if the end-task gain is real-but-small or null.
+GraphRAG spend to date ~$1.45.
