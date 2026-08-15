@@ -157,3 +157,21 @@ vs N=10 (+0.05..+0.08). Since the N=10 real-judge washout erased a similar-sized
 real-judge N=100 run is GUARDED -- though the deeper burial (bridge at rank 20-90, where cosine propagation can't
 reach but a title-mention edge can) is a mechanism the margin-size may understate. Decision surfaced to Robert
 (2026-08-15): spend ~$1 on the definitive real hop-aware-judge N=100 run, or reframe now.
+
+## N=100 REAL HOP-AWARE JUDGE -- MODEST REVIVAL: structure separates in the deep-burial regime  [scripts/graphrag_n100_judge.py]
+Judged the full top-100 pool (hop-aware graded, gpt-4o-mini, 22k calls, $1.02; judge recall on gold 0.821),
+soft sn2=1.0 (same as the N=10 fair test -- not tuned). POOLED (n=240): graph-cosine +0.032[+0.008,+0.056] @B=1,
++0.042[+0.015,+0.069] @B=2 (significant); graph-prior +0.037/+0.045/+0.036 @B=1/2/3 (significant). graph-GP is
+the ONLY method that beats the cosine prior (cosine-GP ~= prior; passive self-destructs under the hard pin).
+Advantage is LOW-BUDGET (B=1-2), decays by B=3-4 (convergence). PER-DATASET (n=120, under-powered): 2Wiki shows
+graph-cosine (+0.040/+0.042 sig), Hotpot shows graph-prior (+0.050/+0.067 sig); the OTHER margin is positive but
+n.s. on each. All 8 point estimates positive across both datasets/comparisons -- consistent in sign, modest in
+size (~+0.03-0.04). KEY FINDING = a REGIME BOUNDARY: N=10 (shallow bridge) washes out under a real judge, N=100
+(deep burial, rank 20-90) separates -- structure earns its keep exactly when the bridge is buried beyond the
+embedding kernel's reach. Contingent on: hop-aware judge (bridge recall) + deep burial + Bayesian soft design.
+Modest, honest revival -- NOT a knockout. NEXT to solidify: more questions (tighten per-dataset CIs) + downstream
+QA at N=100 (recall->answer payoff). Total GraphRAG spend ~$1.4.
+REVISED STORY: not 'structure always wins' (false) nor 'structure never survives a real judge' (also false) --
+it's 'structure-as-covariance helps budget-limited active retrieval PRECISELY in the deep-multi-hop regime, with
+a hop-aware judge and a noise-aware design; it washes out when the bridge is shallow or the judge is bridge-blind
+or the design hard-trusts the judge.' A bounded, mechanistic, defensible contribution.
