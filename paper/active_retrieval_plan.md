@@ -200,6 +200,24 @@ END-TASK (QA) firm-up n=600 [graphrag_n100_qa.py --subset 300]: STILL NOT signif
 +0.020[-0.000,+0.040] @B=1 (CI touches 0); graph-prior F1 +0.015/+0.019 (n.s.); EM all n.s. Doubling n did not
 rescue it -- the +0.04 recall win is too small to reliably move gpt-4o-mini answers.
 
+## CHAIN-COMPLETION REANALYSIS + EVOI RACE (both $0, cached labels)  [graphrag_chain_completion.py, graphrag_evoi.py]
+(A) Reanalyze n=600 with SET-COMPLETION utilities: graph-cosine @B=1 chain-completion +0.068[+0.040,+0.097]
+pooled (Hotpot +0.070, 2Wiki +0.067), bridge-found +0.070 -- ~1.8x the average-recall margin (+0.039), sig on
+BOTH datasets. Average recall was diluting the intervention. Retrieval-vs-reasoning: answer-in-context (oracle
+reader) +0.040[+0.015,+0.067] sig, but gpt-4o-mini QA n.s. -> chain more often complete, reader doesn't exploit
+it. Reachability ceiling 0.75. => CHAIN COMPLETION is the headline metric; QA null is a decomposition not a failure.
+(B) EVOI-vs-UCB race REFUTED as specified. 2x2 {cosine,graph}x{UCB,EVOI} chain-completion @B=1 pooled:
+cosine-UCB 0.323 | cosine-EVOI 0.358 | **graph-UCB 0.392 (best)** | graph-EVOI 0.355. EVOI HELPS cosine (+0.035)
+but HURTS graph (-0.037[-0.068,-0.007] sig; Hotpot -0.060 sig; 2Wiki -0.013 n.s.); under EVOI graph-vs-cosine ~0.
+=> the graph kernel's advantage lives in UCB's EXPLORATION (judge confident anchor -> propagate along edge to the
+buried bridge); myopic omitted-mass EVOI exploits directly, over-trusts the 0.27-precision judge, forgoes the
+propagation, neutralizes the kernel. REFUTES 'acquisition is the bottleneck'; kernel x acquisition are ENTANGLED,
+graph NEEDS UCB. graph-UCB stays the method. Cleaner mechanistic finding than a win would have been.
+PIVOT: bank graph-UCB + the kernel x acquisition interaction; paper spine = chain-completion headline +
+retrieval-vs-reasoning decomposition + this mechanism + regime boundary. Amplifiers (lambda_q mixture, MuSiQue/
+N=500, real BAGEL) over more acquisition engineering. (Only lower-odds acquisition variant left: propagation-aware,
+cosine-prior-based completion target.)
+
 ## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$3.1)
 DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
 embedding kernel (BAGEL-lite) AND passive at low budget in the deep-multi-hop regime under a real hop-aware
