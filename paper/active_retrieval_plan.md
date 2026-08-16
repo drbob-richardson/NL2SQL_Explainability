@@ -218,6 +218,21 @@ retrieval-vs-reasoning decomposition + this mechanism + regime boundary. Amplifi
 N=500, real BAGEL) over more acquisition engineering. (Only lower-odds acquisition variant left: propagation-aware,
 cosine-prior-based completion target.)
 
+## ORACLE-LAMBDA CEILING + an accidental KERNEL-NORMALIZATION win  [scripts/graphrag_lambda_ceiling.py]
+Built the mixture kernel K_q=(1-lam)*Ehat+lam*Ghat with BOTH kernels normalized to unit diagonal (correlation form).
+(1) BIG, FREE win: normalizing the GMRF graph kernel to correlation form strictly improves graph-UCB chain-completion:
++0.053[+0.028,+0.078] @B=1, +0.093 @B=2, +0.115 @B=3 over the RAW kernel. => graph-cosine margin DOUBLES from +0.068
+(raw) to **+0.122[+0.088,+0.155] @B=1, +0.150 @B=2** (normalized). Mechanism (amplifies the EVOI finding): the raw
+GMRF gives high-degree HUBS lower prior variance so UCB under-explores them; the hubs are the anchors whose judgment
+propagates to bridges. Equalize variance -> UCB explores hubs -> propagation fires -> chains complete. ADOPT the
+normalized kernel as the method; re-run the key recall/completion/N=100 comparisons to update the headline upward.
+(2) Oracle-lambda headroom over the (normalized) graph kernel: +0.030[+0.015,+0.045] @B=1, +0.045 @B=3 -- modest but
+significant. lam* is PREDICTABLE: graph-strictly-best queries have golds_connected 0.93 / bridge_reachable 0.93 /
+deepest-gold-rank 23 vs 0.71/0.74/13 for mix/cosine-best -> a learned lambda_q keyed on connectivity+burial is
+feasible (the structural-leverage regime). SEQUENCE: adopt normalized kernel (re-run headline, $0) -> build learned
+lambda_q (modest extra headroom) -> then amplifiers (MuSiQue/N=500, real BAGEL, judge independent Qs for the full
+lambda_q adaptivity story).
+
 ## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$3.1)
 DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
 embedding kernel (BAGEL-lite) AND passive at low budget in the deep-multi-hop regime under a real hop-aware
