@@ -245,7 +245,26 @@ beats BAGEL-lite on ANSWERS' is now REAL pooled + Hotpot, borderline 2Wiki. Kern
 investigation from 'recall win, end-task null' to 'recall + completion + answer win'. NEXT: learned lambda_q
 (modest extra headroom); firm up 2Wiki / add MuSiQue; real BAGEL; write-up.
 
-## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$3.15)
+## MuSiQue HOP-SCALING TEST -- prediction NOT confirmed; MuSiQue much harder  [scripts/musique_run.py]
+Hop-aware judge (48.3k calls, ~$2.1) + normalized kernels, per-hop 200/200/83 (2/3/4-hop, require-all chain in
+top-100). MuSiQue is a MUCH harder retrieval problem than Hotpot/2Wiki: prior recall@k 0.48/0.45/0.33, chain-
+completion 0.15/0.02/0.00 -- completing a full k-hop chain in top-k FLOORS OUT for k=3,4 (all-or-nothing metric
+mis-specified for long chains). Result (graph-GP vs cosine-GP, normalized):
+  2-hop (n=200): completion +0.050[+0.015,+0.085] @B=2 (sig); F1 +0.005/+0.009 (n.s.).
+  3-hop (n=200): completion ~0 (floored); **F1 +0.064[+0.026,+0.103] @B=1 (SIG)** -- graph surfaces partial chains.
+  4-hop (n=83): recall FLOORS and DROPS with budget (0.33->0.27, judging HURTS); F1 -0.025 (n.s.); completion 0.
+=> The 'margin RISES monotonically 2->3->4 hop' prediction FAILED: F1 non-monotonic (~0 / +0.064 sig / -0.025),
+completion floors, 4-hop is a failure regime. The graph advantage does NOT cleanly generalize to MuSiQue and
+does NOT scale with hop count as the mechanism predicted. Bright spot: the 3-hop F1 win is real. Net: MuSiQue
+TEMPERS the CS/ML story back toward 'bounded to Hotpot/2Wiki-style shallow multi-hop,' not a scaling law.
+### TOP MONDAY DIAGNOSTICS (do BEFORE concluding -- the negative may be construction, not mechanism):
+1. Is the title-mention graph even DENSE on MuSiQue? MuSiQue was built AGAINST reasoning shortcuts, so gold
+   paragraphs may not mention each other's titles -> sparse/empty graph -> no propagation -> graph~=cosine.
+   If sparse, the negative is 'WRONG GRAPH for MuSiQue,' NOT 'structure does not scale' -- very different. ($0)
+2. Fairer metric than all-or-nothing completion: chain RECALL / partial-completion (the k=3,4 floor hides signal). ($0)
+3. Entity-mention or evidence-decomposition graph instead of title-mention (MuSiQue gives question_decomposition). ($)
+
+## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$5.3)
 DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
 embedding kernel (BAGEL-lite) AND passive at low budget in the deep-multi-hop regime under a real hop-aware
 judge, SIGNIFICANT ON BOTH datasets (graph-cosine +0.039 @B=1 each). Plus (i) a clean REGIME BOUNDARY (washes
