@@ -187,3 +187,27 @@ the recall result + the regime boundary (N=10 washout vs N=100 separation) + the
 blindness, noise-washout, deep-burial, Bayesian-soft necessity). KEY LEVER to resolve it = more questions (bigger
 n) -> tightens both the per-dataset recall CIs AND the QA CIs; tells us if the end-task gain is real-but-small or null.
 GraphRAG spend to date ~$1.45.
+
+## FIRM-UP (n=600: 300/dataset, real hop-aware judge, +$1.62)  [graphrag_n100_judge.py --subset 300 --n 8000]
+RECALL solidified per-dataset. graph-cosine (structure vs embedding kernel) now SIGNIFICANT ON BOTH datasets @B=1:
+Hotpot +0.039[+0.018,+0.061], 2Wiki +0.039[+0.017,+0.060]; 2Wiki also @B=2 +0.033[+0.010,+0.057] (Hotpot @B=2
++0.022 borderline). Pooled n=600: graph-cosine +0.039[+0.024,+0.054] @B=1, +0.027[+0.009,+0.045] @B=2. => the
+graph kernel beats the embedding kernel (BAGEL-lite) ROBUSTLY at low budget under a real judge, on both datasets --
+the core defensible claim. graph-prior (act vs ignore) is PRIOR-DEPENDENT: significant on Hotpot (weak prior 0.609)
+but n.s. on 2Wiki (strong prior 0.684) -- acting-on-the-judge helps most when the prior is weak; the graph-vs-cosine
+advantage is the consistent one. Oracle-at-scale (n=2003) graph-cosine +0.080[+0.069,+0.090] @B=1 (ceiling firm).
+END-TASK (QA) firm-up n=600 [graphrag_n100_qa.py --subset 300]: STILL NOT significant. Best case F1 graph-cosine
++0.020[-0.000,+0.040] @B=1 (CI touches 0); graph-prior F1 +0.015/+0.019 (n.s.); EM all n.s. Doubling n did not
+rescue it -- the +0.04 recall win is too small to reliably move gpt-4o-mini answers.
+
+## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$3.1)
+DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
+embedding kernel (BAGEL-lite) AND passive at low budget in the deep-multi-hop regime under a real hop-aware
+judge, SIGNIFICANT ON BOTH datasets (graph-cosine +0.039 @B=1 each). Plus (i) a clean REGIME BOUNDARY (washes
+out at N=10 / shallow bridges / bridge-blind judge / hard-pin design), (ii) a full MECHANISTIC story (structure
+as covariance; bridge-blindness of off-the-shelf judges + the graded hop-aware fix; noise-washout; deep-burial;
+Bayesian-soft necessity), (iii) an oracle UPPER BOUND. NOT SUPPORTED: an end-task/answer-accuracy headline (QA
+n.s. even at n=600). => this is an IR/recall + characterization contribution, NOT a 'GraphRAG beats X on QA'
+paper. Framing: SIGIR IR-track / short, or a component of the RSS Discussion Paper's 'where Bayesian structure
+earns its keep in retrieval' thesis. Remaining if pursued standalone: BAGEL head-to-head (real, not lite),
+MuSiQue as a 3rd dataset, nDCG alongside recall, hierarchical-prior cold-start.
