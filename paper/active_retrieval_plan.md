@@ -233,7 +233,19 @@ feasible (the structural-leverage regime). SEQUENCE: adopt normalized kernel (re
 lambda_q (modest extra headroom) -> then amplifiers (MuSiQue/N=500, real BAGEL, judge independent Qs for the full
 lambda_q adaptivity story).
 
-## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$3.1)
+## NORMALIZED-KERNEL END-TASK RESULT -- the answer win LANDS  [scripts/graphrag_n100_normalized.py]
+Re-ran N=100 downstream QA with normalized kernels ($0.01, 131 new answers). The doubled retrieval effect CARRIED
+to the end-task. POOLED n=600 F1 graph-cosine +0.040[+0.018,+0.063] @B=1 (raw was +0.020 n.s. -> now SIGNIFICANT),
++0.041 @B=2, +0.039 @B=3; EM +0.033/+0.035/+0.035 (all sig); graph-prior F1 +0.035/+0.052/+0.064 (sig). recall
+graph-GP 0.69/0.71/0.72, completion 0.45/0.49/0.51 (vs cosine 0.63.. / 0.32..). PER-DATASET: Hotpot F1 +0.048/
++0.058/+0.059 (all SIG), EM +0.037/+0.053/+0.053 (sig); 2Wiki F1 +0.032[-0.002,+0.067] BORDERLINE, +0.024, +0.019
+-- 2Wiki retrieval/completion IS sig (+0.09-0.12) but the reader converts less (compositional answers, stronger
+prior); the retrieval-vs-reasoning gap is dataset-dependent. => 'GraphRAG (graph-covariance active retrieval)
+beats BAGEL-lite on ANSWERS' is now REAL pooled + Hotpot, borderline 2Wiki. Kernel normalization flipped the
+investigation from 'recall win, end-task null' to 'recall + completion + answer win'. NEXT: learned lambda_q
+(modest extra headroom); firm up 2Wiki / add MuSiQue; real BAGEL; write-up.
+
+## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$3.15)
 DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
 embedding kernel (BAGEL-lite) AND passive at low budget in the deep-multi-hop regime under a real hop-aware
 judge, SIGNIFICANT ON BOTH datasets (graph-cosine +0.039 @B=1 each). Plus (i) a clean REGIME BOUNDARY (washes
