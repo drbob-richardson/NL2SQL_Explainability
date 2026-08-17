@@ -257,12 +257,21 @@ mis-specified for long chains). Result (graph-GP vs cosine-GP, normalized):
 completion floors, 4-hop is a failure regime. The graph advantage does NOT cleanly generalize to MuSiQue and
 does NOT scale with hop count as the mechanism predicted. Bright spot: the 3-hop F1 win is real. Net: MuSiQue
 TEMPERS the CS/ML story back toward 'bounded to Hotpot/2Wiki-style shallow multi-hop,' not a scaling law.
-### TOP MONDAY DIAGNOSTICS (do BEFORE concluding -- the negative may be construction, not mechanism):
-1. Is the title-mention graph even DENSE on MuSiQue? MuSiQue was built AGAINST reasoning shortcuts, so gold
-   paragraphs may not mention each other's titles -> sparse/empty graph -> no propagation -> graph~=cosine.
-   If sparse, the negative is 'WRONG GRAPH for MuSiQue,' NOT 'structure does not scale' -- very different. ($0)
-2. Fairer metric than all-or-nothing completion: chain RECALL / partial-completion (the k=3,4 floor hides signal). ($0)
-3. Entity-mention or evidence-decomposition graph instead of title-mention (MuSiQue gives question_decomposition). ($)
+### AUTOPSY (done, $0) -- the negative is GRAPH CONSTRUCTION, NOT mechanism  [musique_diagnose.py, musique_entity_graph.py]
+- MuSiQue graph density HIGHER than Hotpot (0.035 vs 0.004) but GOLD-connectivity much LOWER (title: 0.35 vs 0.76)
+  -- edges in the wrong place (built against title-shortcuts). Judge also noisier (recall 0.57 vs 0.89, secondary).
+- Entity-overlap graph reconnects golds (3-hop 0.23->0.86) but too DENSE (0.17) -> diffuse propagation -> no gain.
+- Sparsity sweep (df cutoff 0.30->0.03, min-shared 1/2): NO surface config restores a significant margin (2hop ~+0.02,
+  3hop ~0 everywhere). MuSiQue's distractors were chosen to share entities with golds -> can't sparsify gold-edges
+  without killing them (adversarial entanglement of surface co-occurrence and reasoning).
+- **ORACLE gold-clique graph (golds connected, density 0.0005): rec-margin @B=2 +0.068[+0.035,+0.100] (2hop),
+  +0.087[+0.050,+0.125] (3hop)** -- LARGE, significant, INCLUDING 3-hop where surface gave ~0.
+=> THE MECHANISM WORKS ON MuSiQue given the right (sparse + gold-connected) graph; the binding constraint is GRAPH
+CONSTRUCTION. DEEPENED THESIS: structure-as-covariance value = f(graph-chain ALIGNMENT); gold-connectivity is the
+measurable alignment metric; oracle ceiling +0.07-0.09; surface graphs align for standard multi-hop, fail for
+adversarial (MuSiQue). This is a mechanism + a LAW about when it applies -- stronger than a clean win.
+NEXT (motivated, costly, uncertain): an LLM-inferred LOGICAL graph (HopRAG-style) to approximate the oracle-clique
+WITHOUT gold -- how close to the +0.07-0.09 ceiling can an implementable graph get? Also: fairer chain-recall metric.
 
 ## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$5.3)
 DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
