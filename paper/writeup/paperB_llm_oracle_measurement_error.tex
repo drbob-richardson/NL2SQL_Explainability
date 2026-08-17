@@ -70,11 +70,16 @@ not random; it is a deterministic function of the passage's \emph{role} in the r
 Observing a biased, noisy version of a latent truth is the province of \emph{measurement-error} and
 \emph{misclassification} models. But this instance has two features that break the standard toolkit:
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
-  \item \textbf{The bias is systematic in a latent categorical role}, not conditionally-random given the truth.
-  Classical rater models (below) assume that, given an item's true label, errors are random draws from a fixed
-  confusion; here the ``error'' is a predictable consequence of \emph{which kind} of relevant passage it is.
+  \item \textbf{The misclassification is \emph{differential} with respect to the scientific target.} Our target
+  is binary relevance $r_i$. Two truly-relevant passages ($r_i{=}1$) have radically different grade
+  distributions depending on an unobserved functional role---bridge vs.\ direct---so relevance alone does not
+  render the measurement non-differential; the error law is fixed only after \emph{refining} $r_i$ by a latent
+  role $z_i$. This is the feature a standard binary-relevance rater model cannot represent, and it is the sense
+  in which the problem is nonstandard---not that role-dependence per se defeats latent-class models (it does
+  not; see \S\ref{sec:prelim}).
   \item \textbf{We usually have one judge and no gold.} The classical routes to pinning down the error
-  mechanism---many independent raters per item, or a labeled subset---are often unavailable at scale.
+  mechanism---many independent raters per item, or a labeled subset---are often unavailable at scale, which is
+  why identification (\S\ref{sec:ident}) is the crux.
 \end{enumerate}
 Our contribution is a model for (1) and a use of \emph{corpus structure} to solve (2). The payoff is a
 calibrated posterior over true relevance computed from biased judgments, and a transportable template for how a
@@ -108,9 +113,12 @@ raters per item.
 \begin{intuition}
 Dawid--Skene says: if three annotators look at the same item and two say ``cat,'' the item is probably a cat and
 the third annotator is probably noisy---and by watching many items you learn \emph{how} noisy each annotator is.
-It is the workhorse of crowdsourced labeling. Our problem breaks assumption (b)---the LLM's error depends on a
-\emph{latent role} the item plays, not just on its true label---and often lacks the replication that (a)
-exploits.
+It is the workhorse of crowdsourced labeling. Our problem does \emph{not} break latent-class rater models per
+se: once the latent \emph{role} $z_i$ is the class, $g_i\mid z_i$ is a perfectly standard class-dependent error
+law. The sharper statistical point is that this misclassification is \emph{differential} with respect to our
+target, binary relevance $r_i$: two $r_i{=}1$ passages of different roles have different grade laws, so $r_i{=}1$
+is not enough to fix the error law---you must refine $r_i$ by $z_i$. And we typically lack the replication that
+Dawid--Skene exploits, which is what makes identification (\S\ref{sec:ident}) nontrivial.
 \end{intuition}
 
 \subsection{Ordinal responses and the probit/threshold parameterization}
@@ -205,49 +213,81 @@ With one judge and no gold, \eqref{eq:obs} alone does not identify $(\Pi,z)$: a 
 truly irrelevant ($z{=}0$) or a bridge the judge is blind to ($z{=}1$), and the marginal grade distribution
 cannot tell them apart (\S\ref{sec:idprelim}). We need an outside constraint that behaves like replication.
 
-\subsection{Three levers, and the one we add}
-\begin{assumption}[Anchors]\label{as:anchor}
-A subset $\mathcal A$ of passages have $\Pr(z_i\ge1)\to1$ under the semantic prior---top-cosine passages that
-are almost surely relevant. Anchors provide partially known latent roles (a soft ``gold'' from the retriever,
-not from human labels).
-\end{assumption}
-\begin{assumption}[Graph-smooth truth, judge-blind]\label{as:smooth}
-The roles $z$ follow the Potts prior \eqref{eq:prior} with coupling $\theta>0$, while the confusion $\Pi$ is
-conditionally independent of the graph given $z$: the instrument does not ``know'' the corpus structure.
-\end{assumption}
-\begin{assumption}[Optional rater/prompt diversity]\label{as:raters}
-$R\ge2$ judges (distinct prompts or models) with conditionally independent errors given $z$---classical
-replication, if available.
-\end{assumption}
+\subsection{The right analogy is a hidden Markov model, not Dawid--Skene}
+Dawid--Skene buys identification with \emph{replication}: several conditionally-independent raters view the
+\emph{same} latent state. We have one rater, so that route is closed. The correct analogy is instead a
+\emph{hidden Markov model} (HMM)---or, on a general corpus, a \emph{hidden Markov random field}. In an HMM each
+latent state is observed only \emph{once}, yet the \emph{dependence among the latent states} induces dependence
+among those single observations, and under rank/separation conditions the emission and transition laws are
+identified \emph{up to a permutation of the states, with no replication}. Our reasoning chains are literally
+such a process: the gold evidence for a $k$-hop question is a sequence of roles
+$z_1\!\to\!z_2\!\to\!\cdots\!\to\!z_m$ tied by a role-transition structure, and the judge emits one ordinal
+grade per passage. \emph{The chain's own transitions manufacture the multiple views a lone judge cannot supply.}
 
-\PROP{\textbf{Proposition (identification --- to prove).} Under Assumptions~\ref{as:anchor}--\ref{as:smooth},
-and either \ref{as:raters} or a connected graph with an anchor in each component, the confusion $\Pi$ and the
-latent field $z$ are identified up to the role ordering fixed by the anchors. \emph{Proof idea:} anchors pin
-the direct-role row $\pi_2$; a bridge adjacent (in $A$) to an anchor is, by graph smoothness, probably
-relevant, so its frequently-low grades identify the bridge row $\pi_1$ as \emph{bias} rather than truth; and
-each anchor's neighbourhood supplies many such correlated-role views through the same instrument, playing the
-role that replication plays in Dawid--Skene. A precise statement under a block model (a connected gold chain
-vs.\ a distractor set), together with the Fisher information showing when the bias parameter $\alpha_2-\alpha_1$
-is estimable, is the theoretical core.}
+\subsection{A first identification theorem (the chain case)}
+Take latent roles on a chain, $z_1\!\to\!\cdots\!\to\!z_m$, with a role-transition matrix $T$ and one-judge
+ordinal emissions $g_i\mid z_i\sim p_\theta(g\mid z)$. Across many \emph{independent} query-chains we observe
+the joint law of consecutive grades. The key object is the distribution of a \emph{triple},
+\begin{equation}\label{eq:triple}
+  \Pr(g_i,\,g_{i+1},\,g_{i+2}),
+\end{equation}
+which, by the Markov property, factorizes through the shared latent $z_{i+1}$ and so furnishes \emph{three}
+conditionally-independent views of that one hidden state. This is exactly the configuration in which Kruskal's
+theorem on three-way tensor decomposition delivers \emph{generic} identifiability of finite mixtures and HMMs
+(Allman, Matias \& Rhodes, 2009): the emission $p_\theta(g\mid z)$ and the transition $T$ are recovered up to a
+relabeling of roles, provided the role-emission distributions are linearly independent---a separation condition
+our model satisfies whenever bridge and direct grades differ (precisely the bridge-blindness gap
+$\alpha_2-\alpha_1$).
+
+\PROP{\textbf{Theorem (chain identification --- to prove).} Under a chain role-process with linearly-independent
+role-emission distributions and $m\ge3$, the emission law $p_\theta(g\mid z)$ and the role-transition $T$ are
+identified from the triple laws \eqref{eq:triple} up to a permutation of roles; the permutation is fixed by
+semantic \emph{anchors} (top-cosine passages, almost surely $z{=}\textsf{direct}$). This replaces the earlier
+neighbour-intuition with tensor-rank machinery and makes ``structure substitutes for replication'' a precise
+statement. The Fisher-information analysis of when $\alpha_2-\alpha_1$ is estimable, and the finite-sample rate,
+are the accompanying results.}
+
+\subsection{From chains to general corpus graphs}
+The chain is the tractable core; the operational setting is a corpus graph. We carry the identification over
+under:
+\begin{assumption}[Anchors]\label{as:anchor}
+A subset of passages have $\Pr(z_i{=}\textsf{direct})\to1$ under the semantic prior (top-cosine passages),
+providing partially-known roles that fix the permutation.
+\end{assumption}
+\begin{assumption}[Graph-smooth truth, judge-blind instrument]\label{as:smooth}
+Roles $z$ follow the graph prior \eqref{eq:prior}; the emission law $\Pi$ is conditionally independent of the
+graph given $z$ (the judge does not ``know'' the structure).
+\end{assumption}
+On a general graph, \eqref{eq:triple} generalizes to the joint law over an anchor and its connected
+neighbourhood (a local tree/star), giving the multiple views; a connected component with an anchor plays the
+role of one long chain. Optional rater/prompt diversity ($R\ge2$ conditionally-independent judges) is classical
+replication, which we can add but do not require.
+\PROP{Extending the chain theorem to hidden Markov \emph{random fields} on the corpus graph---and identifying
+the operating conditions (component connectivity, anchor density, emission separation) under which $\Pi$ and the
+role field are identified---is the general-case theoretical program.}
 
 \begin{intuition}
-Here is the whole idea in one sentence: \emph{if I am confident passage $A$ is relevant, and the judge calls
-$A$'s graph-neighbour $B$ irrelevant, then either $B$ really is irrelevant or my judge is bridge-blind---and
-graph smoothness plus many such $(A,B)$ pairs lets me tell which.} The corpus graph manufactures the ``repeated
-looks at correlated truths'' that a lone judge cannot provide, so structure substitutes for replication. This
-is the sense in which \emph{structure identifies the measurement}, and it is exactly dual to the companion
-paper, where structure propagated \emph{belief}; here it propagates \emph{calibration}.
+The chain \emph{is} the replication. A lone judge, run once per passage, still leaves fingerprints of its bias
+in the \emph{joint} distribution of grades along a reasoning chain, because the chain's latent roles are
+correlated in a known way; three consecutive grades are three looks at the middle role. Anchors then say which
+role is which. This is exactly dual to the companion paper: there the graph propagated \emph{belief}; here it
+manufactures the repeated views that \emph{identify the instrument}.
 \end{intuition}
 
 \section{Inference and Calibration}\label{sec:infer}
 \subsection{Posterior}
-The target is $\Pr(z,\Pi,\theta\mid\{g^{(\rho)}\},A)$ under \eqref{eq:obs}--\eqref{eq:prior}, with an
-ordered-probit (or Dirichlet) prior on $\Pi$ that regularizes---but does not forbid---the bridge bias, and a
-prior on the Potts coupling $\theta$.
-\PROP{Inference by blocked Gibbs or variational methods: update the discrete field $z$ by graph message passing
-(or a mean-field/GMRF relaxation of the Potts prior); update $\Pi$ (equivalently $\alpha,\kappa$) by conjugate
-or Pólya--Gamma steps; anchors enter as soft evidence. Cost is per query ($N{=}100$), so it is cheap and
-embarrassingly parallel across queries.}
+The target is $\Pr(z,\theta,\alpha,\kappa\mid\{g^{(\rho)}\},A)$ under \eqref{eq:obs}--\eqref{eq:prior}. Because
+we adopt the ordered-\emph{probit} emission \eqref{eq:probit}, inference uses \emph{Albert--Chib} latent-normal
+data augmentation: introduce the latent propensities $\eta_i$, Gaussian given the role $z_i$ and the role
+effects $\alpha$, which renders the $\alpha,\kappa$ updates conjugate; the discrete role field $z$ is updated by
+message passing. (Had we chosen an ordered-\emph{logit} emission, Pólya--Gamma augmentation would be the
+analogue; we commit to probit for its clean latent-normal structure, and we keep the two consistent.)
+\PARTIAL{One caveat we will not paper over: the Potts coupling $\theta$ carries a normalizing constant
+$Z(\theta)$ that depends on $\theta$, so $\theta$ is \emph{not} a simple conjugate Gibbs update. For the first
+version we therefore work on a \emph{chain or tree}, where exact forward--backward message passing is available
+and $Z(\theta)$ is tractable---which also matches the identification theorem of \S\ref{sec:ident}; on general
+graphs we fix/tune $\theta$ or use pseudolikelihood / exchange (auxiliary-variable) algorithms. Inference is per
+query ($N{=}100$) and embarrassingly parallel across queries.}
 
 \subsection{The deliverable: a calibrated relevance posterior}
 The output we care about is the bias-corrected posterior $\Pr(r_i{=}1\mid g,A)$---what we should believe about
@@ -256,14 +296,21 @@ true relevance after accounting for the judge's structured bias.
 coverage of the true relevant set), whereas the raw judge is not; standard reliability diagrams / coverage
 checks against held-out gold quantify the improvement.}
 
-\subsection{The value of a corrected oracle (the go/no-go)}
-Correcting an instrument is only worthwhile if it improves a \emph{decision}. Plugging $\Pr(r_i{=}1\mid g,A)$
-into the companion paper's set-completion objective (as the GP's observation likelihood, replacing the raw
-label) should reduce expected retrieval loss.
-\PROP{\textbf{This is the single experiment that decides Paper B's fate.} If bias-corrected inference beats
-raw-judge use on a downstream decision, Paper B is a stand-alone contribution; if not, it collapses into the
-companion paper as a modeling remark. The experiment is cheap---we already hold the judge grades, gold labels,
-and graphs.}
+\subsection{What makes Paper B stand on its own}
+A measurement model earns its place on \emph{intrinsic} statistical grounds, before any downstream use. The
+primary deliverables are: (i) \emph{identifiable estimation} of the judge's bias---the emission law, and in
+particular the bridge-blindness gap $\alpha_2-\alpha_1$; (ii) recovery of latent \emph{role prevalence}; (iii) a
+\emph{calibrated} posterior relevance $\Pr(r_i{=}1\mid g,A)$ with correct coverage, and specifically correct
+uncertainty on \emph{bridge} items, where the raw judge is confidently wrong; and (iv) improved prediction of
+held-out gold relevance versus the raw judge. Demonstrating these makes the paper a contribution to measurement
+under biased oracles regardless of the application.
+\paragraph{The consequential demonstration.} \emph{Then}, as the payoff, plugging the corrected posterior into
+the companion paper's set-completion objective (replacing the raw label in the GP likelihood) should reduce
+expected retrieval loss.
+\PROP{We will run the retrieval comparison, but not as the \emph{sole} criterion---otherwise a reviewer could
+fairly ask why the measurement model is not merely a section of the retrieval paper. The go/no-go is the
+\emph{ensemble} (i)--(iv) together with the downstream gain, all of it cheap, since we already hold the judge
+grades, gold labels, and graphs.}
 
 \section{Empirical Grounding: What We Already See}\label{sec:evid}
 \TESTED{The bias exists and is structured (repeated from \S\ref{sec:model}): naive judge gold-recall $0.35$;
@@ -279,10 +326,12 @@ role-dependence directly---the first, cheap experiment (``Dig~1''), which ground
 \emph{Measurement-error and misclassification models} (Carroll et al.); \emph{latent-class rater models} and
 Bayesian crowdsourcing aggregation (Dawid--Skene and successors); \emph{Potts/GMRF priors} on graphs; and the
 fast-growing but methodologically informal \emph{LLM-as-judge reliability} literature (agreement rates, bias
-audits). Our novelty is threefold: (i) bias that is \emph{systematic in a latent role}, breaking the
-conditional-random-error assumption; (ii) \emph{structural identification} that replaces replication or gold
-with corpus dependence; and (iii) evaluation tied to a \emph{downstream decision} rather than to inter-rater
-agreement.
+audits); and \emph{tensor / three-view identifiability} of latent-variable models (Kruskal; Allman, Matias \&
+Rhodes), which supplies our proof machinery. Our novelty is fourfold: (i) misclassification that is
+\emph{differential} with respect to the target, driven by a latent role that refines relevance; (ii) roles that
+are \emph{graph-dependent} rather than exchangeable; (iii) \emph{structural identification}---an HMM/tensor
+argument in which corpus dependence replaces replication or gold; and (iv) evaluation on intrinsic calibration
+and a downstream decision rather than on inter-rater agreement.
 
 \section{Discussion}
 The theme---\emph{rigorous Bayesian treatment of imperfect LLM oracles}---extends well beyond retrieval. The

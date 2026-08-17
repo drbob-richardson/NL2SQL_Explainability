@@ -213,6 +213,13 @@ but HURTS graph (-0.037[-0.068,-0.007] sig; Hotpot -0.060 sig; 2Wiki -0.013 n.s.
 buried bridge); myopic omitted-mass EVOI exploits directly, over-trusts the 0.27-precision judge, forgoes the
 propagation, neutralizes the kernel. REFUTES 'acquisition is the bottleneck'; kernel x acquisition are ENTANGLED,
 graph NEEDS UCB. graph-UCB stays the method. Cleaner mechanistic finding than a win would have been.
+REFEREE FOLLOW-UP (graphrag_ccvoi.py, $0): the earlier EVOI minimized omitted-MASS (sum p_j); the GENUINE
+one-step VOI for chain completion minimizes P(fail)=1-prod(1-p_j). Tested both vs UCB on the NORMALIZED graph
+kernel: graph-ccVOI (true completion-VOI) trails graph-UCB by -0.078/-0.102/-0.113 chain-completion @B=1/2/3
+(sig), ~tying the omitted-mass surrogate. => NOT 'a bad surrogate backfires' -- even the correct one-step
+Bayes-risk-reduction loses, because the value of graph exploration is MULTI-STAGE (judge anchor now, propagation
+pays off at the next decision). Worth theory (one-step VOI vs optimal sequential/POMDP policy). Strengthens the
+acquisition claim; folded into paperA writeup.
 PIVOT: bank graph-UCB + the kernel x acquisition interaction; paper spine = chain-completion headline +
 retrieval-vs-reasoning decomposition + this mechanism + regime boundary. Amplifiers (lambda_q mixture, MuSiQue/
 N=500, real BAGEL) over more acquisition engineering. (Only lower-odds acquisition variant left: propagation-aware,
