@@ -1,0 +1,240 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm,xcolor,hyperref,booktabs,enumitem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+
+% ---- status tags: make the tested/untested boundary unmissable ----
+\newcommand{\TESTED}[1]{{\color{teal}\small$\blacktriangleright$\,\textbf{[TESTED]} #1}}
+\newcommand{\PARTIAL}[1]{{\color{orange}\small$\blacktriangleright$\,\textbf{[PARTIAL]} #1}}
+\newcommand{\PROP}[1]{{\color{violet}\small$\blacktriangleright$\,\textbf{[PROPOSED / UNTESTED]} #1}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\gp}{\mathcal{GP}}
+\newcommand{\Kt}{\widetilde{K}}
+
+\title{\textbf{Bayesian Active Graph Retrieval:\\ Structure as Covariance for Budget-Limited Multi-Hop RAG}}
+\author{Robert Richardson \\ \small (working draft --- CS/ML paper of a two-paper split)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Retrieval-augmented generation over multi-hop questions must often find a \emph{bridge} passage that is
+semantically distant from the query yet essential to the reasoning chain. Dense retrievers bury it, and
+verifying candidates with an LLM is expensive, so retrieval under a judgment budget becomes a problem of
+Bayesian experimental design. We argue that the corpus \emph{graph}---useless as a ranking prior, since
+diffusion buries the answer---is load-bearing as a \emph{covariance}: relevance is correlated along graph
+edges, so one paid judgment on a findable anchor propagates belief to its buried, connected neighbours. We
+place a Gaussian-process prior on a latent relevance field whose mean is the semantic retriever and whose
+covariance is a graph Laplacian kernel, and select judgments by optimistic acquisition. Three findings
+organize the paper. (i) A \emph{correlation-form} (unit-diagonal) graph kernel is essential: it equalizes
+prior variance so exploration reaches the high-degree hubs whose judgment propagates. (ii) The advantage is
+realized through exploration, not through a myopic value-of-information rule---a set-completion EVOI
+acquisition \emph{neutralizes} the kernel, while UCB retains it. (iii) The method's value obeys a sharp
+\emph{alignment law}: it helps in proportion to how well the graph encodes the true evidence dependencies,
+which we make measurable and validate across standard multi-hop benchmarks (where it holds) and an
+adversarially-constructed one (where it provably cannot, though an oracle graph shows the mechanism is sound).
+\end{abstract}
+
+\paragraph{Status legend.} \TESTED{} established in current experiments;\ \PARTIAL{} partial evidence;\
+\PROP{} proposed model/methodology, not yet run. This draft deliberately over-marks the boundary.
+
+\section{Introduction}
+Multi-hop question answering requires assembling an \emph{evidence set} $R_q$ of passages that jointly support
+the answer. A recurring failure mode is the \emph{bridge}: a passage that names the intermediate entity linking
+the question to the answer, and which is therefore semantically far from the query and ranked low by a dense
+retriever. When a strong but costly verifier (an LLM judge) can be called only $B$ times per query, the system
+faces a decision problem: which candidates should it pay to judge so that the finally-retrieved top-$k$
+contains the whole chain?
+
+Our thesis inverts the usual role of corpus structure. Prior work uses graphs to \emph{rank} (propagating
+relevance scores), which for multi-hop tends to \emph{bury} the answer under topically-central but irrelevant
+neighbours. We instead use the graph as the \emph{covariance} of a latent relevance field: it does not say
+where relevance is, only where its \emph{errors are correlated}. Under a judgment budget this is precisely the
+object that makes each observation efficient---conditioning on a judged anchor updates belief about its
+graph-connected, semantically-distant bridge.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Model.} A GP over latent relevance with a \emph{semantic mean} and a \emph{graph covariance},
+  and the finding that the kernel must be used in \emph{correlation form} to be effective. \TESTED{normalization
+  win, \S\ref{sec:model}}
+  \item \textbf{Acquisition.} Evidence that the structural gain flows through optimistic \emph{exploration}
+  (UCB), and that a principled set-completion EVOI rule \emph{destroys} it. \TESTED{\S\ref{sec:acq}}
+  \item \textbf{Alignment law.} A characterization---structure helps iff the graph aligns with the reasoning
+  chain---made measurable by \emph{gold-connectivity}, with an oracle ceiling, validated positively on
+  HotpotQA/2WikiMultiHopQA and as a sharp boundary on MuSiQue. \TESTED{\S\ref{sec:law}}
+  \item \textbf{Adaptivity (proposed).} A hierarchical mixture kernel with a learned, query-specific weight
+  $\lambda_q$; and an \emph{adaptive} graph that is inferred from the first judgments. \PROP{\S\ref{sec:mixture},
+  \S\ref{sec:future}}
+\end{enumerate}
+
+\section{Problem Setup}\label{sec:setup}
+For a query $q$ let $D_q=\{d_1,\dots,d_N\}$ be a first-stage candidate pool ($N{=}100$), each with a dense
+embedding $v_i$. Let $r_i\in\{0,1\}$ indicate whether $d_i$ belongs to the (unknown) required evidence set
+$R_q$, $|R_q|=k$. A judgment on $d_i$ returns a noisy label $y_i$ from an LLM oracle at unit cost; the budget
+is $B$ judgments. After judging a set $S$ ($|S|\le B$), the system returns a context $\widehat R$ of size $k$.
+Writing the \emph{set-completion} loss
+\begin{equation}\label{eq:loss}
+  \mathcal L(\widehat R, R_q) \;=\; c_{\text{miss}}\,\mathbf 1\{R_q\not\subseteq \widehat R\} \;+\; c_{\text{ctx}}\,|\widehat R|,
+\end{equation}
+budget-limited retrieval is the sequential design problem of choosing $S$, then $\widehat R$, to minimize
+$\E[\mathcal L]$. We evaluate with recall@$k$, \emph{chain completion} $\mathbf 1\{R_q\subseteq\widehat R\}$,
+and downstream answer EM/F1.
+
+\section{Model: Structure as Covariance}\label{sec:model}
+\paragraph{Latent relevance field.} We model a latent relevance score $f_q\in\R^N$ as a Gaussian process with a
+\emph{semantic mean} and a \emph{structural covariance},
+\begin{equation}\label{eq:field}
+  f_q \;=\; m_q + g_q, \qquad g_q \sim \gp\!\big(0,\, K_q\big), \qquad m_q(i) = \sigma\!\big(a\,\cos(q,d_i)+b\big),
+\end{equation}
+where $m_q$ is a cross-query-calibrated dense retriever (a pooled logistic map from cosine to a relevance
+probability) and $K_q$ encodes which passages have \emph{correlated} relevance. The dense retriever says where
+relevance ought to be; the covariance says where its errors travel. Relevance is $r_i = \mathbf 1\{f_i>\tau\}$
+(equivalently, $f_i$ is a probit score); in practice we rank by the posterior mean of $f$.
+
+\paragraph{Kernels.} We consider an embedding kernel and a graph kernel:
+\begin{equation}
+  K_E(i,j) = \exp\!\big(-(1-\cos(v_i,v_j))/\ell\big), \qquad
+  K_G = (I + \lambda L)^{-1},\quad L = \mathrm{diag}(A\mathbf 1) - A,
+\end{equation}
+where $A$ is the corpus graph (\S\ref{sec:law}) and $K_G$ is an intrinsic GMRF/CAR kernel: passages close in
+the graph metric have positively correlated relevance. $K_E$ is the assumption used by embedding-kernel active
+learning (BAGEL); our multi-hop data are a direct counterexample---a necessary bridge is far in $K_E$ but near
+in $K_G$.
+
+\paragraph{Correlation form (the load-bearing detail).} We use both kernels in \emph{unit-diagonal
+(correlation) form},
+\begin{equation}\label{eq:norm}
+  \Kt(i,j) \;=\; K(i,j)\big/\sqrt{K(i,i)\,K(j,j)}.
+\end{equation}
+For $K_G$ this is not cosmetic. The raw GMRF assigns \emph{lower} prior variance to high-degree nodes, so an
+optimistic acquisition (below) under-explores exactly the well-connected hubs whose judgment would propagate
+furthest. Equalizing the diagonal restores hub exploration.
+\TESTED{On chain completion at $N{=}100$, normalizing the graph kernel improves graph$-$cosine by
+$+0.05/+0.09/+0.12$ at $B{=}1/2/3$; the graph$-$cosine margin roughly \emph{doubles} to $+0.12$--$0.15$.}
+
+\paragraph{Posterior under a noisy oracle.} Given judged set $S$ with labels $y_S$ and observation noise
+$\sigma^2$, the posterior mean/variance are the standard GP conditionals
+\begin{equation}\label{eq:post}
+  \mu = m + K_{\cdot S}(K_{SS}+\sigma^2 I)^{-1}(y_S - m_S), \qquad
+  s^2 = \mathrm{diag}\!\big(K - K_{\cdot S}(K_{SS}+\sigma^2 I)^{-1}K_{S\cdot}\big).
+\end{equation}
+Treating the oracle label as \emph{noisy evidence} ($\sigma^2>0$, soft update) rather than hard truth is
+necessary: hard-conditioning on an imperfect judge sinks true positives it mislabels and, through the graph,
+propagates that error to their neighbours. \TESTED{A hard pin collapses under a real judge; the soft update
+removes the self-destruction (Paper B formalizes the observation model behind $\sigma^2$).}
+
+\paragraph{Hierarchical mixture kernel.}\label{sec:mixture}
+Because the value of the graph is query-dependent (\S\ref{sec:law}), we propose a per-query convex mixture of
+the two (normalized) kernels,
+\begin{equation}\label{eq:mix}
+  K_q(\lambda_q) = (1-\lambda_q)\,\Kt_E + \lambda_q\,\Kt_G, \qquad
+  \lambda_q = \sigma(w^\top \phi_q),
+\end{equation}
+with query features $\phi_q$ (candidate burial, graph density, prior--judge agreement) and a \emph{hierarchical}
+prior on $w$ pooled across queries---the borrowing-strength device that lets a new query, with $B{\le}3$
+judgments, inherit ``how much to trust the graph.''
+\PROP{$\lambda_q$ learning: an oracle-$\lambda$ ceiling shows a modest but significant residual headroom
+($+0.03$--$0.045$) over the fixed graph kernel, and $\lambda^\star$ is predictable from connectivity/burial
+features---so the mixture is \emph{feasible}, but the learned version and its cross-query pooling are not yet run.}
+
+\section{Active Retrieval: Acquisition and Decision}\label{sec:acq}
+At each step we judge the candidate that maximizes an acquisition functional, update \eqref{eq:post}, and finally
+return the top-$k$ of $\mu$. We use upper-confidence-bound acquisition
+\begin{equation}\label{eq:ucb}
+  a_{\mathrm{UCB}}(i) = \mu_i + \beta\, s_i .
+\end{equation}
+A natural alternative targets the decision \eqref{eq:loss} directly: a one-step \emph{expected value of
+information} for set completion, minimizing the expected omitted-relevance mass
+$U = \sum_{j\notin \widehat R}\Pr(r_j)$,
+\begin{equation}\label{eq:evoi}
+  a_{\mathrm{EVOI}}(i) = U - \E_{y_i}\!\big[\,U \mid \text{judge } i\,\big].
+\end{equation}
+\TESTED{\textbf{EVOI is the wrong rule here.} In a $2{\times}2$ (kernel $\times$ acquisition) study, EVOI
+\emph{helps} the embedding kernel but \emph{hurts} the graph kernel, and under EVOI the graph-vs-cosine
+advantage vanishes. Interpretation: the graph's gain is realized when optimism judges a confident hub and the
+covariance propagates to the buried bridge; a myopic omitted-mass rule instead exploits the low-precision judge
+directly, forgoes the propagation, and neutralizes the kernel. \emph{Kernel and acquisition are entangled: the
+graph needs exploration.}}
+
+\begin{center}\small
+\begin{tabular}{lcc}
+\toprule
+chain completion @$B{=}1$ & UCB & EVOI \\ \midrule
+cosine kernel & 0.323 & 0.358 \\
+graph kernel  & \textbf{0.392} & 0.355 \\ \bottomrule
+\end{tabular}
+\end{center}
+
+\section{When Does Structure Help? The Alignment Law}\label{sec:law}
+\paragraph{Structural leverage.} The reduction in posterior variance at $j$ from observing $i$ is governed by
+\begin{equation}\label{eq:lev}
+  \Delta_{i\to j} \;\propto\; \frac{K(i,j)^2}{K(i,i)+\sigma^2}.
+\end{equation}
+Structure is valuable for surfacing a buried gold $j$ (low $m_j$) exactly when some \emph{observable} anchor
+$i$ (high $m_i$) has large $K_G(i,j)$---i.e., is graph-connected---and $\sigma^2$ is not too large. This is the
+mathematical form of the empirical boundary and motivates a scalar diagnostic.
+
+\begin{definition}[Gold-connectivity]
+For a query with gold set $R_q$, the alignment score is $\mathbf 1\{\exists\,i\neq j\in R_q:\,A_{ij}=1\}$
+(more finely, the number of within-$R_q$ edges): whether the required chain is connected in the graph.
+\end{definition}
+
+\PROP{\textbf{Alignment law (informal).} The expected reduction in set-completion loss from the graph kernel,
+relative to the embedding kernel, is non-decreasing in gold-connectivity and vanishes when the required chain
+is disconnected. A clean statement and proof under a block-correlated model of $R_q$ vs.\ distractors is the
+main theoretical to-do.}
+
+\TESTED{\textbf{Positive regime (surface graph suffices).} On HotpotQA and 2WikiMultiHopQA, a title-mention
+graph has gold-connectivity $0.69$--$0.76$ and the graph kernel beats the embedding kernel (BAGEL-lite) and
+passive verification on chain completion ($+0.12$--$0.15$ @low budget, both datasets) and on downstream answer
+F1 ($+0.04$ pooled/Hotpot; 2Wiki borderline). The advantage is a low-budget phenomenon and decays as $B$ grows.}
+
+\TESTED{\textbf{Boundary regime (adversarial).} On MuSiQue, whose distractors are constructed to be
+surface-similar to the golds, the title graph has gold-connectivity only $0.23$--$0.53$ and \emph{no} cheap
+graph recovers the chain: an entity-overlap graph reconnects the golds ($0.23\!\to\!0.86$) but is too dense
+(diffuse propagation); a sparsity sweep, a question-conditioned entity graph, a prior gate, and an
+LLM-\emph{decomposition} graph (sparse \emph{and} $0.66$--$0.78$ gold-connected) all give $\approx 0$ margin,
+because matching sub-questions to passages still relies on cosine---the signal MuSiQue defeats. An \emph{oracle
+gold-clique} graph, however, restores $+0.07$--$0.09$ including at $3$-hop, so the \emph{mechanism is sound};
+the binding constraint is chain \emph{identification}, not the covariance idea.}
+
+\paragraph{Takeaway.} Structure-as-covariance helps cheaply \emph{iff} the corpus's surface structure aligns
+with the reasoning chain. This is a corpus/benchmark property, measurable a priori by gold-connectivity, with a
+proven ceiling on how much a better graph is worth.
+
+\section{Experiments}\label{sec:exp}
+\paragraph{Setup.} Pools of $N{=}100$ retrieved from a full-dev-set corpus; a hop-aware LLM relevance judge
+(graded $0$--$2$); soft GP ($\sigma^2$ tuned to judge reliability); metrics recall@$k$, chain completion, EM/F1;
+paired bootstrap CIs; grouped by query. Baselines: no-judge prior, passive verify-top-$B$, embedding-kernel GP
+(BAGEL-lite), and (ceiling) oracle-judge / oracle-graph.
+\PARTIAL{All results above are on HotpotQA, 2WikiMultiHopQA, MuSiQue. \emph{To do:} a real BAGEL head-to-head
+(not our re-implementation), firming the 2Wiki end-task, nDCG alongside recall, and a fair chain-recall metric
+for long chains.}
+
+\section{Related Work}
+Active/Bayesian retrieval and relevance feedback; BAGEL (query-specific GP-UCB over embeddings); GraphRAG and
+HopRAG (graph-structured retrieval, logical pseudo-query edges); GMRF/CAR priors on graphs (Rue \& Held);
+Bayesian optimization and value-of-information. Our distinction: the graph enters as \emph{covariance of a
+latent relevance field with a semantic mean}, not as a ranking signal or a zero-mean embedding kernel; and we
+characterize \emph{when} it helps.
+
+\section{Limitations and Future Work}\label{sec:future}
+The effects are modest and low-budget; the win is over a re-implemented BAGEL; two of three benchmarks are
+standard multi-hop. The deepest open direction is \PROP{\textbf{adaptive structure learning}: rather than fix
+$A$, infer it from the first few judgments---each judgment reveals not only relevance but \emph{which hop} a
+passage serves, so the oracle's own reasoning can build the chain graph within the budget, unifying the two
+roles of structure (covariance and identification) and potentially cracking adversarial benchmarks without a
+cheating oracle.}
+
+\section{Conclusion}
+The corpus graph, worthless for ranking, is load-bearing as a covariance for budget-limited multi-hop
+retrieval---when used in correlation form, driven by optimistic exploration, and when its edges align with the
+reasoning chain. We give the model, the mechanism, and a measurable law for its applicability.
+
+\end{document}
