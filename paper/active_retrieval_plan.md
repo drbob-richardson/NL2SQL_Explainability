@@ -270,8 +270,15 @@ TEMPERS the CS/ML story back toward 'bounded to Hotpot/2Wiki-style shallow multi
 CONSTRUCTION. DEEPENED THESIS: structure-as-covariance value = f(graph-chain ALIGNMENT); gold-connectivity is the
 measurable alignment metric; oracle ceiling +0.07-0.09; surface graphs align for standard multi-hop, fail for
 adversarial (MuSiQue). This is a mechanism + a LAW about when it applies -- stronger than a clean win.
-NEXT (motivated, costly, uncertain): an LLM-inferred LOGICAL graph (HopRAG-style) to approximate the oracle-clique
-WITHOUT gold -- how close to the +0.07-0.09 ceiling can an implementable graph get? Also: fairer chain-recall metric.
+FREE-GRAPH PROBES (musique_implgraph.py, $0): question-entity graph FAILS (gold-conn ~0.05 -- bridges are not
+question-named entities, confirming the hop is latent); prior-gated-entity halves density but 3-hop margin still
+~0 (MuSiQue distractors are high-cosine by design, so a relevance gate can't separate them). => CONFIRMED: no
+free (cosine+entity) graph recovers MuSiQue's chain; the gap to the oracle (+0.09) is entirely the inability to
+exclude distractors without a true relevance/logical signal.
+NEXT (motivated, costly, uncertain): an LLM-inferred LOGICAL graph to approximate the oracle-clique WITHOUT gold.
+Cheapest principled version = DECOMPOSITION graph: LLM decomposes each question into ordered single-hop sub-qs
+(~483 calls ~$0.05), cosine-retrieve top-few per sub-q, connect co-/consecutively-retrieved passages -> a sparse
+chain graph. How close to the +0.07-0.09 ceiling can it get? Also: fairer chain-recall metric.
 
 ## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$5.3)
 DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
