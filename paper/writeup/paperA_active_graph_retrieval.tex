@@ -66,7 +66,7 @@ question?'' But each such call is expensive, so a system can afford only a small
 The question this paper answers is: \emph{given that budget, which candidates should we pay to verify so that
 the passages we ultimately hand the reader contain the whole evidence chain?}
 
-\subsection{The thesis: structure as covariance, not as a ranking signal}
+\subsection{The thesis: semantics sets the mean, structure sets the dependence}
 A natural idea is to use a graph over passages (who links to / mentions whom) to help retrieve. The obvious way
 ---let relevance ``flow'' along edges and re-rank by the diffused score---backfires for multi-hop: diffusion
 spreads mass to topically-central neighbours and buries the specific bridge even further. That failure is well
@@ -78,6 +78,12 @@ correlated}. Formally we treat relevance as a random field over the candidate po
 graph-connected, then verifying one is informative about the other, even if they are far apart in embedding
 space. So one paid judgment on a \emph{findable} anchor updates our belief about its \emph{buried but connected}
 bridge. The graph earns its keep as covariance, not as a re-ranker.
+
+A word on slogans, because it matters to a Bayesian reader: a GP covariance \emph{is} part of the prior, so the
+contrast is not ``covariance versus prior.'' The precise statement is \emph{mean versus dependence}:
+\textbf{semantics determines the prior mean, and structure determines the prior covariance (the dependence).}
+Equivalently, ``structure as dependence, not as relevance''---the graph never asserts \emph{that} a passage is
+relevant, only \emph{with what} its relevance co-varies.
 
 \begin{intuition}
 ``Prior'' answers \emph{where do I expect relevance to be?} (the dense retriever's job). ``Covariance'' answers
@@ -264,6 +270,13 @@ whisper. It is a one-line change with an outsized effect because it interacts wi
 graph$-$cosine by $+0.05/+0.09/+0.12$ at budgets $B{=}1/2/3$ (paired 95\% CIs exclude 0); the graph$-$cosine
 margin roughly \emph{doubles} from $+0.068$ to $+0.12$--$0.15$. It is the single largest free improvement we found.}
 
+\paragraph{This is a finding, not an invention.} Normalizing a graph kernel to equal per-vertex prior variance
+is a known operation (local/correlation normalization of graph kernels; Urry \& Sollich, 2013). Our contribution
+is not the operator but the \emph{finding} that it is \emph{load-bearing for active graph retrieval}: without it,
+the very hubs that carry the most structural information look artificially certain, and an optimistic acquisition
+skips them---so a routine normalization interacts decisively with exploration and graph degree. We present it as
+a finding about that interaction, and do not headline ``unit-diagonal kernels'' as a method.
+
 \subsection{Conditioning on a judgment: the posterior}
 Suppose we have judged the set $S$ and observed labels $y_S$. Because everything is Gaussian, the posterior over
 $f$ is Gaussian with closed form. Writing $K$ for the (normalized) kernel and $\sigma^2$ for observation noise,
@@ -438,9 +451,15 @@ recall, and a chain-recall metric that does not floor on long chains.}
 embeddings---our nearest neighbour, and the kernel our data refute); \emph{GraphRAG} and \emph{HopRAG}
 (graph-structured retrieval; HopRAG builds logical pseudo-query edges precisely because surface similarity is
 insufficient---consonant with our alignment law); \emph{GMRF/CAR priors on graphs} (Rue \& Held); \emph{Bayesian
-optimization and value of information}. Our distinction: the graph enters as the \emph{covariance of a latent
-relevance field with a semantic mean}, not as a ranking signal or a zero-mean embedding kernel, and we
-characterize precisely \emph{when} it helps.
+optimization and value of information}; and \emph{set-wise retrieval} (SETR), which argues for returning a set
+rather than a ranking. Our distinction: the graph enters as the \emph{covariance of a latent relevance field with
+a semantic mean}, not as a ranking signal or a zero-mean embedding kernel, and we characterize precisely
+\emph{when} it helps. Notably, BAGEL's own paper names two limitations---dependence on the embedding
+representation / kernel match, and the danger that erroneous LLM relevance scores are propagated confidently by
+the GP. Our two moves address exactly these: graph \emph{dependence} replaces the mismatched embedding kernel,
+and the \emph{soft} (noisy-likelihood) update prevents confident propagation of a wrong label. We therefore
+position the paper as a targeted sequel, not a reinvention of graph GPs or active retrieval---the novelty is the
+mean/dependence decomposition, the exploration mechanism, and the alignment regime, not any single primitive.
 
 \section{Limitations and Future Work}\label{sec:future}
 The effects are modest and low-budget; the win is over a re-implemented BAGEL; two of three benchmarks are

@@ -224,6 +224,21 @@ such a process: the gold evidence for a $k$-hop question is a sequence of roles
 $z_1\!\to\!z_2\!\to\!\cdots\!\to\!z_m$ tied by a role-transition structure, and the judge emits one ordinal
 grade per passage. \emph{The chain's own transitions manufacture the multiple views a lone judge cannot supply.}
 
+\subsection{Why this is not the clusterability route (heterophily is the point)}
+A known and tempting shortcut identifies label noise from \emph{local same-class} structure: if graph-neighbours
+share the true class, their single noisy labels furnish repeated views of one latent state, and higher-order
+consensus identifies the confusion matrix without anchors (the \emph{clusterability} route, Zhu et al., 2021).
+Our structure is \emph{not} homophilic in that sense. A direct-evidence passage adjacent to a bridge has a
+\emph{different} role, $z_i\neq z_j$---but a \emph{compatible} one, which is exactly why the prior
+\eqref{eq:prior} rewards role \emph{compatibility} rather than role \emph{identity}. Clusterability's consensus
+argument therefore does not apply; the identifying object is instead the role \emph{transition/compatibility}
+matrix $T$ itself, recovered through the triple law \eqref{eq:triple}. The novelty we can actually defend is
+consequently narrow and specific---\emph{single-judge identification of a role-dependent measurement channel
+from heterophilic, role-compatible corpus structure}---not the broad and long-established claim that
+``dependence can substitute for replication'' (true since classical HMM identifiability; Gassiat et al.). A
+bonus falls out: estimating $T$ recovers the latent \emph{grammar} of multi-hop evidence---which functional
+roles follow which---an object clusterability's trivial same-class structure does not possess.
+
 \subsection{A first identification theorem (the chain case)}
 Take latent roles on a chain, $z_1\!\to\!\cdots\!\to\!z_m$, with a role-transition matrix $T$ and one-judge
 ordinal emissions $g_i\mid z_i\sim p_\theta(g\mid z)$. Across many \emph{independent} query-chains we observe
@@ -274,6 +289,12 @@ role is which. This is exactly dual to the companion paper: there the graph prop
 manufactures the repeated views that \emph{identify the instrument}.
 \end{intuition}
 
+\paragraph{An honest clarification about ``no gold.''} We use no human relevance labels and no repeated
+judgments---but we do use \emph{weak semantic anchors} (top-cosine passages, almost surely direct evidence) as
+soft pseudo-labels. Their role is only to \emph{name} the latent states \emph{after} identification, not to
+create it: without any anchors the model is identified up to a permutation of roles, and the semantics merely
+resolve the permutation. We are careful not to imply the method uses no identifying side information whatsoever.
+
 \section{Inference and Calibration}\label{sec:infer}
 \subsection{Posterior}
 The target is $\Pr(z,\theta,\alpha,\kappa\mid\{g^{(\rho)}\},A)$ under \eqref{eq:obs}--\eqref{eq:prior}. Because
@@ -323,15 +344,20 @@ role-dependence directly---the first, cheap experiment (``Dig~1''), which ground
 \eqref{eq:obs}--\eqref{eq:probit} before any of the harder machinery.}
 
 \section{Related Work}
-\emph{Measurement-error and misclassification models} (Carroll et al.); \emph{latent-class rater models} and
-Bayesian crowdsourcing aggregation (Dawid--Skene and successors); \emph{Potts/GMRF priors} on graphs; and the
-fast-growing but methodologically informal \emph{LLM-as-judge reliability} literature (agreement rates, bias
-audits); and \emph{tensor / three-view identifiability} of latent-variable models (Kruskal; Allman, Matias \&
-Rhodes), which supplies our proof machinery. Our novelty is fourfold: (i) misclassification that is
-\emph{differential} with respect to the target, driven by a latent role that refines relevance; (ii) roles that
-are \emph{graph-dependent} rather than exchangeable; (iii) \emph{structural identification}---an HMM/tensor
-argument in which corpus dependence replaces replication or gold; and (iv) evaluation on intrinsic calibration
-and a downstream decision rather than on inter-rater agreement.
+Our proof machinery draws on \emph{measurement-error and misclassification} models (Carroll et al.),
+\emph{latent-class rater} models and Bayesian crowdsourcing (Dawid--Skene and successors), \emph{Potts/GMRF}
+priors, and \emph{tensor / three-view identifiability} of latent-variable models (Kruskal; Allman, Matias \&
+Rhodes) with classical \emph{HMM identifiability} (Gassiat et al.). Two nearby lines demand explicit care.
+\emph{First}, a fast-growing 2026 literature already frames the \emph{LLM judge as a measurement instrument}
+(noisy-surrogate estimation with a gold calibration sample; IRT-based judge diagnostics; total-evaluation-error
+decompositions)---so we claim \emph{no} novelty for that framing; our contribution begins after it.
+\emph{Second}, and most pointedly, the \emph{clusterability} line (Zhu et al., 2021; Liu et al., 2023) already
+shows that dependence can substitute for repeated labels in identifying a noise-transition matrix---but through
+\emph{homophilic}, same-class local structure. Our defensible novelty is the complement: (i) misclassification
+that is \emph{differential} in a latent role refining the target; (ii) \emph{heterophilic}, role-\emph{compatible}
+graph structure (bridge $\leftrightarrow$ direct), where neighbours \emph{differ}; (iii) single-judge
+\emph{structural identification} through that heterophilic dependence, with semantics only naming states; and
+(iv) evaluation on intrinsic calibration and a downstream decision rather than agreement rates.
 
 \section{Discussion}
 The theme---\emph{rigorous Bayesian treatment of imperfect LLM oracles}---extends well beyond retrieval. The
