@@ -220,6 +220,37 @@ kernel: graph-ccVOI (true completion-VOI) trails graph-UCB by -0.078/-0.102/-0.1
 Bayes-risk-reduction loses, because the value of graph exploration is MULTI-STAGE (judge anchor now, propagation
 pays off at the next decision). Worth theory (one-step VOI vs optimal sequential/POMDP policy). Strengthens the
 acquisition claim; folded into paperA writeup.
+
+## LEARNED GOLD-FREE lambda_q GATE (graphrag_lambda_learn.py, $0) -- honest NEGATIVE on chained-only data
+5-fold CV; gold-free features (top-k cosine, burial gap, cos spread, density, anchor degree, budget) -> ridge
+predicts per-query graph advantage -> gate lambda_q. OUT-OF-SAMPLE chain completion: learned lambda_q TIES
+fixed-graph (-0.005 @B=1/2/3, CI ~[-.012,0]); captured ~none of the oracle headroom (itself small + budget-
+inconsistent: oracle-graph +0.042 @B=2 but -0.037 @B=1). WHY: on chained-only data the graph helps on ~86% of
+queries, so 'always graph' is near-optimal and there is almost nothing to route. Features DO carry sensible
+signal (topk_cos NEGATIVELY predicts graph advantage -- a confident prior => graph adds less). => the lambda_q
+payoff needs a MIXED query distribution including INDEPENDENT (comparison) questions where the graph HURTS
+(lambda->0); those are not judged yet (small API). HONEST CLAIM: gold-free features predict graph advantage,
+but chained-only data lacks the graph-unfavorable queries to demonstrate routing value; do NOT claim a
+learned-lambda_q win until the mixed distribution is run.
+
+## HETEROPHILIC CHAIN-IDENTIFICATION SIM (paperB_identify_sim.py, $0) -- mechanism CONFIRMED, but a real tension
+3-state role-HMM (irrelevant/bridge/direct), heterophilic transition (low diagonal); recover emission by
+Baum-Welch (CHAIN, uses dependence) vs mixture-EM (I.I.D., dependence removed). Min-perm emission error, best-of-4:
+  SEPARATED emissions: chain-EM 0.07-0.09 vs i.i.d. 0.70 -- CLEAN ~10x gap => the 'heterophilic DEPENDENCE (not
+    replication) identifies the channel' mechanism is CONFIRMED; a single grade-2-heavy anchor NAMES the roles.
+  BRIDGE-BLIND emissions (the ACTUAL phenomenon): chain-EM ~0.20 (noisy, ~ i.i.d.) -- WEAKLY identified, because
+    bridge-blindness MEANS the bridge emission overlaps the irrelevant emission (both mass on grade 0) = poor
+    emission separation, exactly the condition the theorem needs. LEN 5->15 did NOT fix it (separation, not chain
+    length, is binding -- flips the earlier 'asymptotic in chain length' guess).
+=> DEEP TENSION: bridge-blindness is partly SELF-OBSCURING -- the more the judge conflates bridge with irrelevant,
+the harder to identify the bias FROM GRADES. LIKELY RESOLUTION (refines the theorem): the bridge ROLE is
+identified by GRAPH POSITION (connected to a direct/anchor), not by grades; and the DELIVERABLE (relevance
+correction Pr(r|g,A)) may work via the graph/Potts prior + anchors even with a fuzzy emission Pi. SPLIT THE
+THEOREM: (a) role-field identification (graph/transition-driven, plausibly OK) vs (b) emission/bias-MAGNITUDE
+identification (weak in the bridge-blind regime). NEXT make-or-break for B: simulate the FULL model (roles on a
+graph + Potts prior + bridge-blind emission + anchors) and test whether the posterior correctly FLIPS bridge
+grades to relevant -- the actual deliverable -- even when Pi is only weakly identified. If yes, B works (graph
+carries the correction); if no, B's central claim is in real trouble.
 PIVOT: bank graph-UCB + the kernel x acquisition interaction; paper spine = chain-completion headline +
 retrieval-vs-reasoning decomposition + this mechanism + regime boundary. Amplifiers (lambda_q mixture, MuSiQue/
 N=500, real BAGEL) over more acquisition engineering. (Only lower-odds acquisition variant left: propagation-aware,
