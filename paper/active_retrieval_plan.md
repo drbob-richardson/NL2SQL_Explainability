@@ -276,9 +276,22 @@ question-named entities, confirming the hop is latent); prior-gated-entity halve
 free (cosine+entity) graph recovers MuSiQue's chain; the gap to the oracle (+0.09) is entirely the inability to
 exclude distractors without a true relevance/logical signal.
 NEXT (motivated, costly, uncertain): an LLM-inferred LOGICAL graph to approximate the oracle-clique WITHOUT gold.
-Cheapest principled version = DECOMPOSITION graph: LLM decomposes each question into ordered single-hop sub-qs
-(~483 calls ~$0.05), cosine-retrieve top-few per sub-q, connect co-/consecutively-retrieved passages -> a sparse
-chain graph. How close to the +0.07-0.09 ceiling can it get? Also: fairer chain-recall metric.
+DECOMPOSITION graph (musique_decomp_graph.py, $0.01): LLM decomposes Q into sub-qs (mean 3.55), assign passages
+to hops by cosine, connect top-2 across hops. Achieves BOTH target properties -- gold-conn 0.66/0.78 (3/4-hop, up
+from 0.23/0.53 title) AND density 0.0022 (near-oracle sparse) -- BUT margin STILL ~0 (2hop -0.005, 3hop +0.008).
+WHY: the decomposition (hops) is good, but MATCHING sub-qs to passages relies on COSINE, which MuSiQue defeats ->
+top-2 per sub-q pulls in distractors -> ~80% of edges wrong -> propagation doesn't discriminate.
+
+## FINAL CHARACTERIZATION (MuSiQue investigation complete)
+The bottleneck is chain-IDENTIFICATION via surface similarity, which MuSiQue adversarially defeats. Cheap signals
+(cosine / entity / decomposition+cosine-match) ALL fail; only the oracle (knows golds) or expensive deep per-passage
+reading (= the judge budget) recovers the chain. The MECHANISM IS SOUND (oracle +0.07-0.09, both 2&3-hop); cheap
+APPLICABILITY is bounded by a measurable CORPUS property: **structure-as-covariance helps cheaply IFF the corpus's
+surface structure aligns with the reasoning chain** (Hotpot/2Wiki yes -- titles mention each other; MuSiQue no --
+distractors made surface-similar to golds by design). This is the paper's BOUNDARY LAW + an honest limit, and it
+makes MuSiQue a FEATURE (the boundary case that reveals the alignment requirement + the oracle ceiling), not a
+failed experiment. (Possible expensive future refinement: cross-encoder or LLM passage-scoring for the sub-q match
+-- but that abandons the cheap-structural-prior premise; likely still partly defeated by MuSiQue's design.)
 
 ## FIRMED-UP BOTTOM LINE (GraphRAG investigation, total spend ~$5.3)
 DEFENSIBLE: a bounded, structure-specific RECALL result -- graph-kernel GP-UCB active retrieval beats the
