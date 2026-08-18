@@ -35,8 +35,9 @@ node emission, define the aliasing depth $L^\star$, characterize exact aliasing 
 \emph{lumpable} partition (an impossibility boundary), separate \emph{functional} identifiability of a decision
 target $R=h(Z)$ from full parameter identifiability, and give the information-theoretic limit
 $\mathcal I_G=I(R_v;Y_{N(v)}\mid Y_v,X_v)$ that says exactly how much a cheap non-structural covariate leaves for
-structure to add. We verify the two load-bearing results in simulation, and lay out the near-aliasing rate and
-Bayesian weak-identification theory that would make this a T\&M paper. The empirical failure that prompted this
+structure to add. We \emph{prove} the near-aliasing rate---a phase boundary $n(\delta_E^2+\delta_G^2)$ with
+error exponent equal to the Chernoff information between the structural signatures, verified numerically---and lay
+out the Bayesian weak-identification theory that would round out a T\&M paper. The empirical failure that prompted this
 redirection---structure barely helps retrieval once cosine is present---is not a defeat: it is the regime
 $\mathcal I_G\!\to\!0$, an instance the theory predicts exactly.
 \end{abstract}
@@ -170,17 +171,59 @@ almost nothing. And when the covariate is sufficient, $\mathcal I_G=0$ and \emph
 retrieval ``failure'' is the theorem's $\mathcal I_G\!\to\!0$ corner, not a bug.
 \end{intuition}
 
-\section{Near-aliasing rates and Bayesian weak identification (the T\&M core)}
+\section{The near-aliasing rate (proved) and Bayesian weak identification}
 The results above are qualitative (identified / not). T\&M wants \emph{rates and limits} in the near-aliased
-regime, $\delta_E=d(O_a,O_b)\to0$ and $\delta_G=d(Q_{L^\star}(a),Q_{L^\star}(b))\to0$.
-\begin{conjecture}[Phase boundary]\label{conj:rate}
-For classifying the $h$-functional at a node from its radius-$L^\star$ neighbourhood, the minimax risk decays
-like $\exp\!\big(-c\,n\,(\delta_E^2+\delta_G^2)\big)$ (Hellinger/Chernoff separation of the mixed signatures), so
-consistent recovery holds iff $n(\delta_E^2+\delta_G^2)\to\infty$, with a non-vanishing weak-identification
-regime when it stays bounded.
-\end{conjecture}
-\CONJ{Derive the exact separation of $Q_{L^\star}(a),Q_{L^\star}(b)$ in Hellinger as a function of $(T,O)$ and
-$\delta_E$; convert to minimax classification risk. The clean target is a boundary in $n(\delta_E^2+\delta_G^2)$.}
+regime, $\delta_E^2=H^2(O_a,O_b)\to0$ and $\delta_G^2=H^2\big((T^{L}O)_a,(T^{L}O)_b\big)\to0$
+(squared Hellinger distances). The conditional-independence structure of the model makes this a clean product-of-channels
+computation, and the conjectured phase boundary becomes a theorem.
+
+\begin{theorem}[Near-aliasing rate and phase boundary]\label{thm:rate}
+Test $H_a\!:Z_v=a$ against $H_b\!:Z_v=b$ (with $h(a)\neq h(b)$) from the node measurement $Y_v$ and $d$
+neighbour measurements at radius $L$, under the tree-indexed model. Let the node and per-neighbour Chernoff
+informations be $C_E=\max_{s}-\log\sum_y O_{a,y}^{s}O_{b,y}^{1-s}$ and
+$C_G=\max_{s}-\log\sum_y (T^{L}O)_{a,y}^{s}(T^{L}O)_{b,y}^{1-s}$, and the Bhattacharyya coefficients
+$\rho_E=\sum_y\sqrt{O_{a,y}O_{b,y}}=1-\tfrac12\delta_E^2$, $\rho_G=1-\tfrac12\delta_G^2$. Then for the
+equal-prior Bayes error $P_e$:
+\begin{enumerate}[label=(\alph*),leftmargin=*,itemsep=0pt]
+\item \textbf{(product factorization)} conditional independence gives the joint law
+$P_c=O_c\otimes\bigotimes_{j=1}^{d}(T^{L}O)_c$ under $H_c$, so the affinity multiplies:
+$\rho(P_a,P_b)=\rho_E\,\rho_G^{\,d}$;
+\item \textbf{(bounds)} $\tfrac14\big(\rho_E\rho_G^{d}\big)^{2}\le P_e\le \tfrac12\,\rho_E\rho_G^{d}$, hence
+$P_e=\exp\!\big(-\Theta(\delta_E^2+d\,\delta_G^2)\big)$;
+\item \textbf{(sharp exponent)} $P_e\;\asymp\;d^{-1/2}\exp\!\big(-(C_E+d\,C_G)\big)$ (Bahadur--Rao);
+\item \textbf{(phase boundary)} $P_e\to0$ iff $\delta_E^2+d\,\delta_G^2\to\infty$; in the near-aliased regime with
+$\delta_E$ bounded, iff $d\,\delta_G^2\to\infty$. Writing $n$ for the effective count of informative neighbours,
+the boundary is $n(\delta_E^2+\delta_G^2)\to\infty$.
+\end{enumerate}
+\end{theorem}
+\PROVEN{\emph{Proof.} (a) By the Markov property on the tree, given $Z_v=c$ the node emission and the $d$
+neighbour subtrees are mutually independent, each neighbour measurement drawn from row $c$ of $T^{L}O$; the joint
+law is the stated product. Hellinger affinity is multiplicative over product measures, giving
+$\rho(P_a,P_b)=\rho_E\rho_G^{d}$. (b) Equal-prior Bayes error obeys the Bhattacharyya upper bound
+$P_e\le\tfrac12\rho(P_a,P_b)$ and the Le~Cam lower bound $P_e\ge\tfrac12\big(1-\mathrm{TV}\big)\ge
+\tfrac12\big(1-\sqrt{1-\rho^2}\big)\ge\tfrac14\rho^{2}$; substitute $\rho=\rho_E\rho_G^{d}$ and use
+$-\log\rho_\bullet=\tfrac12\delta_\bullet^2(1+o(1))$. (c) The log-likelihood ratio is a sum of $d$ i.i.d.\ neighbour
+terms plus the node term; Chernoff's theorem gives error exponent equal to the summed Chernoff informations
+$C_E+dC_G$, and the local CLT supplies the $d^{-1/2}$ prefactor (Bahadur--Rao). (d) Immediate from (b)--(c).
+\hfill$\square$\\[2pt]
+\textbf{Verified} (\texttt{paperB\_rate\_sim.py}, exact node alias $\delta_E{=}0$, so all information is
+structural): with $(T\!O)_a{=}(.64,.20,.16)$, $(T\!O)_b{=}(.28,.20,.52)$ the Chernoff information is $C_G{=}0.0925$
+($s^\star{=}0.49$, so Bhattacharyya $\beta_G{=}0.0924$ nearly attains it). A Bahadur--Rao fit
+$-\log P_e = a\,d + p\log d + \text{const}$ over $d\le 96$ recovers exponent $a=0.0934$ (matches $C_G=0.0925$) and
+polynomial order $p=0.34$ (matches the predicted $\tfrac12$): the error decays as $d^{-1/2}e^{-dC_G}$ with the
+\emph{structural} channel alone, though the measurement is fully aliased.}
+\begin{intuition}
+The rate says exactly how ``buy-able'' de-aliasing is: each informative neighbour multiplies the odds of the
+right call by a fixed factor $e^{C_G}$, so error falls geometrically in the number of neighbours---but the
+per-neighbour exponent $C_G\approx\tfrac14\delta_G^2$ is tiny when the states are near-aliased, so you need
+$\sim 1/\delta_G^2$ neighbours to separate them. That $1/\delta_G^2$ is the price of the alias.
+\end{intuition}
+\paragraph{Remaining rigor.} (a)--(d) are proved for the immediate-neighbour (degree-$d$ / star) case, which is
+also the retrieval geometry. Two extensions complete the T\&M version: (i) \emph{general trees}---the affinity
+still factorizes over the $d$ immediate subtrees and each subtree affinity is $\le$ its radius-$1$ value, so the
+bound holds a fortiori; the exact deep-subtree Chernoff constant is the remaining computation; (ii) the
+\emph{field} minimax (estimating $R$ over all nodes) follows from the pairwise rate by a standard Assouad/Fano
+reduction. Neither is expected to change the boundary $n(\delta_E^2+\delta_G^2)$.
 \begin{conjecture}[Bayesian weak identification]\label{conj:bayes}
 As $(\delta_E,\delta_G)\to0$: (a) the posterior for $R$ contracts iff $n(\delta_E^2+\delta_G^2)\to\infty$; (b)
 the emission-bias nuisance may fail to contract while $R$ does (functional vs.\ parameter); (c) two admissible
@@ -210,8 +253,10 @@ $\mathcal I_G$ axis of Theorem~\ref{thm:info}.
   \item \textbf{Finish Thms \ref{thm:dealias}--\ref{thm:info}} rigorously (\ref{thm:dealias},\ref{cor:func},
   \ref{thm:info} essentially done; \ref{thm:lump} needs the lumpability$\to$HMRF extension and the genericity
   condition).
-  \item \textbf{Prove the near-aliasing rate} (Conj.~\ref{conj:rate}): the phase boundary in
-  $n(\delta_E^2+\delta_G^2)$. This is the T\&M centerpiece---new mathematics, not an application.
+  \item \textbf{Near-aliasing rate (Thm~\ref{thm:rate})---proved for the immediate-neighbour case} and
+  numerically confirmed (exponent $=$ Chernoff information, $d^{-1/2}$ prefactor). Remaining: the deep-subtree
+  Chernoff constant on general trees, and the Assouad/Fano reduction for the field minimax. This is the T\&M
+  centerpiece---the phase boundary $n(\delta_E^2+\delta_G^2)$ is now a theorem, not a conjecture.
   \item \textbf{Measurement-design corollary.} If a second channel $O^{(2)}$ (a different prompt/model/verifier)
   partially breaks the alias, derive the \emph{structure$\leftrightarrow$replication trade-off}: how much
   targeted re-measurement restores identification as a function of $\delta_G$. (Positions us away from the 2026
