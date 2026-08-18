@@ -30,16 +30,21 @@ node-level emission distributions coincide or nearly so. Our motivating patholog
 relevance judge grades a necessary \emph{bridge} passage exactly like an \emph{irrelevant} one, because it does
 not directly answer the query. The question is not ``can we correct the judge?'' but the sharper statistical
 one: \emph{when can the dependence structure distinguish latent states that the measurement channel itself
-cannot?} We call this \textbf{structural de-aliasing}. We formalize a graph-indexed latent Markov model with a
-node emission, define the aliasing depth $L^\star$, characterize exact aliasing by an emission-consistent
-\emph{lumpable} partition (an impossibility boundary), separate \emph{functional} identifiability of a decision
-target $R=h(Z)$ from full parameter identifiability, and give the information-theoretic limit
-$\mathcal I_G=I(R_v;Y_{N(v)}\mid Y_v,X_v)$ that says exactly how much a cheap non-structural covariate leaves for
-structure to add. We \emph{prove} the near-aliasing rate---a phase boundary $n(\delta_E^2+\delta_G^2)$ with
-error exponent equal to the Chernoff information between the structural signatures, verified numerically---and lay
-out the Bayesian weak-identification theory that would round out a T\&M paper. The empirical failure that prompted this
-redirection---structure barely helps retrieval once cosine is present---is not a defeat: it is the regime
-$\mathcal I_G\!\to\!0$, an instance the theory predicts exactly.
+cannot?} We call this \textbf{structural de-aliasing}, and we separate two aliasing depths---\emph{path}
+(single-measurement) and \emph{structural} (joint-neighbourhood)---showing the branching of the tree can de-alias
+states no single path distinguishes ($L^\star_{\mathrm{struct}}<L^\star_{\mathrm{path}}$, a de Finetti /
+overdispersion signature). A literature audit disciplines the claims: the qualitative backbone---exact aliasing
+$=$ an emission-consistent \emph{lumpable} partition---is probabilistic bisimulation $=$ lumpability, and
+``branching beats paths'' is the classical linear-vs-branching-time gap, so we \emph{demote} these to scaffolding.
+The paper's weight rests on what is unclaimed: (i) a \emph{near-aliasing rate}---we prove the phase boundary
+$\delta_E^2+d\,\delta_G^2$ with error exponent the shared-$s$ Chernoff information between the structural
+signatures (verified numerically), where the one aliased-state precedent (Weiss--Nadler 2015) stops at
+consistency; (ii) the \emph{aliasing framing} itself, which every distinct-emission tree-identifiability result
+skips; (iii) an iso-information \emph{design} law pricing structure against replication and a second instrument;
+(iv) \emph{functional} recovery $R=h(Z)$ without parameter identification; and (v) the information limit
+$\mathcal I_G=I(R_v;Y_{N(v)}\mid Y_v,X_v)$ fixing when structure can help at all. The empirical failure that
+prompted this redirection---structure barely helps retrieval once cosine is present---is not a defeat: it is the
+regime $\mathcal I_G\!\to\!0$, an instance the theory predicts exactly.
 \end{abstract}
 
 \paragraph{Status tags.} \PROVEN{} established or numerically verified here;\ \SKETCH{} argued, proof to be
@@ -63,15 +68,21 @@ evidence, an irrelevant passage next to more irrelevant material---so that the \
 measurements distinguishes what the node measurement cannot. That is the question worth a theorem.
 \end{intuition}
 
-\paragraph{Positioning.} Generic identifiability of HMMs with linearly-independent emissions is classical
-(Gassiat et al.); identifiability of HMMs with \emph{two aliased states} has been studied (Weiss \& Nadler,
-2015); and a 2026 line proves nonidentifiability of LLM-judge debiasing and proposes anchor/paired designs. We
-do \emph{not} re-enter those lanes. Our distinct contribution is the combination: \emph{(i)} graph/tree-indexed
-latent structure, \emph{(ii)} \emph{heterophilic} compatibility (aliased states occur next to \emph{different}
-states, not like themselves), \emph{(iii)} \emph{near}-aliasing rates rather than only generic identifiability,
-\emph{(iv)} identifiability of a scientific \emph{functional} when the full model is not identified, and
-\emph{(v)} the information-theoretic boundary that ties all of it to when a cheap covariate leaves anything for
-structure to add.
+\paragraph{What is and is not new (summary; see \S\ref{sec:related}).} A literature audit sharpened the claims
+considerably, and we state them conservatively. The \emph{qualitative} backbone is largely known: our structural
+signature $Q_L$ is a \emph{branching-time} object, and ``$Q_L(a)=Q_L(b)\,\forall L\iff$ common emission-consistent
+lumpable block'' is probabilistic bisimulation $=$ lumpability (Larsen--Skou 1991; Buchholz 1994;
+Baier et al.\ 2005); ``branching distinguishes more than paths'' is the classical linear-vs-branching-time gap;
+and the tree-identifiability engine (conditionally-i.i.d.\ siblings) is Chang (1996) and Allman--Matias--Rhodes
+(2009). We therefore \emph{demote} the lumpability characterization to qualitative scaffolding and cite it as
+such. The genuinely unclaimed territory, and the paper's intended centre, is \textbf{quantitative}: (i) a
+\emph{near-aliasing rate}---a Chernoff/minimax law for how fast the branching neighbourhood separates
+\emph{node-aliased} states as the transition-row gap $\delta_G$ and branching degree $d$ vary---which even the one
+aliased-state paper (Weiss--Nadler 2015: two states, a line, consistency only, no rates, not the near-aliased
+regime) leaves open; (ii) the \emph{aliasing} framing itself, since every tree-identifiability result assumes
+\emph{distinct} emissions and so never de-aliases $O_a=O_b$; and (iii) the information limit $\mathcal I_G$ that
+says when a cheap covariate leaves anything for structure to add. Functional recovery (\S\ref{sec:func}) is a
+clean corollary in the lineage of estimable functions (Rao) and partial identification (Manski).
 
 \section{Model}
 Let $G=(V,\mathcal E)$ be a known graph (we develop the tree/chain case first). Each node carries a latent state
@@ -85,63 +96,125 @@ target is a \emph{functional} $R_v=h(Z_v)$ (in retrieval, $h(c)=\I\{c\ \text{rel
 \emph{node-aliased} if $O_a=O_b$ (exactly) or $d(O_a,O_b)=\delta_E$ small (near). Bridge-blindness is
 $O_{\textsf{bridge}}=O_{\textsf{irrelevant}}$ with $O_{\textsf{direct}}$ distinct.
 
-\section{Structural signatures and aliasing depth}
-\begin{definition}[Structural observation signature]
-$Q_L(c)=\mathcal L\big(Y_{B_L(v)}\mid Z_v=c\big)$, the law of the radius-$L$ neighbourhood of measurements given
-the centre state. $Q_0(c)=O_c$.
+\section{Structural signatures and two aliasing depths}
+We must distinguish two objects that an earlier draft conflated. The first is the law of a \emph{single}
+measurement at distance $L$; the second is the \emph{joint} law of the whole neighbourhood. The joint is strictly
+richer, and the gap between them is where the interesting theory lives.
+\begin{definition}[Path signature and structural signature]
+The \emph{path signature} is $P_L(c)=\mathcal L(Y_w\mid Z_v=c)$ for a single node $w$ at path-distance $L$ from
+$v$; on a tree $P_L(c)=(T^{L}O)_c$ (row $c$). The \emph{structural signature} is
+$Q_L(c)=\mathcal L\big(Y_{B_L(v)}\mid Z_v=c\big)$, the \emph{joint} law of \emph{all} measurements in the
+radius-$L$ ball. $P_0(c)=Q_0(c)=O_c$; $Q_L$ carries the dependence among the $Y_w$, $P_L$ only a marginal.
 \end{definition}
-If the judge is perfectly bridge-blind, $Q_0(\textsf{bridge})=Q_0(\textsf{irrelevant})$. De-aliasing asks
-whether $Q_L$ separates them for some $L>0$.
-
-\begin{theorem}[De-aliasing and aliasing depth]\label{thm:dealias}
-On a tree-indexed Markov chain, the law of the measurement at a node at path-distance $L$ from $v$, given
-$Z_v=c$, is row $c$ of $T^{L}O$:
+\begin{definition}[Path vs.\ structural aliasing depth]
+$L^\star_{\mathrm{path}}(a,b)=\min\{L:P_L(a)\neq P_L(b)\}$ and
+$L^\star_{\mathrm{struct}}(a,b)=\min\{L:Q_L(a)\neq Q_L(b)\}$. Since a discriminating marginal implies a
+discriminating joint but not conversely,
 \[
-   \Pr(Y_w=y\mid Z_v=c)=\big(T^{L}O\big)_{c,y}.
+   L^\star_{\mathrm{struct}}(a,b)\ \le\ L^\star_{\mathrm{path}}(a,b),
 \]
-Hence if $O_a=O_b$ but $(T^{L}O)_a\neq(T^{L}O)_b$ for some $L$, states $a,b$ are distinguishable from a
-distance-$L$ measurement, and the \emph{aliasing depth} is
-$L^\star(a,b)=\min\{L\ge0:(T^{L}O)_a\neq(T^{L}O)_b\}$.
+and the inequality can be strict---the branching of the tree can de-alias states no single path distinguishes
+(Thm~\ref{thm:branch}).
+\end{definition}
+If the judge is perfectly bridge-blind, $Q_0(\textsf{bridge})=Q_0(\textsf{irrelevant})$; de-aliasing asks whether
+$Q_L$ (not merely $P_L$) separates them for some $L>0$.
+
+\begin{theorem}[Path de-aliasing]\label{thm:dealias}
+On a tree-indexed Markov chain, the path signature is row $c$ of $T^{L}O$:
+$\Pr(Y_w=y\mid Z_v=c)=(T^{L}O)_{c,y}$. Hence if $O_a=O_b$ but $(T^{L}O)_a\neq(T^{L}O)_b$ for some $L$, then
+$L^\star_{\mathrm{path}}(a,b)=\min\{L\ge0:(T^{L}O)_a\neq(T^{L}O)_b\}$ hops suffice for a \emph{single}
+measurement to distinguish them.
 \end{theorem}
-\PROVEN{Proof is the Markov property: $\Pr(Y_w\mid Z_v{=}c)=\sum_{c'}\Pr(Y_w\mid Z_w{=}c')\,(T^{L})_{cc'}
-=(T^{L}O)_{c}$. In the bridge-blind model with heterophilic $T$ (bridge$\to$direct), $O_{\textsf{irr}}=
-O_{\textsf{bridge}}$ but $(TO)_{\textsf{irr}}=(0.64,0.20,0.16)\neq(TO)_{\textsf{bridge}}=(0.28,0.20,0.52)$, so
-$L^\star=1$: one hop de-aliases. Verified: classifying the node-aliased pair from the node measurement alone is
-at chance ($0.598$, prior-driven), from the neighbourhood $0.733$.}
+\PROVEN{Markov property: $\Pr(Y_w\mid Z_v{=}c)=\sum_{c'}(T^{L})_{cc'}O_{c'}=(T^{L}O)_{c}$. In the bridge-blind
+model with heterophilic $T$ (bridge$\to$direct), $O_{\textsf{irr}}=O_{\textsf{bridge}}$ but
+$(TO)_{\textsf{irr}}=(0.64,0.20,0.16)\neq(TO)_{\textsf{bridge}}=(0.28,0.20,0.52)$, so
+$L^\star_{\mathrm{path}}=1$. Verified: classifying the node-aliased pair from the node measurement alone is at
+chance ($0.598$), from the neighbourhood $0.733$.}
 \begin{intuition}
-$L^\star$ is ``how many hops of context you need to tell the two states apart.'' Node-level aliasing is
-$L^\star>0$; heterophily (aliased states have different neighbours) is what makes $L^\star$ finite and small.
+$L^\star_{\mathrm{path}}$ is ``how many hops until \emph{one} downstream measurement is marginally informative.''
+Heterophily (aliased states have different neighbours) is what makes it finite and small.
 \end{intuition}
 
-\begin{theorem}[Exact aliasing $=$ lumpable partition; impossibility]\label{thm:lump}
+\begin{theorem}[Branching de-aliasing: the joint beats every marginal]\label{thm:branch}
+There exist tree-indexed models and node-aliased states $a,b$ with $L^\star_{\mathrm{path}}(a,b)=\infty$ (no
+single measurement at any distance distinguishes them: $P_L(a)=P_L(b)$ for all $L$) yet
+$L^\star_{\mathrm{struct}}(a,b)=2$. The mechanism is dependence: on a tree the \emph{immediate}-neighbour joint
+factorizes, $Q_1(c)=(TO)_c^{\otimes\deg(v)}$, so radius-$1$ branching adds nothing beyond the marginal; but at
+radius $\ge2$ siblings sharing a parent are conditionally dependent given $Z_v$, and their \emph{joint} can
+differ across states whose every marginal coincides. The de-aliasing rate is then the Chernoff information of the
+joint signatures, positive even though the per-measurement Chernoff information is exactly $0$.
+\end{theorem}
+\PROVEN{\emph{Explicit construction and verification} (\texttt{paperB\_branch\_sim.py}). Binary measurement;
+centre state $c\in\{a,b\}$ acts through a hidden intermediate $U\sim T_c$ over three states with Bernoulli
+measurement means $m=(.2,.5,.8)$, each emitting conditionally-i.i.d.\ children. Take $T_a=(.5,0,.5)$ and
+$T_b=(0,1,0)$. Then every single-measurement marginal has mean $\sum_j T_c(j)m_j=0.5$ under \emph{both} states
+(so $P_L(a)=P_L(b)$, $L^\star_{\mathrm{path}}=\infty$), while the pairwise correlation
+$\E[Y_iY_k\mid c]=\sum_j T_c(j)m_j^2$ is $0.34$ vs.\ $0.25$---the sibling joint separates them. Numerically the
+single-measurement Bayes error is exactly $0.5$ (chance), the two-sibling error $0.41$, and it decays as
+$e^{-D\gamma}$ in the number $D$ of siblings with structural rate $\gamma\to0.089>0$, whereas the path Chernoff
+information is $0$. Hence $L^\star_{\mathrm{struct}}=2<\infty=L^\star_{\mathrm{path}}$.}
+\begin{intuition}
+This is a de Finetti / overdispersion signature: state $a$ makes siblings \emph{agree} (a shared hidden cause
+pushes them jointly low or jointly high), state $b$ makes them independent fair coins. Any one child looks like a
+fair coin under both---you must see \emph{several children at once} to feel the correlation. Branching is not just
+``more of the same measurement''; it exposes dependence, a strictly stronger channel.
+\end{intuition}
+\paragraph{Positioning.} The mechanism---identification from repeated conditionally-i.i.d.\ views of a hidden
+node---is the engine of latent-tree identifiability (Chang 1996 on triples; Allman--Matias--Rhodes 2009 on
+Kruskal/tensor; Choi et al.\ 2011), and abstractly ``branching $\sqsupset$ path'' is linear-vs-branching-time
+(Baier et al.\ 2005). Our contribution is not that principle but its use for \emph{aliasing}: those results all
+assume \emph{distinct} emissions and identify the full tree, whereas we drive the \emph{same} mechanism to
+separate \emph{node-aliased} states $O_a=O_b$ and, in Thm~\ref{thm:rate}, attach a \emph{rate}. To our knowledge
+the path-vs-structural aliasing dichotomy and the overdispersion de-aliasing signature are not stated in either
+the phylogenetics/latent-tree or the concurrency literatures.
+
+\begin{theorem}[Exact aliasing $=$ lumpable partition; \emph{scaffold, largely known}]\label{thm:lump}
 Under a genericity condition on $O$, states $a,b$ are \emph{fully aliased} ($Q_L(a)=Q_L(b)$ for all $L$, hence
 indistinguishable from any finite neighbourhood) iff they lie in the same block of the coarsest partition
 $\mathcal P$ of $[K]$ that is (i) \emph{emission-consistent} ($O$ constant on blocks) and (ii) \emph{strongly
-lumpable} for $T$ ($\sum_{c'\in B'}T_{cc'}$ is constant over $c\in B$, for all blocks $B,B'$). No consistent
-estimator separates states in a common block.
+lumpable} for $T$ ($\sum_{c'\in B'}T_{cc'}$ constant over $c\in B$). No consistent estimator separates states in a
+common block.
 \end{theorem}
-\SKETCH{On a tree, conditioning on $Z_v=c$, the subtrees are independent and each is a Markov chain rooted at a
-neighbour whose state is drawn from row $c$ of $T$; the whole neighbourhood law depends on $c$ only through that
-row \emph{aggregated to the level at which the observation process is measurable}. Emission-consistency plus
-strong lumpability (Kemeny--Snell) make the block process a Markov chain with block-measurable emissions, so
-same-block states induce identical $Q_L$ for all $L$; conversely, if the pair is not in a common
-emission-consistent lumpable block, some $(T^{L}O)$ row differs (Thm~\ref{thm:dealias}) and they de-alias. The
-genericity condition rules out accidental cancellations in $O$. Making this fully rigorous---and extending
-lumpability from chains to hidden Markov \emph{random fields}---is a core to-do.}
+\SKETCH{\textbf{This is known and we cite it as such.} The characterization is exactly \emph{probabilistic
+bisimulation} for labelled Markov chains (Larsen--Skou 1991), which equals \emph{strong lumpability}
+(Kemeny--Snell 1960, Thm 6.3.2; Buchholz 1994) with the emission as label; the branching-vs-linear placement is
+Baier et al.\ (2005). \emph{Forward:} emission-consistency $+$ lumpability make the block process Markov with
+block-measurable emissions, so same-block states induce identical joint $Q_L$ for all $L$. \emph{Converse:} the
+hard direction, controlling the \emph{joint} law (not merely marginals $P_L$, which by Thm~\ref{thm:branch} do not
+suffice); the genericity condition rules out accidental cancellations in $O$. \textbf{We do not claim this as a
+contribution}---it is the qualitative identifiability boundary against which the quantitative results are stated.
+The one nuance worth flagging is that this \emph{tree} (branching) equivalence is strictly finer than the
+\emph{string}/trace equivalence of classical HMM realization theory (Hankel-rank minimality: Carlyle--Paz 1971,
+Vidyasagar 2011, Balle et al.\ 2015), precisely because siblings are dependent---the content of
+Thm~\ref{thm:branch}.}
 
-\section{Functional identifiability: decision recovery without parameter recovery}
-The emission cannot see relevance ($O_{\textsf{bridge}}=O_{\textsf{irr}}$), so the full role model is not
-node-identified. But the \emph{decision} may still be.
-\begin{corollary}[Functional identifiability]\label{cor:func}
-$R_v=h(Z_v)$ is identified from the neighbourhood iff every pair $a,b$ with $h(a)\neq h(b)$ is de-aliased
-($L^\star(a,b)<\infty$). In the bridge-blind model the only $h$-splitting node-aliased pair is
-$(\textsf{irrelevant},\textsf{bridge})$, de-aliased at radius $1$ iff $(TO)_{\textsf{irr}}\neq(TO)_{\textsf{bridge}}$
-(bridges disproportionately adjacent to direct evidence). Hence \emph{relevance is recoverable even though the
-emission is blind to it and the role parameters are not identified}.
-\end{corollary}
-\PROVEN{Immediate from Thm~\ref{thm:dealias}: identifying $h$ requires distinguishing only $h$-splitting pairs.}
-This is the genuinely Bayesian/statistical distinction the paper should foreground: \emph{parameter recovery vs.\
-decision recovery}. You need not identify the confusion matrix to identify what to do.
+\section{Functional identifiability: decision recovery without parameter recovery}\label{sec:func}
+\emph{This is the conceptual payoff.} The headline is not about bridges or judges; it is:
+\begin{quote}\itshape
+We need not identify the latent measurement model to identify the scientific decision target.
+\end{quote}
+The emission cannot see relevance ($O_{\textsf{bridge}}=O_{\textsf{irr}}$), so the confusion matrix and the role
+labels are \emph{not} identified. Yet the functional $R=h(Z)$ can be, and that is all a decision needs.
+\begin{theorem}[Functional identifiability]\label{cor:func}
+The functional $R_v=h(Z_v)$ is identified from the radius-$L$ neighbourhood iff every pair $a,b$ with
+$h(a)\neq h(b)$ is structurally de-aliased, $L^\star_{\mathrm{struct}}(a,b)\le L$. This can hold while the
+underlying state is \emph{not} identified: aliased pairs $a,b$ with $h(a)=h(b)$ never need separating, and (by
+Thm~\ref{thm:branch}) an $h$-splitting pair may be separated by the branching joint even when no single
+measurement---hence no marginal likelihood term---distinguishes them. In the bridge-blind model the only
+$h$-splitting node-aliased pair is $(\textsf{irrelevant},\textsf{bridge})$, de-aliased at radius $1$; relevance is
+recoverable though the emission is blind to it and the role parameters are not.
+\end{theorem}
+\PROVEN{Identifying $h$ requires distinguishing only $h$-splitting pairs; apply Thms~\ref{thm:dealias}--
+\ref{thm:branch} to exactly those pairs, and note $h$-collapsing aliased pairs are free.}
+\begin{intuition}
+Estimable functions of a nonidentified parameter are classical (Rao), and partial identification (Manski) usually
+delivers a \emph{set} for a target under a nonidentified model; the crisp statement here---\emph{the recoverable
+functionals are exactly those measurable w.r.t.\ the coarsest emission-consistent lumpable partition}---is the
+natural corollary of Thm~\ref{thm:lump}, and the structural signature can \emph{point}-identify such a functional
+even when the marginal likelihood cannot (Thm~\ref{thm:branch}). ``Recover the decision, not the parameter'' is
+both the statistical selling point and the reason the retrieval application, which only ever needed the decision,
+was never really asking for the (impossible) parameter recovery.
+\end{intuition}
 
 \section{The information limit: exactly when structure can help}
 Let $X_v$ be cheap non-structural covariates. Define the \emph{incremental structural information}
@@ -179,61 +252,106 @@ computation, and the conjectured phase boundary becomes a theorem.
 
 \begin{theorem}[Near-aliasing rate and phase boundary]\label{thm:rate}
 Test $H_a\!:Z_v=a$ against $H_b\!:Z_v=b$ (with $h(a)\neq h(b)$) from the node measurement $Y_v$ and $d$
-neighbour measurements at radius $L$, under the tree-indexed model. Let the node and per-neighbour Chernoff
-informations be $C_E=\max_{s}-\log\sum_y O_{a,y}^{s}O_{b,y}^{1-s}$ and
-$C_G=\max_{s}-\log\sum_y (T^{L}O)_{a,y}^{s}(T^{L}O)_{b,y}^{1-s}$, and the Bhattacharyya coefficients
-$\rho_E=\sum_y\sqrt{O_{a,y}O_{b,y}}=1-\tfrac12\delta_E^2$, $\rho_G=1-\tfrac12\delta_G^2$. Then for the
-equal-prior Bayes error $P_e$:
+\emph{conditionally-independent} neighbour measurements at radius $L$ (the immediate-neighbour / star geometry,
+where the $Y_j$ are i.i.d.\ from $(T^{L}O)_c$ given $Z_v=c$; for $L=1$ this is exact---see the dependence caveat
+below). Write the Chernoff \emph{divergence functions}
+$C_E(s)=-\log\sum_y O_{a,y}^{s}O_{b,y}^{1-s}$ and $C_G(s)=-\log\sum_y (T^{L}O)_{a,y}^{s}(T^{L}O)_{b,y}^{1-s}$,
+with Chernoff informations $C_E=\max_s C_E(s)$, $C_G=\max_s C_G(s)$ (optimizers $s_E^\star,s_G^\star$), and
+Bhattacharyya coefficients $\rho_E=1-\tfrac12\delta_E^2$, $\rho_G=1-\tfrac12\delta_G^2$ (the $s{=}\tfrac12$ values).
+Then for the equal-prior Bayes error $P_e$:
 \begin{enumerate}[label=(\alph*),leftmargin=*,itemsep=0pt]
-\item \textbf{(product factorization)} conditional independence gives the joint law
-$P_c=O_c\otimes\bigotimes_{j=1}^{d}(T^{L}O)_c$ under $H_c$, so the affinity multiplies:
-$\rho(P_a,P_b)=\rho_E\,\rho_G^{\,d}$;
+\item \textbf{(product factorization)} $P_c=O_c\otimes(T^{L}O)_c^{\otimes d}$, so the $s$-tilted affinity
+multiplies: $\sum P_a^{s}P_b^{1-s}=\exp\!\big(-C_E(s)-d\,C_G(s)\big)$; at $s{=}\tfrac12$, $\rho=\rho_E\rho_G^{d}$;
 \item \textbf{(bounds)} $\tfrac14\big(\rho_E\rho_G^{d}\big)^{2}\le P_e\le \tfrac12\,\rho_E\rho_G^{d}$, hence
 $P_e=\exp\!\big(-\Theta(\delta_E^2+d\,\delta_G^2)\big)$;
-\item \textbf{(sharp exponent)} $P_e\;\asymp\;d^{-1/2}\exp\!\big(-(C_E+d\,C_G)\big)$ (Bahadur--Rao);
-\item \textbf{(phase boundary)} $P_e\to0$ iff $\delta_E^2+d\,\delta_G^2\to\infty$; in the near-aliased regime with
-$\delta_E$ bounded, iff $d\,\delta_G^2\to\infty$. Writing $n$ for the effective count of informative neighbours,
-the boundary is $n(\delta_E^2+\delta_G^2)\to\infty$.
+\item \textbf{(sharp exponent, shared $s$)}
+$P_e\asymp d^{-1/2}\exp\!\big(-\max_{s}\{C_E(s)+d\,C_G(s)\}\big)$ (Bahadur--Rao, under a nonlattice condition on
+the per-neighbour log-likelihood ratio; a bounded oscillatory factor replaces the constant in the lattice case).
+The exponent uses \emph{one shared} $s$: $\max_s\{C_E(s)+dC_G(s)\}\le C_E+dC_G$ in general, with equality only if
+$s_E^\star=s_G^\star$; as $d\to\infty$ the optimizer $\to s_G^\star$ and the exponent is
+$d\,C_G+C_E(s_G^\star)+o(1)$---the node contributes $C_E$ evaluated at the \emph{structural} optimizer, an $O(1)$
+term, not $\max_s C_E$;
+\item \textbf{(phase boundary)} for one node of degree $d$, $P_e\to0$ iff $\delta_E^2+d\,\delta_G^2\to\infty$; in
+the near-aliased regime with $\delta_E$ bounded, iff $d\,\delta_G^2\to\infty$. For $n$ independent degree-$d$ stars
+the effective information is $n(\delta_E^2+d\,\delta_G^2)$, separating \emph{replication depth} $n$ from
+\emph{structural degree} $d$.
 \end{enumerate}
 \end{theorem}
-\PROVEN{\emph{Proof.} (a) By the Markov property on the tree, given $Z_v=c$ the node emission and the $d$
-neighbour subtrees are mutually independent, each neighbour measurement drawn from row $c$ of $T^{L}O$; the joint
-law is the stated product. Hellinger affinity is multiplicative over product measures, giving
-$\rho(P_a,P_b)=\rho_E\rho_G^{d}$. (b) Equal-prior Bayes error obeys the Bhattacharyya upper bound
-$P_e\le\tfrac12\rho(P_a,P_b)$ and the Le~Cam lower bound $P_e\ge\tfrac12\big(1-\mathrm{TV}\big)\ge
-\tfrac12\big(1-\sqrt{1-\rho^2}\big)\ge\tfrac14\rho^{2}$; substitute $\rho=\rho_E\rho_G^{d}$ and use
+\PROVEN{\emph{Proof.} (a) By the Markov property, given $Z_v=c$ the node emission and the $d$ neighbours are
+mutually independent, each $\sim(T^{L}O)_c$; affinities of products multiply, and so does the $s$-tilted
+integral. (b) Bhattacharyya upper bound $P_e\le\tfrac12\rho$ and Le~Cam lower bound
+$P_e\ge\tfrac12(1-\mathrm{TV})\ge\tfrac14\rho^{2}$ with $\rho=\rho_E\rho_G^{d}$ and
 $-\log\rho_\bullet=\tfrac12\delta_\bullet^2(1+o(1))$. (c) The log-likelihood ratio is a sum of $d$ i.i.d.\ neighbour
-terms plus the node term; Chernoff's theorem gives error exponent equal to the summed Chernoff informations
-$C_E+dC_G$, and the local CLT supplies the $d^{-1/2}$ prefactor (Bahadur--Rao). (d) Immediate from (b)--(c).
-\hfill$\square$\\[2pt]
-\textbf{Verified} (\texttt{paperB\_rate\_sim.py}, exact node alias $\delta_E{=}0$, so all information is
-structural): with $(T\!O)_a{=}(.64,.20,.16)$, $(T\!O)_b{=}(.28,.20,.52)$ the Chernoff information is $C_G{=}0.0925$
-($s^\star{=}0.49$, so Bhattacharyya $\beta_G{=}0.0924$ nearly attains it). A Bahadur--Rao fit
-$-\log P_e = a\,d + p\log d + \text{const}$ over $d\le 96$ recovers exponent $a=0.0934$ (matches $C_G=0.0925$) and
-polynomial order $p=0.34$ (matches the predicted $\tfrac12$): the error decays as $d^{-1/2}e^{-dC_G}$ with the
-\emph{structural} channel alone, though the measurement is fully aliased.}
+terms plus the node term; Chernoff's theorem gives exponent $\max_s\{C_E(s)+dC_G(s)\}$ (one $s$ tilts the whole
+product), and the local CLT gives the $d^{-1/2}$ prefactor under the nonlattice condition. Convexity of $C_E(s)+
+dC_G(s)$ and $C_G'(s_G^\star)=0$ give the $d\to\infty$ expansion. (d) Immediate from (b)--(c). \hfill$\square$\\[2pt]
+\textbf{Verified} (\texttt{paperB\_rate\_sim.py}). \emph{Exact node alias} $\delta_E{=}0$ (all information
+structural): $(T\!O)_a{=}(.64,.20,.16)$, $(T\!O)_b{=}(.28,.20,.52)$ give $C_G{=}0.0925$; a Bahadur--Rao fit
+$-\log P_e=a\,d+p\log d+\text{const}$ ($d\le96$) recovers $a=0.0934$ (matches $C_G$) and $p=0.34$ (matches the
+$\tfrac12$ prefactor). \emph{Shared-$s$ correction:} for an asymmetric node channel ($s_E^\star{=}0.68$) crossed
+with a symmetric neighbour channel ($s_G^\star{=}0.50$), $\max_s\{C_E{+}C_G\}=0.845$ at the compromise
+$s^\star{=}0.57$, strictly below the separate-max $0.878$---confirming the exponent is the shared-$s$ value, with
+the gap $O((s_E^\star-s_G^\star)^2)$ vanishing near the alias.}
 \begin{intuition}
 The rate says exactly how ``buy-able'' de-aliasing is: each informative neighbour multiplies the odds of the
 right call by a fixed factor $e^{C_G}$, so error falls geometrically in the number of neighbours---but the
 per-neighbour exponent $C_G\approx\tfrac14\delta_G^2$ is tiny when the states are near-aliased, so you need
 $\sim 1/\delta_G^2$ neighbours to separate them. That $1/\delta_G^2$ is the price of the alias.
 \end{intuition}
+
+\begin{corollary}[Iso-information: structure vs.\ replication vs.\ a second instrument]\label{cor:design}
+Because independent channels contribute \emph{additively} to the error exponent (product factorization,
+Thm~\ref{thm:rate}a), a design with $n$ replicated node measurements, $d$ informative neighbours, and $m$ readings
+from a second instrument $O^{(2)}$ (partially breaking the alias, per-reading information $C_2$) has effective
+local information
+\[
+   \mathcal C(n,d,m)\;=\;n\,C_E+d\,C_G+m\,C_2\quad(\text{leading order; shared-}s\text{ correction }o(1)\text{ near the alias}),
+\]
+and the \emph{iso-information surfaces} $\{n C_E+d C_G+m C_2=\text{const}\}$ give the exact substitution rates: one
+neighbour is worth $C_G/C_E$ repeated node measurements and $C_G/C_2$ second-instrument readings. In the
+near-aliased regime $C_E\to0$ (the node is useless), so structure and the second instrument are the \emph{only}
+currencies, trading at $C_G/C_2=\delta_G^2/\delta_2^2$.
+\end{corollary}
+\PROVEN{Additivity of Chernoff exponents over independent channels (Thm~\ref{thm:rate}a) with the shared-$s$
+caveat of Thm~\ref{thm:rate}c; the near-aliased limits are the Hellinger expansions.} This turns ``use a second
+prompt/model'' from a corollary into a quantitative \emph{measurement-design} statement---how many extra readings
+one unit of structure is worth---which is the methodological result a T\&M readership will want, and it positions
+us squarely away from replication-only debiasing (anchor/paired designs): here structure is a first-class,
+priced substitute for measurement.
+
 \paragraph{Remaining rigor.} (a)--(d) are proved for the immediate-neighbour (degree-$d$ / star) case, which is
 also the retrieval geometry. Two extensions complete the T\&M version: (i) \emph{general trees}---the affinity
 still factorizes over the $d$ immediate subtrees and each subtree affinity is $\le$ its radius-$1$ value, so the
 bound holds a fortiori; the exact deep-subtree Chernoff constant is the remaining computation; (ii) the
 \emph{field} minimax (estimating $R$ over all nodes) follows from the pairwise rate by a standard Assouad/Fano
-reduction. Neither is expected to change the boundary $n(\delta_E^2+\delta_G^2)$.
-\begin{conjecture}[Bayesian weak identification]\label{conj:bayes}
-As $(\delta_E,\delta_G)\to0$: (a) the posterior for $R$ contracts iff $n(\delta_E^2+\delta_G^2)\to\infty$; (b)
-the emission-bias nuisance may fail to contract while $R$ does (functional vs.\ parameter); (c) two admissible
-structural priors $\Pi_1,\Pi_2$ give $d_{\mathrm{TV}}\{\Pi_1(R\mid Y,G),\Pi_2(R\mid Y,G)\}\to0$ in the identified
-regime and bounded-away-from-zero in the structurally-unidentified regime---a computable diagnostic separating
-``a correction learned from data'' from ``a correction imposed by the structural prior.''
+reduction. Neither is expected to change the boundary $n(\delta_E^2+d\,\delta_G^2)$ (replication depth $n$,
+structural degree $d$).
+
+\subsection{The local weak-identification regime (the Bayesian core to prove)}
+Contraction/no-contraction is a coarse dichotomy; the interesting Bayesian object sits \emph{on} the phase
+boundary. Index a sequence of models by $n$ (independent degree-$d$ stars) with structural separation shrinking at
+the critical rate
+\[
+   \sqrt{n}\,\delta_{G,n}\to \kappa\in[0,\infty],
+\]
+so $\kappa=\infty$ is strong identification, $\kappa=0$ full aliasing, and $\kappa\in(0,\infty)$ a genuine
+weak-identification continuum.
+\begin{conjecture}[Nonstandard limit on the boundary]\label{conj:bayes}
+Along $\sqrt n\,\delta_{G,n}\to\kappa$: (a) the local log-likelihood for the de-aliasing contrast converges (LAN
+with a \emph{degree-weighted} information $d\,I_G^\star$) to a Gaussian shift experiment with signal $\propto
+\kappa\sqrt d$, so the posterior for the functional $R$ has a \emph{nonstandard, prior-dependent} limit indexed by
+$\kappa$---interpolating Bernstein--von Mises ($\kappa=\infty$) and prior ($\kappa=0$); (b) the emission-bias
+\emph{nuisance} has a non-regular (prior-sensitive) limit while the \emph{functional} $R=h(Z)$ remains
+decision-consistent---the Bayesian face of parameter-vs-decision recovery; (c) hence
+$d_{\mathrm{TV}}\{\Pi_1(R\mid Y,G),\Pi_2(R\mid Y,G)\}\to$ an explicit function of $\kappa$ that is $0$ at
+$\kappa=\infty$ and bounded away from $0$ for $\kappa<\infty$---a computable ``learned-vs-imposed correction''
+diagnostic.
 \end{conjecture}
-\CONJ{Posterior-contraction machinery (Ghosal--van der Vaart style) adapted to the tree-signature likelihood;
-the prior-sensitivity claim is a cut/robustness statement. This is the most Bayesian-Analysis-flavoured piece and
-is the natural second paper if the T\&M rate theory is the first.}
+\CONJ{Establish LAN for the tree-signature likelihood at the aliasing point (the score is the sibling-covariance
+contrast of Thm~\ref{thm:branch}, so the information is $O(d)$---degree buys local information), then a
+Bernstein--von Mises / limit-experiment analysis in the localized parameter. The nuisance non-regularity is a
+cut-posterior statement. This is the Bayesian Analysis centre; it is genuinely nonstandard (weak identification),
+not routine posterior contraction.}
 
 \section{The three empirical regimes as instances of one theory}
 \begin{center}\small
@@ -248,32 +366,107 @@ impossibility & sufficient for $R$ & $0$ & no method can help \\ \bottomrule
 The apparent contradiction between the favorable sim and the retrieval null dissolves: they are two points on the
 $\mathcal I_G$ axis of Theorem~\ref{thm:info}.
 
-\section{Roadmap to a JASA T\&M paper}
+\section{Related work and honest positioning}\label{sec:related}
+The organizing distinction is \emph{linear-time vs.\ branching-time}: our signature $Q_L$ is the joint law of the
+neighbourhood \emph{tree} (branching), whereas the single-path $(T^{L}O)_c$ is a \emph{string/trace} law (linear).
+\begin{center}\small
+\begin{tabular}{p{4.6cm}p{4.9cm}p{4.4cm}}
+\toprule
+ingredient & nearest prior work & our position \\ \midrule
+$Q_L$-equivalence $=$ emission-consistent lumpable partition (Thm~\ref{thm:lump}) &
+probabilistic bisimulation (Larsen--Skou 1991; Desharnais--Panangaden 2002) $=$ strong lumpability (Kemeny--Snell
+1960; Buchholz 1994); hierarchy in Baier et al.\ 2005 & \textbf{known}; cited as qualitative scaffold, not a
+contribution \\
+path aliasing $=(T^{L}O)_c$ minimality & HMM realization / Hankel-rank (Carlyle--Paz 1971; Vidyasagar 2011;
+Balle--Panangaden--Precup 2015) & \textbf{known}; the string equivalence, strictly coarser than ours \\
+branching $\sqsupset$ path via conditionally-i.i.d.\ siblings (Thm~\ref{thm:branch}) & latent-tree identifiability
+(Chang 1996; Allman--Matias--Rhodes 2009; Choi et al.\ 2011) & engine \textbf{known}; our use for
+\emph{aliasing} ($O_a{=}O_b$) and with a \emph{rate} is not \\
+aliased-state HMM identifiability & Weiss--Nadler 2015 (2 states, a line, consistency $O_p(T^{-1/2})$, \emph{no
+rate}, not near-aliased) & \textbf{our opening}: a minimax/Chernoff \emph{rate}, any $K$, on trees \\
+functional recovery under non-identification (Thm~\ref{cor:func}) & estimable functions (Rao); partial
+identification (Manski 2003) & principle \textbf{old}; ``recoverable $=$ lumpable-measurable'' a clean corollary \\
+$\mathcal I_G$ information limit (Thm~\ref{thm:info}) & standard MI/log-loss identity & elementary as identity;
+novel as the \emph{screen} for when structure can help \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent\textbf{Bottom line.} The qualitative backbone is largely a repackaging of bisimulation$=$lumpability and
+latent-tree identifiability, and we say so. The paper's weight must rest on the \textbf{quantitative de-aliasing
+rate} (Thm~\ref{thm:rate}), the \textbf{aliasing framing} that no tree-identifiability result covers, the
+\textbf{design corollary} (Cor~\ref{cor:design}), and the \textbf{local weak-identification asymptotics}
+(Conj~\ref{conj:bayes}). We flag the latent-tree literature as large and phrase the aliasing-novelty as ``to our
+knowledge.''
+
+\section{The three empirical regimes as instances of one theory}
+\begin{center}\small
+\begin{tabular}{lccl}
+\toprule
+regime & cheap covariate $X$ & $\mathcal I_G$ & outcome \\ \midrule
+favorable simulation (Paper B v1) & absent/weak & large & graph rescues relevance \\
+real retrieval (Paper B v1) & cosine (strong) & $\approx 0$ & graph adds $\approx\!+0.03$; prior does the work \\
+impossibility & sufficient for $R$ & $0$ & no method can help \\ \bottomrule
+\end{tabular}
+\end{center}
+The apparent contradiction between the favorable sim and the retrieval null dissolves: they are two points on the
+$\mathcal I_G$ axis of Theorem~\ref{thm:info}.
+
+\section{Roadmap: what must carry the paper}
+Ordered by how much novelty each piece bears (audit-adjusted).
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
-  \item \textbf{Finish Thms \ref{thm:dealias}--\ref{thm:info}} rigorously (\ref{thm:dealias},\ref{cor:func},
-  \ref{thm:info} essentially done; \ref{thm:lump} needs the lumpability$\to$HMRF extension and the genericity
-  condition).
-  \item \textbf{Near-aliasing rate (Thm~\ref{thm:rate})---proved for the immediate-neighbour case} and
-  numerically confirmed (exponent $=$ Chernoff information, $d^{-1/2}$ prefactor). Remaining: the deep-subtree
-  Chernoff constant on general trees, and the Assouad/Fano reduction for the field minimax. This is the T\&M
-  centerpiece---the phase boundary $n(\delta_E^2+\delta_G^2)$ is now a theorem, not a conjecture.
-  \item \textbf{Measurement-design corollary.} If a second channel $O^{(2)}$ (a different prompt/model/verifier)
-  partially breaks the alias, derive the \emph{structure$\leftrightarrow$replication trade-off}: how much
-  targeted re-measurement restores identification as a function of $\delta_G$. (Positions us away from the 2026
-  anchor/paired-design debiasing work: our knob is \emph{structure}, replication is the corollary.)
-  \item \textbf{Screen a second, no-cheap-prior application by $\mathcal I_G$ before modelling.} Compute
-  $\widehat{\mathcal I_G}=\hat I(R;\text{neighbour outputs}\mid \text{node output},\text{all cheap features})$ on
-  candidate domains---verification of reasoning steps in a dependency DAG, program/SQL verification on an
-  AST/edit graph, claim/evidence checking in a RAG chain---and \emph{only} build the model where $\mathcal I_G$
-  is materially positive after every cheap predictor. (Retrieval taught us this screen is mandatory.)
-  \item \textbf{Bayesian companion} (Conj.~\ref{conj:bayes}) for a Bayesian Analysis version: posterior
-  contraction, prior sensitivity, and the ``learned vs.\ imposed correction'' diagnostic.
+  \item \textbf{[CENTER] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star; the phase
+  boundary $\delta_E^2+d\delta_G^2$ and exponent $=$ shared-$s$ Chernoff are done. Finish: deep-subtree Chernoff on
+  general trees and the Assouad/Fano \emph{field} minimax (Priority~4 in the review). This is the result with no
+  prior owner---position vs.\ Weiss--Nadler (no rates) and Chang/AMR (distinct emissions).
+  \item \textbf{[CENTER] Aliasing framing $+$ branching de-aliasing (Thm~\ref{thm:branch})} with the
+  overdispersion signature; the object the tree-identifiability literature never treats because it assumes
+  distinct emissions.
+  \item \textbf{[PAYOFF] Functional recovery (Thm~\ref{cor:func})} and the \textbf{design corollary
+  (Cor~\ref{cor:design})}: decision-not-parameter, and structure priced against replication/instruments.
+  \item \textbf{[SCAFFOLD] Lumpability boundary (Thm~\ref{thm:lump})}---cite bisimulation$=$lumpability, do not
+  claim; use only to state the identifiability boundary.
+  \item \textbf{[BA ROUTE] Local weak identification (Conj~\ref{conj:bayes})}: LAN at the aliasing point, the
+  nonstandard $\kappa$-indexed posterior, nuisance non-regularity. If this lands cleanly it may be the stronger
+  route (Bayesian Analysis) even if the tree minimax gets technical.
+  \item \textbf{[DISCIPLINE] $\mathcal I_G$ screen for a second application} (reasoning-DAG / SQL-AST /
+  claim-evidence) \emph{before} modelling---build only where $\mathcal I_G$ is materially $>0$ after every cheap
+  predictor.
 \end{enumerate}
 
-\paragraph{Ceiling assessment.} A chain-Kruskal identification theorem plus the LLM experiment is below T\&M and
-too narrow for BA. \emph{Structural de-aliasing $+$ the near-aliasing rate $+$ functional Bayes} is a legitimate
-JASA T\&M shot; \emph{de-aliasing $+$ posterior-contraction / prior-sensitivity} is a legitimate Bayesian
-Analysis shot. The failure we found did not kill B---it told us the original theorem was aimed at the easy part
-of the parameter space, and handed us the boundary that is the interesting part.
+\paragraph{Ceiling assessment (audit-adjusted).} If the finished paper were mostly Thms~\ref{thm:dealias},
+\ref{thm:lump} and a star calculation, a T\&M referee who knows concurrency theory would rightly say the
+mathematics follows from bisimulation/lumpability and repeated-views identifiability. The legitimate T\&M shot is
+\emph{the near-aliasing minimax rate on trees $+$ the aliasing framing $+$ functional recovery $+$ the design
+corollary}; the Bayesian-Analysis shot is \emph{the local weak-identification asymptotics}. The retrieval failure
+did not kill B---it revealed that the original theorem was aimed at the easy (already-solved) part of the
+parameter space and handed us the near-aliased boundary, which is the part nobody owns.
+
+\begin{thebibliography}{99}\small
+\bibitem{ls91} Larsen, K.G.\ \& Skou, A.\ (1991). Bisimulation through probabilistic testing. \emph{Inf.\ \&
+Comput.} 94(1):1--28.
+\bibitem{dp02} Desharnais, J., Edalat, A.\ \& Panangaden, P.\ (2002). Bisimulation for labelled Markov processes.
+\emph{Inf.\ \& Comput.} 179(2):163--193.
+\bibitem{ks60} Kemeny, J.G.\ \& Snell, J.L.\ (1960). \emph{Finite Markov Chains}. Van Nostrand.
+\bibitem{buch94} Buchholz, P.\ (1994). Exact and ordinary lumpability in finite Markov chains. \emph{J.\ Appl.\
+Probab.} 31(1):59--75.
+\bibitem{baier05} Baier, C., Hermanns, H., Katoen, J.-P.\ \& Wolf, V.\ (2005). Comparative branching-time
+semantics for Markov chains. \emph{Inf.\ \& Comput.} 200(2):149--214.
+\bibitem{cp71} Carlyle, J.W.\ \& Paz, A.\ (1971). Realizations by stochastic finite automata. \emph{JCSS}
+5(1):26--40.
+\bibitem{vid11} Vidyasagar, M.\ (2011). The complete realization problem for hidden Markov models. \emph{MCSS}
+23:1--65.
+\bibitem{bpp15} Balle, B., Panangaden, P.\ \& Precup, D.\ (2015). A canonical form for weighted automata and
+applications. LICS.
+\bibitem{chang96} Chang, J.T.\ (1996). Full reconstruction of Markov models on evolutionary trees. \emph{Math.\
+Biosci.} 137(1):51--73.
+\bibitem{amr09} Allman, E.S., Matias, C.\ \& Rhodes, J.A.\ (2009). Identifiability of parameters in latent
+structure models with many observed variables. \emph{Ann.\ Statist.} 37(6A):3099--3132.
+\bibitem{choi11} Choi, M.J., Tan, V.Y.F., Anandkumar, A.\ \& Willsky, A.S.\ (2011). Learning latent tree
+graphical models. \emph{JMLR} 12:1771--1812.
+\bibitem{wn15} Weiss, R.\ \& Nadler, B.\ (2015). Learning parametric-output HMMs with two aliased states.
+\emph{ICML}, PMLR 37:702--710.
+\bibitem{manski03} Manski, C.F.\ (2003). \emph{Partial Identification of Probability Distributions}. Springer.
+\bibitem{rao73} Rao, C.R.\ (1973). \emph{Linear Statistical Inference and Its Applications}, 2nd ed. Wiley.
+\end{thebibliography}
 
 \end{document}
