@@ -45,9 +45,10 @@ to its venue, status, and files. (Last updated 2026-08-18.)
 - **Thesis:** when a biased oracle's errors mimic true negatives, measurements are structurally silent about the bias, so the correction must come from inter-item dependence; near-aliasing minimax rate + field minimax + singular n^{-1/4} local regime.
 
 ## Repo layout notes
-- `paper/_shared/` — cross-cutting docs (`CHECKPOINT.md`, `lit_review.md`); `paper/_archive/` — superseded early "BNP-over-query-graph" drafts (`manuscript/master/methods/theory.md`).
+- `paper/_shared/` — cross-cutting docs (`CHECKPOINT.md`, `lit_review.md`); `paper/_archive/` — superseded early "BNP-over-query-graph" drafts + the A/B-split rationale.
 - `paper/figures/` — **shared** figure outputs (paper1_*, schema_growth, phase_transition_*, reliability_*); `paper1_correctness.tex` references these via `../figures/`.
-- `paper/tex/` and `paper/writeup/` — now hold only legacy build artifacts (sources moved out); safe to delete later.
-- `paper-overleaf/`, `paper-overleaf-subgraph/`, `paper-overleaf-tas/` are **separate Overleaf git-bridge clones** (own `.git`) — the authoritative submission copies for #1/#2/#3. Edit/commit inside them; don't relocate.
-- `scripts/` (~170 files) share `data/`; classify by the prefixes above. `server_experiments/` = GPU jobs for #1.
+- (Removed) the old `paper/tex/` and `paper/writeup/` dirs — sources moved into the per-paper folders; only build artifacts remained, so they were deleted.
+- `paper-overleaf/`, `paper-overleaf-subgraph/`, `paper-overleaf-tas/` are **separate Overleaf git-bridge clones** (own `.git`) — the authoritative submission copies for #1/#2/#3. Edit/commit inside them; don't relocate (`sync-tas.sh` points at `paper-overleaf-tas/`).
+- `archive/` (repo root) — unused reference/export material (course PDF, paper zips); safe to ignore.
+- `scripts/` (~170 files) and `data/` (~3 GB) are **shared infrastructure** — the scripts cross-import and read `data/` via one relative path, so they are intentionally NOT split per-project (splitting would silently break pipelines). `server_experiments/` = GPU jobs for #1; `src/bnp_nl2sql` + `tests/` = the package.
 - Compile a draft from inside its folder, e.g. `cd paper/4-graphrag-A && pdflatex paperA_submission.tex`.
