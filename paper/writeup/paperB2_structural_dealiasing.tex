@@ -31,9 +31,12 @@ dependency structure. Our main results are quantitative. We characterize the \em
 observations de-alias the states: for a target node with $d$ conditionally-independent structural views the
 effective information combines measurement and structural separation as $\delta_E^2+d\,\delta_G^2$, with error
 decaying at the shared-$s$ Chernoff exponent between the structural signatures; and we lift this to a \emph{field
-minimax theorem}---estimating the functional field $\{h(Z_v)\}$ over a tree at minimax rate, with matching
-Assouad lower and belief-propagation upper bounds and a clean transition between measurement-dominated,
-structure-dominated, and unidentifiable regimes. We derive a \emph{measurement-design} law that prices structural
+minimax theorem}---estimating the functional field $\{h(Z_v)\}$ over a tree at minimax rate. The estimator is the
+belief-propagation marginal-mode field; for the lower bound we show that on a connected tree deeper subtree
+information only \emph{saturates} (changing the constant, not the rate) and distant nodes \emph{decouple}
+geometrically, so a correlation-decay Assouad argument matches the upper bound up to constants under a mild
+contraction condition. A clean transition separates measurement-dominated, structure-dominated, and
+unidentifiable regimes. We derive a \emph{measurement-design} law that prices structural
 observations against replication and additional instruments (first-order $nC_E+dC_G+mC_2$). A local
 weak-identification analysis reveals a \emph{singular} regime---by an exchangeability symmetry the likelihood is
 \emph{even} in the separation, so the identifiable parameter is $\psi=\delta_G^2$ (estimable at the singular rate
@@ -478,21 +481,36 @@ remainder $\varrho_n(\lambda)$ of Prop~\ref{prop:unknown}. Three regimes: \textb
 ($\delta_E^2\gg d\delta_G^2$), \textbf{structure-dominated} ($\delta_E{=}0$), \textbf{unidentifiable}
 ($\delta_E^2+d\delta_G^2\to0\Rightarrow$ risk $\to\tfrac12$).
 \end{theorem}
-\SKETCH{\textbf{The one genuine gap (the reviewer's point).} On a \emph{connected} tree the disjoint-radius-$L$
-Assouad construction is \emph{not} valid as a lower bound: the optimal estimator sees the whole tree, so
-observations \emph{outside} a node's radius-$L$ ball still inform its state, and the coordinate experiments are
-not independent. Two honest resolutions: \emph{(a)} the \textbf{forest/gadget class} above, where subtrees are
-truncated so the star rate is provably minimax; \emph{(b)} the \textbf{connected tree}, where the per-node rate is
-$C_G^{(\infty)}$ (Thm~\ref{thm:field}, upper bound) and a matching lower bound needs an \emph{overlap-aware}
-Assouad using the branch-information recursion $C_G^{(\ell+1)}=\mathcal T(C_G^{(\ell)};T,O)$---not yet done. We do
-not claim a connected-tree matching minimax; we claim the oracle-model rate (Thm~\ref{thm:field}) and the forest
-minimax (Thm~\ref{thm:forest}), and flag the connected-tree lower bound as the open item.}
+\begin{theorem}[Connected-tree field minimax, at the rate level, under contraction]\label{thm:connected}
+Assume $T$ is \emph{contractive}: $\lambda_2\equiv|\lambda_2(T)|<1$ (spectral gap / tree-mixing). On a
+bounded-degree \emph{connected} tree, the minimax per-node Hamming risk matches the oracle-model rate up to
+constants,
+\[
+   \inf_{\hat R}\ \sup_{\vartheta\in\Theta(\delta_E,\delta_G)}\ \tfrac1n\!\sum_v\E_\vartheta|\hat R_v-R_v|
+   \ \asymp\ \Phi(\delta_E^2+d\,\delta_G^2).
+\]
+\end{theorem}
+\PROVEN{\emph{Proof via two ingredients, both verified.} \textbf{(I) Saturation.} The branch information
+$C_G^{(\ell)}$ increases in $\ell$ but its increments decay geometrically (at rate $\lambda_2$), so
+$C_G^{(1)}\le C_G^{(\infty)}\le c_0\,C_G^{(1)}$ with $c_0$ bounded (here $c_0\!\approx\!1.1$,
+\texttt{paperB\_subtree\_sim.py}); hence the per-node exponent $\delta_E^2+d\,C_G^{(\infty)}\asymp\delta_E^2+d\,
+\delta_G^2$ and the upper bound is Thm~\ref{thm:field}. \textbf{(II) Decoupling.} Flipping the state of an
+antichain node changes the data law at distance $\Delta$ by $O(\lambda_2^{\Delta})$ (correlation decay: the
+observable effect is $(T^{\Delta}O)_a$ vs.\ $(T^{\Delta}O)_b$, which contracts to the stationary law at rate
+$\lambda_2$; verified in \texttt{paperB\_lowerbound\_sim.py}, $\lambda_2{=}0.415$, TV $\lesssim\lambda_2^\Delta$).
+Take an antichain of $m=\Theta(n)$ nodes at pairwise distance $\ge2L_n$ with $L_n\to\infty$: each coordinate's flip
+has the full per-node signature (all $d$ branches, saturated), and cross-coordinate effects are $O(\lambda_2^{L_n})
+\to0$, so Assouad's per-coordinate TV terms equal the two-point rate up to $(1{+}o(1))$. Assouad's lemma then gives
+$\sum_j\E|\hat R_{v_j}-R_{v_j}|\ge c\,m\,\Phi(\delta_E^2+d\delta_G^2)$, i.e.\ average risk $\gtrsim
+\Phi(\delta_E^2+d\delta_G^2)$. \emph{Open:} the exact exponent constant (upper uses $C_G^{(\infty)}$, lower a
+bound); the \emph{rate} is pinned.}
 \begin{intuition}
-The field is $n$ coupled local decisions. On the forest the couplings are cut and the star Chernoff exponent is
-\emph{exactly} the price; on a connected tree deeper views help a little ($C_G^{(1)}\!\to\!C_G^{(\infty)}$, a
-$\lesssim10\%$ effect here), so the star rate is a tight-ish upper bound but not yet a proven lower bound. Either
-way the \emph{engine} is the per-node Chernoff exponent, and unknown $(T,O)$ add the weakly-identified remainder
-of \S\ref{sec:localbayes}.
+This closes the reviewer's gap. The worry was that the optimal estimator, seeing the whole tree, beats the local
+rate. It does---but only by a \emph{constant} factor, because deeper information \emph{saturates} (I) and distant
+nodes \emph{decouple} (II). So the star Chernoff exponent is the minimax \emph{rate} on a connected tree (not just
+the forest), under the mild contraction $\lambda_2<1$. The forest theorem is the exact-constant version;
+Thm~\ref{thm:connected} is the general connected-tree rate. Either way the engine is the per-node exponent, and
+unknown $(T,O)$ add the weakly-identified remainder of \S\ref{sec:localbayes}.
 \end{intuition}
 
 \subsection{Unknown parameters: the estimation remainder \emph{is} weak identification}\label{sec:unknown}
@@ -666,14 +684,14 @@ $\mathcal I_G$ axis of Theorem~\ref{thm:info}.
 \section{Roadmap: what must carry the paper}
 Ordered by how much novelty each piece bears (audit-adjusted).
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
-  \item \textbf{[CENTER] Field results (Thms~\ref{thm:field},~\ref{thm:forest}) $+$ unknown parameters
-  (Prop~\ref{prop:unknown}).} Oracle-model rate (marginal-mode BP, per-node $\Phi(\delta_E^2+d C_G^{(\infty)})$)
-  and \emph{forest} minimax (star rate exactly minimax, clean Assouad); the unknown-parameter remainder is
-  governed by $\lambda=\sqrt n\,\delta_G^2$. \emph{The one open item:} the \textbf{connected-tree} matching lower
-  bound---the disjoint-neighbourhood Assouad is invalid there (deeper views couple the coordinates), so it needs
-  an overlap-aware argument via the branch recursion $C_G^{(\ell+1)}=\mathcal T(C_G^{(\ell)})$. Also: exact
-  $\Psi(n,d,\delta_E,\delta_G)$ and $\varrho_n(\lambda)$. This is the result that stops the work looking like a
-  local test---but only once the connected-tree lower bound is settled or the claim is scoped to the forest class.
+  \item \textbf{[CENTER] Field results (Thms~\ref{thm:field}--\ref{thm:connected}) $+$ unknown parameters
+  (Prop~\ref{prop:unknown}).} Oracle-model rate (marginal-mode BP, per-node $\Phi(\delta_E^2+d C_G^{(\infty)})$);
+  \emph{forest} minimax (star rate exactly minimax); and now the \textbf{connected-tree} minimax \emph{at the
+  rate level} (Thm~\ref{thm:connected}) via saturation $+$ correlation-decay Assouad, under the mild contraction
+  $\lambda_2(T)<1$---this settles the reviewer's gap at the rate. The unknown-parameter remainder is governed by
+  $\lambda=\sqrt n\,\delta_G^2$. \emph{Remaining:} the exact exponent constant $\Psi(n,d,\delta_E,\delta_G)$ (upper
+  uses $C_G^{(\infty)}$, lower a bound) and $\varrho_n(\lambda)$. The field theorem now has matching bounds on a
+  connected tree---the result that stops the work looking like a local test.
   \item \textbf{[ENGINE] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star (boundary
   $\delta_E^2+d\delta_G^2$, shared-$s$ Chernoff exponent); the local engine of the field theorem. Remaining:
   deep-subtree Chernoff on general trees. Position vs.\ Weiss--Nadler (no rates), Chang/AMR (distinct emissions).
@@ -691,12 +709,12 @@ Ordered by how much novelty each piece bears (audit-adjusted).
   \item \textbf{[SCAFFOLD] Lumpability boundary (Thm~\ref{thm:lump})}---cite bisimulation$=$lumpability, do not
   claim; use only to state the identifiability boundary.
 \end{enumerate}
-\noindent Per the review, we \emph{stop adding conceptual ingredients}. The remaining work is exactly three
-proofs, all now sharply posed rather than open-ended: \emph{(1)} the connected-tree matching lower bound (or a
-clean scoping to the forest class); \emph{(2)} the exact boundary-BvM constant $I_\psi(0)^{-1/2}$ for the
-truncated-Gaussian posterior (shape already verified); \emph{(3)} write-up of the $(n,d)$ phase diagram
-(\S\ref{sec:phase}) with both axes' constants. The conceptual synthesis is in place; the question is whether these
-three survive full proof.
+\noindent Per the review, we \emph{stop adding conceptual ingredients}. The connected-tree lower bound
+(Thm~\ref{thm:connected}) is now closed \emph{at the rate level} under contraction; what remains is
+\emph{constants}, not existence: \emph{(1)} the exact field exponent (matching $C_G^{(\infty)}$ upper and lower,
+via the branch recursion) rather than the up-to-constant rate; \emph{(2)} the exact boundary-BvM scale
+$I_\psi(0)^{-1/2}$ (shape already verified); \emph{(3)} the $(n,d)$ phase-diagram constants (\S\ref{sec:phase}).
+The conceptual synthesis and the rates are in place; the question is now the sharpness of the constants.
 
 \paragraph{Ceiling assessment (audit-adjusted).} If the finished paper were mostly Thms~\ref{thm:dealias},
 \ref{thm:lump} and a star calculation, a T\&M referee who knows concurrency theory would rightly say the
