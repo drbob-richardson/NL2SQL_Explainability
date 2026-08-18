@@ -25,28 +25,26 @@
 \maketitle
 
 \begin{abstract}
-A cheap ``oracle''---an LLM judge, an automated verifier, a weak annotator---measures a latent scientific state
-$Z_v$ at each node $v$ of a known dependency structure, returning $Y_v$. We study the regime in which the
-measurement channel \emph{aliases} two scientifically distinct states: $Y$ cannot separate them because their
-node-level emission distributions coincide or nearly so. Our motivating pathology is \emph{bridge-blindness}: a
-relevance judge grades a necessary \emph{bridge} passage exactly like an \emph{irrelevant} one, because it does
-not directly answer the query. The question is not ``can we correct the judge?'' but the sharper statistical
-one: \emph{when can the dependence structure distinguish latent states that the measurement channel itself
-cannot?} We call this \textbf{structural de-aliasing}, and we separate two aliasing depths---\emph{path}
-(single-measurement) and \emph{structural} (joint-neighbourhood)---showing the branching of the tree can de-alias
-states no single path distinguishes ($L^\star_{\mathrm{struct}}<L^\star_{\mathrm{path}}$, a de Finetti /
-overdispersion signature). A literature audit disciplines the claims: the qualitative backbone---exact aliasing
-$=$ an emission-consistent \emph{lumpable} partition---is probabilistic bisimulation $=$ lumpability, and
-``branching beats paths'' is the classical linear-vs-branching-time gap, so we \emph{demote} these to scaffolding.
-The paper's weight rests on what is unclaimed: (i) a \emph{near-aliasing rate}---we prove the phase boundary
-$\delta_E^2+d\,\delta_G^2$ with error exponent the shared-$s$ Chernoff information between the structural
-signatures (verified numerically), where the one aliased-state precedent (Weiss--Nadler 2015) stops at
-consistency; (ii) the \emph{aliasing framing} itself, which every distinct-emission tree-identifiability result
-skips; (iii) an iso-information \emph{design} law pricing structure against replication and a second instrument;
-(iv) \emph{functional} recovery $R=h(Z)$ without parameter identification; and (v) the information limit
-$\mathcal I_G=I(R_v;Y_{N(v)}\mid Y_v,X_v)$ fixing when structure can help at all. The empirical failure that
-prompted this redirection---structure barely helps retrieval once cosine is present---is not a defeat: it is the
-regime $\mathcal I_G\!\to\!0$, an instance the theory predicts exactly.
+We study inference when a measurement channel \emph{nearly aliases} scientifically distinct latent states---their
+node-level emission distributions coincide or nearly so---but the states participate differently in a known
+dependency structure. Our main results are quantitative. We characterize the \emph{rate} at which structural
+observations de-alias the states: for a target node with $d$ conditionally-independent structural views the
+effective information combines measurement and structural separation as $\delta_E^2+d\,\delta_G^2$, with error
+decaying at the shared-$s$ Chernoff exponent between the structural signatures; and we lift this to a \emph{field
+minimax theorem}---estimating the functional field $\{h(Z_v)\}$ over a tree at minimax rate, with matching
+Assouad lower and belief-propagation upper bounds and a clean transition between measurement-dominated,
+structure-dominated, and unidentifiable regimes. We derive a \emph{measurement-design} law that prices structural
+observations against replication and additional instruments ($nC_E+dC_G+mC_2$), and we characterize which
+scientific \emph{functionals} $R=h(Z)$ remain identifiable when the full latent state is not. A local
+weak-identification analysis ($\sqrt n\,\delta_{G,n}\to\kappa$) gives a nonstandard, prior-indexed posterior
+limit that separates a prior-sensitive nuisance from a decision-consistent functional---the Bayesian face of the
+same phenomenon. Exact (as opposed to near-) aliasing is governed by the known equivalence of emission-consistent
+\emph{lumpability} and probabilistic bisimulation, which we use as scaffolding rather than a contribution; the
+branching-beats-paths phenomenon that makes the structural signature richer than any single path is likewise the
+classical linear-vs-branching-time gap. The motivating pathology is an LLM relevance judge that grades a necessary
+\emph{bridge} passage exactly like an \emph{irrelevant} one (\emph{bridge-blindness}); the empirical fact that
+structure barely helps retrieval once a cosine prior is present is not a defeat but the predicted corner
+$\mathcal I_G=I(R_v;Y_{N(v)}\mid Y_v,X_v)\to0$ of the same theory.
 \end{abstract}
 
 \paragraph{Status tags.} \PROVEN{} established or numerically verified here;\ \SKETCH{} argued, proof to be
@@ -223,23 +221,32 @@ Heterophily (aliased states have different neighbours) is what makes it finite a
 \end{intuition}
 
 \begin{theorem}[Branching de-aliasing: the joint beats every marginal]\label{thm:branch}
-There exist tree-indexed models and node-aliased states $a,b$ with $L^\star_{\mathrm{path}}(a,b)=\infty$ (no
-single measurement at any distance distinguishes them: $P_L(a)=P_L(b)$ for all $L$) yet
-$L^\star_{\mathrm{struct}}(a,b)=2$. The mechanism is dependence: on a tree the \emph{immediate}-neighbour joint
-factorizes, $Q_1(c)=(TO)_c^{\otimes\deg(v)}$, so radius-$1$ branching adds nothing beyond the marginal; but at
-radius $\ge2$ siblings sharing a parent are conditionally dependent given $Z_v$, and their \emph{joint} can
-differ across states whose every marginal coincides. The de-aliasing rate is then the Chernoff information of the
-joint signatures, positive even though the per-measurement Chernoff information is exactly $0$.
+There is a two-layer latent branching model and node-aliased states $a,b$ in which \emph{no single observed
+measurement distinguishes them} ($P(a)=P(b)$ marginally at the observed layer) yet the joint law of two siblings
+does, so $L^\star_{\mathrm{struct}}=2$. The mechanism is dependence: given the centre, \emph{immediate} children
+are conditionally independent, so their joint factorizes and adds nothing beyond the marginal; but children
+sharing a hidden intermediate are conditionally dependent, and their joint can differ across states whose every
+marginal coincides. The de-aliasing rate is the Chernoff information of the joint signatures, positive even though
+the per-measurement Chernoff information is exactly $0$.
 \end{theorem}
 \PROVEN{\emph{Explicit construction and verification} (\texttt{paperB\_branch\_sim.py}). Binary measurement;
-centre state $c\in\{a,b\}$ acts through a hidden intermediate $U\sim T_c$ over three states with Bernoulli
-measurement means $m=(.2,.5,.8)$, each emitting conditionally-i.i.d.\ children. Take $T_a=(.5,0,.5)$ and
-$T_b=(0,1,0)$. Then every single-measurement marginal has mean $\sum_j T_c(j)m_j=0.5$ under \emph{both} states
-(so $P_L(a)=P_L(b)$, $L^\star_{\mathrm{path}}=\infty$), while the pairwise correlation
-$\E[Y_iY_k\mid c]=\sum_j T_c(j)m_j^2$ is $0.34$ vs.\ $0.25$---the sibling joint separates them. Numerically the
-single-measurement Bayes error is exactly $0.5$ (chance), the two-sibling error $0.41$, and it decays as
-$e^{-D\gamma}$ in the number $D$ of siblings with structural rate $\gamma\to0.089>0$, whereas the path Chernoff
-information is $0$. Hence $L^\star_{\mathrm{struct}}=2<\infty=L^\star_{\mathrm{path}}$.}
+centre class $c\in\{a,b\}$ acts through a hidden intermediate $U\sim T_c$ over three states with Bernoulli means
+$m=(.2,.5,.8)$, each emitting conditionally-i.i.d.\ children. Take $T_a=(.5,0,.5)$, $T_b=(0,1,0)$. Every
+single child has mean $\sum_j T_c(j)m_j=0.5$ under \emph{both} classes (single-measurement Bayes error exactly
+$0.5$), while the pairwise correlation $\E[Y_iY_k\mid c]=\sum_j T_c(j)m_j^2$ is $0.34$ vs.\ $0.25$; the two-sibling
+error is $0.41$ and decays as $e^{-D\gamma}$ in the sibling count $D$ with rate $\gamma\to0.089>0$, while the path
+Chernoff information is $0$.}
+\SKETCH{\textbf{Honest scope of ``$L^\star_{\mathrm{path}}=\infty$'' (a point a referee will press).} The
+construction above is a \emph{two-layer} model, and the claim it rigorously supports is that \emph{every
+single-measurement marginal coincides}, so no one observation ever separates $a,b$. Realizing this inside a single
+\emph{homogeneous} recurrent chain---literally $(T^{L}O)_a=(T^{L}O)_b$ for all $L$ while the tree law differs---
+requires a pair that is \emph{trace-equivalent but not bisimilar}: a zero-sum direction in the \emph{unobservable}
+subspace that is \emph{not} a lumpable block. (With the naive route the direction is a left eigenvector of $T$,
+which forces emission-consistent lumpability, hence \emph{full} aliasing---so a genuinely strict
+$L^\star_{\mathrm{struct}}<L^\star_{\mathrm{path}}=\infty$ needs the unobservable subspace to strictly exceed the
+lumpable one.) That strict gap is exactly the linear-vs-branching separation (Baier et al.\ 2005), and exhibiting
+the minimal homogeneous witness is a clean to-do; the two-layer construction is the economical proof of the
+phenomenon.}
 \begin{intuition}
 This is a de Finetti / overdispersion signature: state $a$ makes siblings \emph{agree} (a shared hidden cause
 pushes them jointly low or jointly high), state $b$ makes them independent fair coins. Any one child looks like a
@@ -409,12 +416,50 @@ priced substitute for measurement.
 \paragraph{Remaining rigor.} (a)--(d) are proved for the immediate-neighbour (degree-$d$ / star) case, which is
 also the retrieval geometry. Two extensions complete the T\&M version: (i) \emph{general trees}---the affinity
 still factorizes over the $d$ immediate subtrees and each subtree affinity is $\le$ its radius-$1$ value, so the
-bound holds a fortiori; the exact deep-subtree Chernoff constant is the remaining computation; (ii) the
-\emph{field} minimax (estimating $R$ over all nodes) follows from the pairwise rate by a standard Assouad/Fano
-reduction. Neither is expected to change the boundary $n(\delta_E^2+d\,\delta_G^2)$ (replication depth $n$,
-structural degree $d$).
+bound holds a fortiori; the exact deep-subtree Chernoff constant is the remaining computation. The
+\emph{field} version---the general statistical theorem, not a local test---is Thm~\ref{thm:field}.
 
-\subsection{The local weak-identification regime (the Bayesian core to prove)}
+\subsection{The field minimax theorem (the general result)}
+A single-node test is a local problem; a T\&M contribution needs the whole \emph{field} $R=\{h(Z_v)\}_{v\in V}$,
+estimated at minimax rate, with a transition between regimes. We phrase everything in terms of
+\emph{conditionally-independent structural views}: given $Z_v$, the subtrees hanging off $v$'s neighbours are
+independent, and each is one ``view'' with per-view Chernoff information $C_G$; the node emission is a further
+view with $C_E$. Trees give this exactly; sparse locally-tree-like graphs give it approximately.
+\begin{theorem}[Field minimax and the three regimes]\label{thm:field}
+Estimate $R=\{h(Z_v)\}_{v\in V}$ on a bounded-degree tree ($n$ nodes, degree $\le d{+}1$) under average per-node
+loss $\mathcal L(\hat R,R)=\frac1n\sum_v\I\{\hat R_v\neq R_v\}$, over the near-aliased class
+$\Theta(\delta_E,\delta_G)$ ($h$-splitting pair with node/structural separations $\delta_E,\delta_G$; $(T,O)$
+known). Then
+\[
+  \inf_{\hat R}\ \sup_{\theta\in\Theta(\delta_E,\delta_G)}\ \E_\theta\,\mathcal L(\hat R,R)\ \asymp\
+  \Phi\big(\delta_E^2+d\,\delta_G^2\big),\qquad \Phi(x)\asymp e^{-c x},
+\]
+the per-node two-point Bayes floor. \emph{Upper bound:} the exact posterior-mode field estimator (belief
+propagation) attains, at each node, its local star rate (Thm~\ref{thm:rate}). \emph{Lower bound (Assouad):}
+restrict to the sub-family that flips $h$ at an antichain of $\Theta(n)$ nodes with pairwise-disjoint radius-$L$
+neighbourhoods; the induced per-node tests are independent, each with two-point error $\ge\tfrac14\rho_E^2
+\rho_G^{2d}$ (Le~Cam), so the average risk is $\ge c\,\Phi$. Three regimes follow: \textbf{measurement-dominated}
+($\delta_E^2\gg d\delta_G^2$), \textbf{structure-dominated} ($\delta_E{=}0$, rate $d\delta_G^2$), and
+\textbf{unidentifiable} ($\delta_E^2+d\delta_G^2\to0\Rightarrow$ risk $\to\tfrac12$).
+\end{theorem}
+\PROVEN{Upper bound is Thm~\ref{thm:rate} applied node-wise (BP is exact on a tree). Lower bound is Assouad over
+the disjoint-neighbourhood antichain (bounded degree $\Rightarrow$ a positive fraction of nodes are pairwise
+$>2L$ apart), each coordinate a two-point Le~Cam bound. \textbf{Verified} (\texttt{paperB\_field\_sim.py}, exact
+BP): (1) with $\delta_E{=}0$ the field error falls geometrically in branching, $0.241\!\to\!0.210\!\to\!0.175\!
+\to\!0.147$ as degree $2\!\to\!5$ (chance $0.31$), a near-constant $-\log(\text{err}/\text{chance})/d\approx0.14$
+$\Rightarrow$ error $\asymp\text{chance}\cdot e^{-cd}$; (2) three regimes: measurement-dominated
+($\delta_E{=}0.67,\delta_G{=}0.02$) err $0.19$, structure-dominated ($\delta_E{=}0,\delta_G{=}0.50$) err $0.17$,
+near-unidentifiable ($\delta_E{=}\delta_G{=}0$) err $0.33\approx$ chance $0.32$.}
+\begin{intuition}
+The field problem is $n$ coupled local decisions. Because the tree makes far-apart nodes' evidence essentially
+independent, the average error is governed by the \emph{per-node} de-aliasing rate---and Assouad says you cannot
+do better than solving each node locally. So the star Chernoff exponent is the \emph{engine}, and this theorem is
+the \emph{general statement}: minimax-optimal field recovery, with a clean measurement/structure/unidentifiable
+transition. Unknown $(T,O)$ add an estimation remainder that is itself weakly identified near the alias---the
+bridge to \S\ref{sec:localbayes}.
+\end{intuition}
+
+\subsection{The local weak-identification regime (the Bayesian core to prove)}\label{sec:localbayes}
 Contraction/no-contraction is a coarse dichotomy; the interesting Bayesian object sits \emph{on} the phase
 boundary. Index a sequence of models by $n$ (independent degree-$d$ stars) with structural separation shrinking at
 the critical rate
@@ -466,9 +511,10 @@ novel as the \emph{screen} for when structure can help \\
 \end{tabular}
 \end{center}
 \noindent\textbf{Bottom line.} The qualitative backbone is largely a repackaging of bisimulation$=$lumpability and
-latent-tree identifiability, and we say so. The paper's weight must rest on the \textbf{quantitative de-aliasing
-rate} (Thm~\ref{thm:rate}), the \textbf{aliasing framing} that no tree-identifiability result covers, the
-\textbf{design corollary} (Cor~\ref{cor:design}), and the \textbf{local weak-identification asymptotics}
+latent-tree identifiability, and we say so. The paper's weight rests on the \textbf{field minimax theorem}
+(Thm~\ref{thm:field})---the general statement, with matching bounds and a regime transition---built on the
+\textbf{near-aliasing rate} (Thm~\ref{thm:rate}), the \textbf{aliasing framing} no tree-identifiability result
+covers, the \textbf{design law} (Cor~\ref{cor:design}), and the \textbf{local weak-identification asymptotics}
 (Conj~\ref{conj:bayes}). We flag the latent-tree literature as large and phrase the aliasing-novelty as ``to our
 knowledge.''
 
@@ -488,32 +534,39 @@ $\mathcal I_G$ axis of Theorem~\ref{thm:info}.
 \section{Roadmap: what must carry the paper}
 Ordered by how much novelty each piece bears (audit-adjusted).
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
-  \item \textbf{[CENTER] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star; the phase
-  boundary $\delta_E^2+d\delta_G^2$ and exponent $=$ shared-$s$ Chernoff are done. Finish: deep-subtree Chernoff on
-  general trees and the Assouad/Fano \emph{field} minimax (Priority~4 in the review). This is the result with no
-  prior owner---position vs.\ Weiss--Nadler (no rates) and Chang/AMR (distinct emissions).
-  \item \textbf{[CENTER] Aliasing framing $+$ branching de-aliasing (Thm~\ref{thm:branch})} with the
-  overdispersion signature; the object the tree-identifiability literature never treats because it assumes
-  distinct emissions.
-  \item \textbf{[PAYOFF] Functional recovery (Thm~\ref{cor:func})} and the \textbf{design corollary
-  (Cor~\ref{cor:design})}: decision-not-parameter, and structure priced against replication/instruments.
+  \item \textbf{[CENTER] Field minimax (Thm~\ref{thm:field}).} The general theorem: minimax-optimal recovery of
+  $\{h(Z_v)\}$ on a tree with the measurement/structure/unidentifiable transition, Assouad lower $+$ BP upper
+  bounds; verified. \emph{Finish for T\&M:} (a) tighten the Assouad constant and state the exact rate function
+  $\Psi(n,d,\delta_E,\delta_G)$; (b) the \emph{unknown-parameter} version, whose estimation remainder couples to
+  item~5. This is the result that stops the work looking like a local test.
+  \item \textbf{[ENGINE] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star (boundary
+  $\delta_E^2+d\delta_G^2$, shared-$s$ Chernoff exponent); the local engine of the field theorem. Remaining:
+  deep-subtree Chernoff on general trees. Position vs.\ Weiss--Nadler (no rates), Chang/AMR (distinct emissions).
+  \item \textbf{[DESIGN] Iso-information law (Cor~\ref{cor:design})}: structure priced against replication and a
+  second instrument ($nC_E+dC_G+mC_2$); the measurement-design result, elevated per the review to a headline, not
+  a corollary.
+  \item \textbf{[PAYOFF] Functional recovery (Thm~\ref{cor:func})}: decision-not-parameter; recoverable
+  functionals $=$ lumpable-measurable. Aliasing framing $+$ branching (Thm~\ref{thm:branch}) make it vivid but are
+  not oversold.
+  \item \textbf{[BA ROUTE] Local weak identification (Conj~\ref{conj:bayes})}: LAN at the aliasing point, the
+  three limits $\kappa\in\{0,(0,\infty),\infty\}$, nuisance non-regular while the functional is decision-consistent.
+  Potentially the most distinctive piece; the stronger route if the general-graph minimax turns technical.
   \item \textbf{[SCAFFOLD] Lumpability boundary (Thm~\ref{thm:lump})}---cite bisimulation$=$lumpability, do not
   claim; use only to state the identifiability boundary.
-  \item \textbf{[BA ROUTE] Local weak identification (Conj~\ref{conj:bayes})}: LAN at the aliasing point, the
-  nonstandard $\kappa$-indexed posterior, nuisance non-regularity. If this lands cleanly it may be the stronger
-  route (Bayesian Analysis) even if the tree minimax gets technical.
-  \item \textbf{[DISCIPLINE] $\mathcal I_G$ screen for a second application} (reasoning-DAG / SQL-AST /
-  claim-evidence) \emph{before} modelling---build only where $\mathcal I_G$ is materially $>0$ after every cheap
-  predictor.
 \end{enumerate}
+\noindent Per the review, we \emph{stop adding conceptual ingredients} here and concentrate on turning
+Thm~\ref{thm:field} into the general (unknown-parameter, and beyond-exact-tree via conditionally-independent
+views) minimax result.
 
 \paragraph{Ceiling assessment (audit-adjusted).} If the finished paper were mostly Thms~\ref{thm:dealias},
 \ref{thm:lump} and a star calculation, a T\&M referee who knows concurrency theory would rightly say the
 mathematics follows from bisimulation/lumpability and repeated-views identifiability. The legitimate T\&M shot is
-\emph{the near-aliasing minimax rate on trees $+$ the aliasing framing $+$ functional recovery $+$ the design
-corollary}; the Bayesian-Analysis shot is \emph{the local weak-identification asymptotics}. The retrieval failure
-did not kill B---it revealed that the original theorem was aimed at the easy (already-solved) part of the
-parameter space and handed us the near-aliased boundary, which is the part nobody owns.
+\emph{the field minimax theorem $+$ the near-aliasing rate $+$ functional recovery $+$ the design law}; the
+Bayesian-Analysis shot is \emph{the local weak-identification asymptotics}. Venue-wise this is now an ambitious
+but defensible JASA T\&M target (JRSS-B/Biometrika are in the same conversation if the general-graph theory gets
+mathematical; AoAS is the wrong direction unless the theory stalls). The retrieval failure did not kill B---it
+revealed that the original theorem was aimed at the easy (already-solved) part of the parameter space and handed
+us the near-aliased boundary, which is the part nobody owns.
 
 \begin{thebibliography}{99}\small
 \bibitem{ls91} Larsen, K.G.\ \& Skou, A.\ (1991). Bisimulation through probabilistic testing. \emph{Inf.\ \&

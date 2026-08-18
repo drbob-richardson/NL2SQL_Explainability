@@ -66,10 +66,12 @@ def main():
     # asymptotic per-grandchild rate
     D = 40; pe = bayes_err(D)
     gamma = -np.log(pe) / D
-    print(f"\n  per-measurement PATH Chernoff information = 0.0000 (marginals identical): single paths NEVER separate.")
+    print(f"\n  per-measurement PATH Chernoff information = 0.0000 (marginals identical): NO single observation separates.")
     print(f"  structural (branching) rate gamma = -log(P_e)/D -> {gamma:.4f} > 0 at D={D}: the JOINT de-aliases.")
-    print("  => L*_struct = 2 < L*_path = infinity. Dependence among structural observations carries the signal;")
-    print("     the de-aliasing exponent is the joint-signature Chernoff info, positive though every marginal aliases.")
+    print("  => L*_struct = 2, while no single-measurement marginal ever distinguishes a,b (two-layer model).")
+    print("     Dependence among structural observations carries the signal; the exponent is the joint-signature")
+    print("     Chernoff info. (A homogeneous-chain witness with L*_path=inf needs a trace-equivalent-but-not-")
+    print("     bisimilar pair -- the linear-vs-branching gap, strictly beyond the lumpable/fully-aliased case.)")
 
 
 if __name__ == "__main__":
