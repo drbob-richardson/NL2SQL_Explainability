@@ -1,0 +1,234 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm,xcolor,hyperref,booktabs,enumitem}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\PROVEN}[1]{{\color{teal}\small$\blacktriangleright$\,\textbf{[PROVEN/CHECKED]} #1}}
+\newcommand{\SKETCH}[1]{{\color{orange}\small$\blacktriangleright$\,\textbf{[PROOF SKETCH]} #1}}
+\newcommand{\CONJ}[1]{{\color{violet}\small$\blacktriangleright$\,\textbf{[TO PROVE]} #1}}
+\newenvironment{intuition}{\par\smallskip\noindent\hangindent=1.5em\textbf{\itshape Intuition.}\itshape\ \ignorespaces}{\par\smallskip}
+\newcommand{\R}{\mathbb{R}}\newcommand{\E}{\mathbb{E}}\newcommand{\N}{\mathcal{N}}
+\renewcommand{\Pr}{\mathbb{P}}\newcommand{\I}{\mathbb{I}}\newcommand{\HH}{\mathbb{H}}
+
+\title{\textbf{Structural De-aliasing of Latent States under Differential Misclassification}\\[3pt]
+\large\normalfont(Paper B, redirected toward JASA T\&M --- theory work-through and roadmap)}
+\author{Robert Richardson}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A cheap ``oracle''---an LLM judge, an automated verifier, a weak annotator---measures a latent scientific state
+$Z_v$ at each node $v$ of a known dependency structure, returning $Y_v$. We study the regime in which the
+measurement channel \emph{aliases} two scientifically distinct states: $Y$ cannot separate them because their
+node-level emission distributions coincide or nearly so. Our motivating pathology is \emph{bridge-blindness}: a
+relevance judge grades a necessary \emph{bridge} passage exactly like an \emph{irrelevant} one, because it does
+not directly answer the query. The question is not ``can we correct the judge?'' but the sharper statistical
+one: \emph{when can the dependence structure distinguish latent states that the measurement channel itself
+cannot?} We call this \textbf{structural de-aliasing}. We formalize a graph-indexed latent Markov model with a
+node emission, define the aliasing depth $L^\star$, characterize exact aliasing by an emission-consistent
+\emph{lumpable} partition (an impossibility boundary), separate \emph{functional} identifiability of a decision
+target $R=h(Z)$ from full parameter identifiability, and give the information-theoretic limit
+$\mathcal I_G=I(R_v;Y_{N(v)}\mid Y_v,X_v)$ that says exactly how much a cheap non-structural covariate leaves for
+structure to add. We verify the two load-bearing results in simulation, and lay out the near-aliasing rate and
+Bayesian weak-identification theory that would make this a T\&M paper. The empirical failure that prompted this
+redirection---structure barely helps retrieval once cosine is present---is not a defeat: it is the regime
+$\mathcal I_G\!\to\!0$, an instance the theory predicts exactly.
+\end{abstract}
+
+\paragraph{Status tags.} \PROVEN{} established or numerically verified here;\ \SKETCH{} argued, proof to be
+completed;\ \CONJ{} the target results that make this T\&M, not yet proven.
+
+\tableofcontents
+
+\section{The problem, and why it is not the old one}
+The previous conception of this paper asked whether corpus structure can \emph{correct} a bridge-blind LLM
+relevance judge. Empirically it cannot do much in retrieval: a calibrated retriever prior recovers the judge's
+missed bridges nearly as well as anything, and the graph adds little. That negative, however, exposes a deeper
+and more general problem. The judge does not merely add noise; it makes two scientifically different states---a
+\emph{necessary bridge} and an \emph{irrelevant} passage---produce the \emph{same} observation law. This is
+\emph{differential misclassification} that is total on a pair of states: the measurement is \emph{aliased}.
+
+\begin{intuition}
+Ordinary measurement error blurs a signal; here the instrument \emph{collapses} two states onto one output
+distribution. No amount of that instrument, or better calibration of it, separates them. The only remaining hope
+is that the two states \emph{behave differently in the dependency structure}---a bridge sits next to direct
+evidence, an irrelevant passage next to more irrelevant material---so that the \emph{neighbourhood} of
+measurements distinguishes what the node measurement cannot. That is the question worth a theorem.
+\end{intuition}
+
+\paragraph{Positioning.} Generic identifiability of HMMs with linearly-independent emissions is classical
+(Gassiat et al.); identifiability of HMMs with \emph{two aliased states} has been studied (Weiss \& Nadler,
+2015); and a 2026 line proves nonidentifiability of LLM-judge debiasing and proposes anchor/paired designs. We
+do \emph{not} re-enter those lanes. Our distinct contribution is the combination: \emph{(i)} graph/tree-indexed
+latent structure, \emph{(ii)} \emph{heterophilic} compatibility (aliased states occur next to \emph{different}
+states, not like themselves), \emph{(iii)} \emph{near}-aliasing rates rather than only generic identifiability,
+\emph{(iv)} identifiability of a scientific \emph{functional} when the full model is not identified, and
+\emph{(v)} the information-theoretic boundary that ties all of it to when a cheap covariate leaves anything for
+structure to add.
+
+\section{Model}
+Let $G=(V,\mathcal E)$ be a known graph (we develop the tree/chain case first). Each node carries a latent state
+$Z_v\in[K]=\{1,\dots,K\}$; on a tree the field is a Markov random field with edge transition matrix $T$
+($T_{cc'}=\Pr(Z_u\!=\!c'\mid Z_v\!=\!c)$) and root/initial law $\pi$. A measurement channel (the oracle) emits
+\begin{equation}
+  Y_v \mid Z_v=c \;\sim\; O_c \quad(\text{row } c \text{ of the }K\times M\text{ emission matrix } O).
+\end{equation}
+Optionally each node has cheap non-structural covariates $X_v$ (in retrieval, the cosine prior). The scientific
+target is a \emph{functional} $R_v=h(Z_v)$ (in retrieval, $h(c)=\I\{c\ \text{relevant}\}$). Two states $a,b$ are
+\emph{node-aliased} if $O_a=O_b$ (exactly) or $d(O_a,O_b)=\delta_E$ small (near). Bridge-blindness is
+$O_{\textsf{bridge}}=O_{\textsf{irrelevant}}$ with $O_{\textsf{direct}}$ distinct.
+
+\section{Structural signatures and aliasing depth}
+\begin{definition}[Structural observation signature]
+$Q_L(c)=\mathcal L\big(Y_{B_L(v)}\mid Z_v=c\big)$, the law of the radius-$L$ neighbourhood of measurements given
+the centre state. $Q_0(c)=O_c$.
+\end{definition}
+If the judge is perfectly bridge-blind, $Q_0(\textsf{bridge})=Q_0(\textsf{irrelevant})$. De-aliasing asks
+whether $Q_L$ separates them for some $L>0$.
+
+\begin{theorem}[De-aliasing and aliasing depth]\label{thm:dealias}
+On a tree-indexed Markov chain, the law of the measurement at a node at path-distance $L$ from $v$, given
+$Z_v=c$, is row $c$ of $T^{L}O$:
+\[
+   \Pr(Y_w=y\mid Z_v=c)=\big(T^{L}O\big)_{c,y}.
+\]
+Hence if $O_a=O_b$ but $(T^{L}O)_a\neq(T^{L}O)_b$ for some $L$, states $a,b$ are distinguishable from a
+distance-$L$ measurement, and the \emph{aliasing depth} is
+$L^\star(a,b)=\min\{L\ge0:(T^{L}O)_a\neq(T^{L}O)_b\}$.
+\end{theorem}
+\PROVEN{Proof is the Markov property: $\Pr(Y_w\mid Z_v{=}c)=\sum_{c'}\Pr(Y_w\mid Z_w{=}c')\,(T^{L})_{cc'}
+=(T^{L}O)_{c}$. In the bridge-blind model with heterophilic $T$ (bridge$\to$direct), $O_{\textsf{irr}}=
+O_{\textsf{bridge}}$ but $(TO)_{\textsf{irr}}=(0.64,0.20,0.16)\neq(TO)_{\textsf{bridge}}=(0.28,0.20,0.52)$, so
+$L^\star=1$: one hop de-aliases. Verified: classifying the node-aliased pair from the node measurement alone is
+at chance ($0.598$, prior-driven), from the neighbourhood $0.733$.}
+\begin{intuition}
+$L^\star$ is ``how many hops of context you need to tell the two states apart.'' Node-level aliasing is
+$L^\star>0$; heterophily (aliased states have different neighbours) is what makes $L^\star$ finite and small.
+\end{intuition}
+
+\begin{theorem}[Exact aliasing $=$ lumpable partition; impossibility]\label{thm:lump}
+Under a genericity condition on $O$, states $a,b$ are \emph{fully aliased} ($Q_L(a)=Q_L(b)$ for all $L$, hence
+indistinguishable from any finite neighbourhood) iff they lie in the same block of the coarsest partition
+$\mathcal P$ of $[K]$ that is (i) \emph{emission-consistent} ($O$ constant on blocks) and (ii) \emph{strongly
+lumpable} for $T$ ($\sum_{c'\in B'}T_{cc'}$ is constant over $c\in B$, for all blocks $B,B'$). No consistent
+estimator separates states in a common block.
+\end{theorem}
+\SKETCH{On a tree, conditioning on $Z_v=c$, the subtrees are independent and each is a Markov chain rooted at a
+neighbour whose state is drawn from row $c$ of $T$; the whole neighbourhood law depends on $c$ only through that
+row \emph{aggregated to the level at which the observation process is measurable}. Emission-consistency plus
+strong lumpability (Kemeny--Snell) make the block process a Markov chain with block-measurable emissions, so
+same-block states induce identical $Q_L$ for all $L$; conversely, if the pair is not in a common
+emission-consistent lumpable block, some $(T^{L}O)$ row differs (Thm~\ref{thm:dealias}) and they de-alias. The
+genericity condition rules out accidental cancellations in $O$. Making this fully rigorous---and extending
+lumpability from chains to hidden Markov \emph{random fields}---is a core to-do.}
+
+\section{Functional identifiability: decision recovery without parameter recovery}
+The emission cannot see relevance ($O_{\textsf{bridge}}=O_{\textsf{irr}}$), so the full role model is not
+node-identified. But the \emph{decision} may still be.
+\begin{corollary}[Functional identifiability]\label{cor:func}
+$R_v=h(Z_v)$ is identified from the neighbourhood iff every pair $a,b$ with $h(a)\neq h(b)$ is de-aliased
+($L^\star(a,b)<\infty$). In the bridge-blind model the only $h$-splitting node-aliased pair is
+$(\textsf{irrelevant},\textsf{bridge})$, de-aliased at radius $1$ iff $(TO)_{\textsf{irr}}\neq(TO)_{\textsf{bridge}}$
+(bridges disproportionately adjacent to direct evidence). Hence \emph{relevance is recoverable even though the
+emission is blind to it and the role parameters are not identified}.
+\end{corollary}
+\PROVEN{Immediate from Thm~\ref{thm:dealias}: identifying $h$ requires distinguishing only $h$-splitting pairs.}
+This is the genuinely Bayesian/statistical distinction the paper should foreground: \emph{parameter recovery vs.\
+decision recovery}. You need not identify the confusion matrix to identify what to do.
+
+\section{The information limit: exactly when structure can help}
+Let $X_v$ be cheap non-structural covariates. Define the \emph{incremental structural information}
+\begin{equation}\label{eq:IG}
+  \mathcal I_G \;=\; I\big(R_v;\,Y_{N(v)}\ \big|\ Y_v,\,X_v\big).
+\end{equation}
+\begin{theorem}[Information limit]\label{thm:info}
+Under logarithmic loss, the reduction in optimal (Bayes) risk from adding the neighbourhood measurements is
+exactly
+\[
+  \HH(R_v\mid Y_v,X_v)-\HH(R_v\mid Y_v,X_v,Y_{N(v)})=\mathcal I_G .
+\]
+In particular $\mathcal I_G=0\Rightarrow$ \emph{no} graph-based rule---however elaborate the MRF---improves optimal
+log-loss prediction of $R_v$; and by Fano/Pinsker the improvement in $0$--$1$ Bayes risk is bounded by an
+increasing function of $\mathcal I_G$.
+\end{theorem}
+\PROVEN{The identity is the definition of conditional mutual information. The $0$--$1$ bound follows from
+Fano/Pinsker. \textbf{Verified regime-switch:} with $R=\I\{Z\ge1\}$ and a Gaussian covariate $X_v\sim\N(\mu_{Z_v},
+\sigma)$ that separates relevant from irrelevant, the neighbour-gain (an $\mathcal I_G$ proxy in nats) is
+$0.09$ (no $X$), $0.11$ (weak, $\sigma{=}1$), $0.10$ ($\sigma{=}0.5$), $0.007$ (strong, $\sigma{=}0.2$),
+$0.000$ (near-perfect, $\sigma{=}0.1$): as the covariate becomes sufficient for $R$, $\mathcal I_G\to0$.}
+\begin{intuition}
+This single quantity explains all three things we saw. In the clean simulation there was no cheap covariate, so
+$\mathcal I_G$ was large and structure rescued relevance. In real retrieval the cosine prior is a \emph{strong}
+covariate---it already separates buried-bridge from distractor---so $\mathcal I_G$ is tiny and the graph adds
+almost nothing. And when the covariate is sufficient, $\mathcal I_G=0$ and \emph{no} method can help. The
+retrieval ``failure'' is the theorem's $\mathcal I_G\!\to\!0$ corner, not a bug.
+\end{intuition}
+
+\section{Near-aliasing rates and Bayesian weak identification (the T\&M core)}
+The results above are qualitative (identified / not). T\&M wants \emph{rates and limits} in the near-aliased
+regime, $\delta_E=d(O_a,O_b)\to0$ and $\delta_G=d(Q_{L^\star}(a),Q_{L^\star}(b))\to0$.
+\begin{conjecture}[Phase boundary]\label{conj:rate}
+For classifying the $h$-functional at a node from its radius-$L^\star$ neighbourhood, the minimax risk decays
+like $\exp\!\big(-c\,n\,(\delta_E^2+\delta_G^2)\big)$ (Hellinger/Chernoff separation of the mixed signatures), so
+consistent recovery holds iff $n(\delta_E^2+\delta_G^2)\to\infty$, with a non-vanishing weak-identification
+regime when it stays bounded.
+\end{conjecture}
+\CONJ{Derive the exact separation of $Q_{L^\star}(a),Q_{L^\star}(b)$ in Hellinger as a function of $(T,O)$ and
+$\delta_E$; convert to minimax classification risk. The clean target is a boundary in $n(\delta_E^2+\delta_G^2)$.}
+\begin{conjecture}[Bayesian weak identification]\label{conj:bayes}
+As $(\delta_E,\delta_G)\to0$: (a) the posterior for $R$ contracts iff $n(\delta_E^2+\delta_G^2)\to\infty$; (b)
+the emission-bias nuisance may fail to contract while $R$ does (functional vs.\ parameter); (c) two admissible
+structural priors $\Pi_1,\Pi_2$ give $d_{\mathrm{TV}}\{\Pi_1(R\mid Y,G),\Pi_2(R\mid Y,G)\}\to0$ in the identified
+regime and bounded-away-from-zero in the structurally-unidentified regime---a computable diagnostic separating
+``a correction learned from data'' from ``a correction imposed by the structural prior.''
+\end{conjecture}
+\CONJ{Posterior-contraction machinery (Ghosal--van der Vaart style) adapted to the tree-signature likelihood;
+the prior-sensitivity claim is a cut/robustness statement. This is the most Bayesian-Analysis-flavoured piece and
+is the natural second paper if the T\&M rate theory is the first.}
+
+\section{The three empirical regimes as instances of one theory}
+\begin{center}\small
+\begin{tabular}{lccl}
+\toprule
+regime & cheap covariate $X$ & $\mathcal I_G$ & outcome \\ \midrule
+favorable simulation (Paper B v1) & absent/weak & large & graph rescues relevance \\
+real retrieval (Paper B v1) & cosine (strong) & $\approx 0$ & graph adds $\approx\!+0.03$; prior does the work \\
+impossibility & sufficient for $R$ & $0$ & no method can help \\ \bottomrule
+\end{tabular}
+\end{center}
+The apparent contradiction between the favorable sim and the retrieval null dissolves: they are two points on the
+$\mathcal I_G$ axis of Theorem~\ref{thm:info}.
+
+\section{Roadmap to a JASA T\&M paper}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Finish Thms \ref{thm:dealias}--\ref{thm:info}} rigorously (\ref{thm:dealias},\ref{cor:func},
+  \ref{thm:info} essentially done; \ref{thm:lump} needs the lumpability$\to$HMRF extension and the genericity
+  condition).
+  \item \textbf{Prove the near-aliasing rate} (Conj.~\ref{conj:rate}): the phase boundary in
+  $n(\delta_E^2+\delta_G^2)$. This is the T\&M centerpiece---new mathematics, not an application.
+  \item \textbf{Measurement-design corollary.} If a second channel $O^{(2)}$ (a different prompt/model/verifier)
+  partially breaks the alias, derive the \emph{structure$\leftrightarrow$replication trade-off}: how much
+  targeted re-measurement restores identification as a function of $\delta_G$. (Positions us away from the 2026
+  anchor/paired-design debiasing work: our knob is \emph{structure}, replication is the corollary.)
+  \item \textbf{Screen a second, no-cheap-prior application by $\mathcal I_G$ before modelling.} Compute
+  $\widehat{\mathcal I_G}=\hat I(R;\text{neighbour outputs}\mid \text{node output},\text{all cheap features})$ on
+  candidate domains---verification of reasoning steps in a dependency DAG, program/SQL verification on an
+  AST/edit graph, claim/evidence checking in a RAG chain---and \emph{only} build the model where $\mathcal I_G$
+  is materially positive after every cheap predictor. (Retrieval taught us this screen is mandatory.)
+  \item \textbf{Bayesian companion} (Conj.~\ref{conj:bayes}) for a Bayesian Analysis version: posterior
+  contraction, prior sensitivity, and the ``learned vs.\ imposed correction'' diagnostic.
+\end{enumerate}
+
+\paragraph{Ceiling assessment.} A chain-Kruskal identification theorem plus the LLM experiment is below T\&M and
+too narrow for BA. \emph{Structural de-aliasing $+$ the near-aliasing rate $+$ functional Bayes} is a legitimate
+JASA T\&M shot; \emph{de-aliasing $+$ posterior-contraction / prior-sensitivity} is a legitimate Bayesian
+Analysis shot. The failure we found did not kill B---it told us the original theorem was aimed at the easy part
+of the parameter space, and handed us the boundary that is the interesting part.
+
+\end{document}
