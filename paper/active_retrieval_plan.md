@@ -251,6 +251,25 @@ identification (weak in the bridge-blind regime). NEXT make-or-break for B: simu
 graph + Potts prior + bridge-blind emission + anchors) and test whether the posterior correctly FLIPS bridge
 grades to relevant -- the actual deliverable -- even when Pi is only weakly identified. If yes, B works (graph
 carries the correction); if no, B's central claim is in real trouble.
+
+## FULL-MODEL RELEVANCE-CORRECTION SIM (paperB_correction_sim.py, $0) -- B STANDS, on a STRONGER thesis
+Roles on a graph (anchored relevant cluster + ANCHORLESS distractor clusters) + relevance-Potts prior + bridge-
+blind emission + low-prior bridges; Gibbs -> posterior Pr(r|g,A). Sweep coupling theta:
+  theta=0 (NO graph): bridge recall 0.48->0.14 (WORSE than raw judge), AUC 0.69 -- correction FAILS without graph.
+  theta=1: bridge 0.48->0.64, distractor FP 0.049, direct recall 0.96, AUC 0.965 -- WORKS (flips bridges, FP low).
+  theta=2: bridge 0.85, FP 0.078 (mild over-smoothing); theta=3 collapses (over-coupled, dir recall 0.35).
+  ROBUSTNESS: a MISSPECIFIED 'rough' emission (doesn't know the true bridge-blindness) STILL works -- theta=1
+    bridge 0.50/AUC 0.974, theta=2 bridge 0.71/AUC 0.921 ~ true-emission => the deliverable does NOT need a
+    cleanly-identified emission.
+=> RESOLVES the tension. The GRAPH carries the correction, ROBUSTLY, and is NECESSARY (theta=0 fails). The weakly-
+identified emission (prior sim) is irrelevant to the deliverable. SPLIT-THE-THEOREM VALIDATED: (a) relevance-
+correction identification = graph-driven, works; (b) emission-magnitude = weak but doesn't matter. **B's thesis
+SHARPENS (stronger + more distinctive): 'when a biased oracle's errors mimic true negatives (bridge-blindness),
+the measurements are structurally SILENT about the bias, so the correction MUST come from inter-item dependence --
+structure is NECESSARY, not merely helpful.'** CAVEATS (sim with favorable structure; theta sweet-spot ~1-2;
+reliable anchors). NEXT: validate on REAL data (cached Hotpot/MuSiQue judge labels + graphs + gold) -- do graph-
+corrected posteriors beat the raw judge on held-out gold on actual corpora? + principled theta selection (CV on
+gold / prior over theta). B is back on track, on a better thesis than the original.
 PIVOT: bank graph-UCB + the kernel x acquisition interaction; paper spine = chain-completion headline +
 retrieval-vs-reasoning decomposition + this mechanism + regime boundary. Amplifiers (lambda_q mixture, MuSiQue/
 N=500, real BAGEL) over more acquisition engineering. (Only lower-odds acquisition variant left: propagation-aware,
