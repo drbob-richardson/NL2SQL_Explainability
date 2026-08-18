@@ -33,8 +33,8 @@ significant low-budget win on standard multi-hop (recall $+0.058$, nDCG@10 $+0.0
 one judgment), a partial rescue of adversarial MuSiQue by inferring the graph from the judge's own hop-reasoning
 ($+0.035$ at three hops, where every cheap surface graph is null), and an honest analysis of why the natural
 adaptive gate does \emph{not} deploy---the per-query gain is a small distributional effect (signal-to-noise
-$\approx 0.12$) rather than a per-query-predictable signal, so ``always use the graph'' is the correct, simple
-policy. Effects are modest but principled, and the graph never significantly hurts.
+$\approx 0.1$--$0.2$) rather than a per-query-predictable signal, so using the graph across the multi-hop regime
+it targets is the correct, simple policy. Effects are modest but principled.
 \end{abstract}
 
 \section{Introduction}
@@ -57,9 +57,9 @@ the graph enters the \emph{decision/experimental-design} layer, not the ranking 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=*,itemsep=1pt,topsep=2pt]
 \item \textbf{Model + the normalization finding} (\S\ref{sec:model}): a GP with a semantic mean and a graph
-covariance, and the finding that the graph kernel must be in correlation (unit-diagonal) form---which doubles its
-effect (chain-completion margin $+0.07\to+0.12$--$0.15$) by equalizing hub variance so optimistic exploration
-reaches the propagating anchors.
+covariance, and the finding that the graph kernel must be in correlation (unit-diagonal) form---which
+$1.8\times$s its effect (chain-completion margin $+0.068\to+0.122$) by equalizing hub variance so optimistic
+exploration reaches the propagating anchors.
 \item \textbf{The alignment law} (\S\ref{sec:law}): a surfacing lemma and a stochastic-block-model theorem---the
 structural gain is $0$ at zero alignment, positive iff the graph is chain-assortative ($p>q$), and monotone in
 $p-q$; the oracle ceiling and the adversarial failure are the two ends of one axis, measured by gold-connectivity.
