@@ -111,30 +111,49 @@ def main():
     plt.title("Reliability"); plt.legend(fontsize=7); plt.tight_layout()
     plt.savefig(os.path.join(FIG, "paper1_reliability.png"), dpi=150); plt.close()
 
-    # ---- Fig 3: per-DB transfer ----
-    udb = sorted(set(dbs))
-    frozen = {d: auroc([v4o[i] for i in range(len(dbs)) if dbs[i] == d],
-                       [y[i] for i in range(len(dbs)) if dbs[i] == d]) for d in udb}
-    enc = json.load(open(os.path.join(ROOT, "server_experiments", "results",
-                                      "exp1_verifier_ModernBERT-base.json")))["lodo_per_db"]
-    # exp3 (Qwen-1.5B LoRA) per-db, from results paste (json not yet synced from server)
-    gen = {"california_schools": 0.687, "debit_card_specializing": 0.682, "financial": 0.628,
-           "formula_1": 0.707, "student_club": 0.682, "superhero": 0.693,
-           "thrombosis_prediction": 0.627, "toxicology": 0.564}
+    # ---- Fig 3: per-DB transfer, with 95% CIs (frozen vs the two fine-tuned verifiers) ----
+    def auroc_ci(s, yv, nb=2000):
+        s = np.asarray(s, float); yv = np.asarray(yv, float); base = auroc(s, yv)
+        n = len(s); rng = np.random.default_rng(0); bs = []
+        for _ in range(nb):
+            idx = rng.integers(0, n, n)
+            if len(np.unique(yv[idx])) == 2:
+                bs.append(auroc(s[idx], yv[idx]))
+        lo, hi = (np.percentile(bs, [2.5, 97.5]) if bs else (base, base))
+        return base, lo, hi
+    RES = os.path.join(ROOT, "server_experiments", "results")
+    encj = json.load(open(os.path.join(RES, "exp1_verifier_ModernBERT-base.json")))
+    genj = json.load(open(os.path.join(RES, "exp3_judge_Qwen2.5-1.5B-Instruct.json")))
+    udb = sorted(encj["lodo_per_db_scores"])
+    def frozen_sy(d):
+        return ([v4o[i] for i in range(len(dbs)) if dbs[i] == d],
+                [y[i] for i in range(len(dbs)) if dbs[i] == d])
+    series = [("frozen gpt-4o judge (zero-shot)", lambda d: auroc_ci(*frozen_sy(d))),
+              ("fine-tuned encoder (LODO)",
+               lambda d: auroc_ci(encj["lodo_per_db_scores"][d], encj["lodo_per_db_labels"][d])),
+              ("fine-tuned Qwen-1.5B (LODO)",
+               lambda d: auroc_ci(genj["lodo_per_db_scores"][d], genj["lodo_per_db_labels"][d]))]
+    vals = {name: [fn(d) for d in udb] for name, fn in series}
     x = np.arange(len(udb)); w = 0.27
-    plt.figure(figsize=(8, 3.8))
-    plt.bar(x - w, [frozen[d] for d in udb], w, label="frozen gpt-4o judge (zero-shot)")
-    plt.bar(x, [enc.get(d, np.nan) for d in udb], w, label="fine-tuned encoder (LODO)")
-    plt.bar(x + w, [gen.get(d, np.nan) for d in udb], w, label="fine-tuned Qwen-1.5B (LODO)")
+    plt.figure(figsize=(8.6, 3.9))
+    for k, (name, _) in enumerate(series):
+        base = [vals[name][j][0] for j in range(len(udb))]
+        err = [[vals[name][j][0] - vals[name][j][1] for j in range(len(udb))],
+               [vals[name][j][2] - vals[name][j][0] for j in range(len(udb))]]
+        plt.bar(x + (k - 1) * w, base, w, yerr=err, capsize=2, label=name, error_kw={"lw": 0.8})
     plt.axhline(0.5, color="gray", lw=0.8, ls=":")
-    plt.xticks(x, [d[:10] for d in udb], rotation=30, ha="right", fontsize=7)
-    plt.ylabel("AUROC on held-out DB"); plt.ylim(0.45, 0.85)
-    plt.title("Per-database transfer: frozen reasoning judge vs fine-tuned verifiers")
+    plt.xticks(x, [d[:12] for d in udb], rotation=30, ha="right", fontsize=7)
+    plt.ylabel("AUROC on held-out DB"); plt.ylim(0.40, 0.95)
+    plt.title("Per-database transfer (95% CIs): frozen reasoning judge vs fine-tuned verifiers")
     plt.legend(fontsize=7); plt.tight_layout()
     plt.savefig(os.path.join(FIG, "paper1_lodo_perdb.png"), dpi=150); plt.close()
 
-    print(f"\nfrozen gpt-4o per-DB mean = {np.mean(list(frozen.values())):.3f} "
-          f"(vs encoder LODO 0.670, Qwen LODO 0.659)")
+    fr = [vals["frozen gpt-4o judge (zero-shot)"][j][0] for j in range(len(udb))]
+    en = [vals["fine-tuned encoder (LODO)"][j][0] for j in range(len(udb))]
+    ge = [vals["fine-tuned Qwen-1.5B (LODO)"][j][0] for j in range(len(udb))]
+    wins = sum(fr[j] > max(en[j], ge[j]) for j in range(len(udb)))
+    print(f"\nfrozen per-DB mean = {np.mean(fr):.3f}; frozen leads on {wins}/{len(udb)} DBs "
+          f"(vs encoder + Qwen-1.5B)")
     print(f"wrote 3 figures to {FIG}")
 
 
