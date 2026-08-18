@@ -1,0 +1,241 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm,hyperref,booktabs,enumitem}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}\newtheorem{proposition}{Proposition}\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}\newtheorem{definition}{Definition}\newtheorem{assumption}{Assumption}
+\newcommand{\R}{\mathbb{R}}\newcommand{\E}{\mathbb{E}}\newcommand{\N}{\mathcal{N}}
+\newcommand{\Pf}{\mathbb{P}}\newcommand{\I}{\mathbb{1}}\newcommand{\HH}{\mathbb{H}}
+\newcommand{\Lpath}{L^\star_{\mathrm{path}}}\newcommand{\Lstr}{L^\star_{\mathrm{struct}}}
+
+\title{\textbf{Structural De-aliasing: Recovering Latent States that a\\ Measurement Channel Cannot Separate}\\[4pt]
+\large Minimax rates, measurement design, and a singular local regime}
+\author{Robert Richardson}
+\date{\today}
+
+\begin{document}\maketitle
+
+\begin{abstract}
+A cheap measurement channel---an automated grader, a weak annotator, a machine verifier---reports a noisy label of
+a latent scientific state at each node of a known dependency structure. We study the regime in which the channel
+\emph{nearly aliases} two scientifically distinct states: their node-level emission distributions coincide or
+nearly so, so no amount of the channel, or better calibration of it, separates them. The states nonetheless
+participate \emph{differently} in the dependency structure, and the question we answer is quantitative: at what
+rate can the structural observations de-alias states the channel cannot? For a node with $d$ conditionally
+independent structural views, the effective information combines measurement and structural separation as
+$\delta_E^2+d\,\delta_G^2$, with error decaying at the Chernoff exponent between the structural signatures. We lift
+this to a field minimax theorem for recovering the functional field $\{h(Z_v)\}$ on a tree: the belief-propagation
+marginal-mode estimator attains the rate, and a correlation-decay Assouad argument matches it up to constants
+under a spectral-gap condition, because deeper subtree information saturates and distant nodes decouple. Two
+distinct information axes emerge---local structural richness $d\,\delta_G^2$ (classification) and population size
+via $\lambda=\sqrt n\,\delta_G^2$ (learning the channel)---yielding a two-dimensional phase diagram with two
+separate failure modes. We give a measurement-design law that prices structural views against replication and a
+second instrument, and we show a scientific functional $R=h(Z)$ can be point-identified while the latent state and
+the confusion matrix are not. Finally, the local weak-identification regime is genuinely \emph{singular}: an
+exchangeability symmetry makes the likelihood even in the separation, so the identifiable parameter is
+$\psi=\delta_G^2$ (estimable at rate $n^{-1/4}$ in $\delta_G$) with a boundary-truncated Gaussian posterior, and
+the orientation of the states is fixed not by the data but by a single anchor. A natural-language--to--evidence
+retrieval problem, where an LLM grader is blind to bridging evidence, is the running illustration and a predicted
+corner ($\mathcal I_G\!\to\!0$) of the same theory.
+
+\smallskip\noindent\emph{Keywords:} aliasing; differential misclassification; hidden Markov random fields;
+minimax rates; weak identification; singular models; measurement design; partial identification.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{The problem.} Let a latent state $Z_v\in[K]$ sit at each node $v$ of a known tree or graph, evolving by
+a Markov transition $T$ along edges, and let a measurement channel emit $Y_v\sim O_{Z_v}$. Two states $a,b$ are
+\emph{node-aliased} when their emission rows coincide, $O_a=O_b$ (exactly or nearly). The scientific target is a
+functional $R_v=h(Z_v)$---a decision, not the full state. When $h(a)\neq h(b)$ for an aliased pair, the channel is
+blind to a distinction that matters, and no calibration of the channel recovers it. But if $a$ and $b$ occur next
+to \emph{different} states, the dependency structure can distinguish them. This paper asks, and answers
+quantitatively, \emph{when and how fast}.
+
+\paragraph{A motivating instance.} In multi-hop retrieval, a large-language-model relevance grader is
+\emph{bridge-blind}: it grades a passage that supplies a necessary linking entity---but does not itself answer the
+query---exactly like an irrelevant passage. Bridge and irrelevant are node-aliased; the bridge, however, sits
+adjacent to directly-relevant evidence, while the irrelevant passage does not. Whether corpus structure can
+recover relevance the grader misses is exactly a structural de-aliasing problem, and its empirical behavior
+(structure helps in the abstract but not once a strong covariate is present) turns out to be a predicted corner of
+the theory, not an anomaly.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt,topsep=2pt]
+\item \textbf{A near-aliasing rate} (\S\ref{sec:rate}). For a node with $d$ conditionally independent structural
+views, the two-point Bayes error for the aliased pair decays as $\exp(-\Theta(\delta_E^2+d\,\delta_G^2))$, with the
+sharp exponent the shared-$s$ Chernoff information between the structural signatures. This is a \emph{rate} where
+the prior literature on aliased-state hidden Markov models gives only identifiability and consistency.
+\item \textbf{Field minimax rates} (\S\ref{sec:field}). For recovering the field $\{h(Z_v)\}$ on a tree under
+average Hamming loss, the belief-propagation marginal-mode estimator attains the per-node rate, and a
+correlation-decay Assouad argument matches it up to constants on a \emph{connected} tree under a spectral-gap
+condition. A clean transition separates measurement-dominated, structure-dominated, and unidentifiable regimes.
+\item \textbf{A two-dimensional phase diagram} (\S\ref{sec:phase}). Local structural richness $d\,\delta_G^2$
+(can we classify if the channel map were known?) and population information $\lambda=\sqrt n\,\delta_G^2$ (can we
+learn the map?) are distinct axes, with two separate failure modes.
+\item \textbf{A measurement-design law} (\S\ref{sec:design}): independent channels add Chernoff exponents, so
+$n$ replications, $d$ structural views, and $m$ readings of a second instrument contribute
+$nC_E+dC_G+mC_2$ (first order), pricing structure against measurement.
+\item \textbf{Functional identifiability without parameter identifiability} (\S\ref{sec:func}): the decision
+$R=h(Z)$ can be point-identified while the state and the confusion matrix are not.
+\item \textbf{A singular local regime} (\S\ref{sec:singular}). By an exchangeability symmetry the local likelihood
+is \emph{even} in the separation; the identifiable parameter is $\psi=\delta_G^2$, estimable at rate $n^{-1/4}$ in
+$\delta_G$, with a boundary-truncated Gaussian posterior; the orientation of the aliased pair is fixed by an
+anchor, not the data.
+\end{enumerate}
+
+\paragraph{Relation to existing work.} The qualitative identifiability backbone is known and we use it as
+scaffolding: observational equivalence of the structural process is probabilistic bisimulation, equivalently
+emission-consistent strong lumpability (Larsen \& Skou, 1991; Kemeny \& Snell, 1960; Buchholz, 1994), and that the
+branching neighborhood distinguishes more than any single path is the classical linear-vs-branching-time gap
+(Baier et al., 2005). Identifiability of latent tree models from repeated conditionally independent views is
+classical (Chang, 1996; Allman, Matias \& Rhodes, 2009), but assumes \emph{distinct} emissions and gives no rates.
+Aliased-state HMMs were treated by Weiss \& Nadler (2015) for two states on a line, with identifiability and
+consistency but \emph{no rate} and not in the near-aliased regime. Our contribution is the quantitative theory
+in the near-aliased regime---rates, minimax field recovery, design, and the singular local asymptotics---together
+with the aliasing framing that the distinct-emission literature does not cover. Functional recovery under
+non-identification continues the tradition of estimable functions (Rao, 1973) and partial identification (Manski,
+2003).
+
+\section{Model and aliasing depths}\label{sec:model}
+On a tree, $\{Z_v\}$ is a Markov random field with edge transition $T$ and the measurement channel emits
+$Y_v\mid Z_v=c\sim O_c$. Optional cheap covariates $X_v$ may accompany each node. The target is $R_v=h(Z_v)$.
+\begin{definition}[Path and structural signatures]
+The \emph{path signature} $P_\ell(c)=\mathcal L(Y_w\mid Z_v=c)=(T^\ell O)_c$ is the law of one measurement at
+distance $\ell$; the \emph{structural signature} $Q_\ell(c)=\mathcal L(Y_{B_\ell(v)}\mid Z_v=c)$ is the joint law
+of the whole radius-$\ell$ neighborhood. The corresponding aliasing depths are
+$\Lpath=\min\{\ell:P_\ell(a)\neq P_\ell(b)\}$ and $\Lstr=\min\{\ell:Q_\ell(a)\neq Q_\ell(b)\}$, with
+$\Lstr\le\Lpath$.
+\end{definition}
+Node-level aliasing ($O_a=O_b$) makes $\Lstr,\Lpath>0$; heterophily (aliased states have different neighbors) makes
+them finite. The joint signature is strictly richer than the marginal: because siblings sharing a hidden parent are
+conditionally dependent, $Q_\ell$ can separate states whose every path marginal $P_\ell$ coincides---a de Finetti /
+overdispersion effect that can give $\Lstr<\Lpath$ (Prop.~\ref{prop:branch}). Write $\delta_E^2=H^2(O_a,O_b)$ and
+$\delta_G^2=H^2\big((TO)_a,(TO)_b\big)$ for the squared-Hellinger node and structural separations.
+
+\section{The near-aliasing rate}\label{sec:rate}
+\begin{theorem}[Near-aliasing rate]\label{thm:rate}
+Test $Z_v=a$ vs $Z_v=b$ from the node measurement and $d$ conditionally independent radius-$L$ views. With
+per-channel Chernoff divergences $C_E(s),C_G(s)$, the equal-prior Bayes error obeys
+$\tfrac14(\rho_E\rho_G^d)^2\le P_e\le\tfrac12\rho_E\rho_G^d$ (Bhattacharyya/Le Cam) and, sharply,
+$P_e\asymp d^{-1/2}\exp\!\big(-\max_s\{C_E(s)+d\,C_G(s)\}\big)$ (Bahadur--Rao, nonlattice). Consequently
+$P_e\to0$ iff $\delta_E^2+d\,\delta_G^2\to\infty$; near the alias the optimal tilt $s\to\tfrac12$ and the exponent
+is $\tfrac12(\delta_E^2+d\,\delta_G^2)(1+o(1))$.
+\end{theorem}
+\begin{proposition}[Branching de-aliasing]\label{prop:branch}
+There are models with node-aliased $a,b$ whose every single-measurement marginal coincides yet whose two-sibling
+joint differs; the de-aliasing exponent is the Chernoff information of the joint signatures, positive though the
+per-measurement Chernoff information is zero. Hence $\Lstr$ can be finite while $\Lpath=\infty$.
+\end{proposition}
+
+\section{Field estimation and minimax rates}\label{sec:field}
+Under average Hamming loss $\mathcal L(\hat R,R)=n^{-1}\sum_v\I\{\hat R_v\neq R_v\}$, the Bayes rule is the vector
+of marginal posterior modes, computed exactly by belief propagation on a tree. Let $\Phi(x)\asymp e^{-cx}$ denote
+the per-node two-point Bayes floor and $C_G^{(\ell)}$ the depth-$\ell$ branch Chernoff information.
+\begin{theorem}[Oracle-model field risk; $\vartheta=(T,O)$ known]\label{thm:oracle}
+The marginal-mode field estimator has per-node Bayes risk $\asymp\Phi\big(\delta_E^2+d\,C_G^{(\infty)}\big)$, where
+$C_G^{(\infty)}=\lim_\ell C_G^{(\ell)}$ is finite; the increments $C_G^{(\ell+1)}-C_G^{(\ell)}$ decay geometrically
+at rate $\lambda_2(T)$, so $C_G^{(1)}\le C_G^{(\infty)}\le c_0\,C_G^{(1)}$ with $c_0$ bounded.
+\end{theorem}
+\begin{theorem}[Forest minimax; $\vartheta$ in the near-aliasing class]\label{thm:forest}
+On the forest of $n$ disjoint depth-1 star gadgets, $\inf_{\hat R}\sup_\vartheta\E\,\mathcal L(\hat R,R)\asymp
+\Phi(\delta_E^2+d\,\delta_G^2)$, with matching per-gadget-Bayes (upper) and Assouad (lower) bounds, the gadgets
+being genuinely independent.
+\end{theorem}
+\begin{theorem}[Connected-tree minimax, rate level, under contraction]\label{thm:connected}
+If $\lambda_2\equiv|\lambda_2(T)|<1$, then on a bounded-degree connected tree
+$\inf_{\hat R}\sup_\vartheta\E\,\mathcal L(\hat R,R)\asymp\Phi(\delta_E^2+d\,\delta_G^2)$. The lower bound follows
+from two facts: deeper subtree information \emph{saturates} ($C_G^{(\infty)}\le c_0 C_G^{(1)}$), so it changes only
+the constant; and flipping an antichain node's state perturbs the data at distance $\Delta$ by $O(\lambda_2^\Delta)$,
+so nodes at pairwise distance $\ge 2L_n$, $L_n\to\infty$, \emph{decouple} and Assouad's lemma applies at the
+per-node rate. The exact exponent constant is left open; the rate is pinned.
+\end{theorem}
+\noindent Three regimes follow: \emph{measurement-dominated} ($\delta_E^2\gg d\delta_G^2$),
+\emph{structure-dominated} ($\delta_E=0$, rate $d\delta_G^2$), and \emph{unidentifiable}
+($\delta_E^2+d\delta_G^2\to0$, risk $\to\tfrac12$).
+
+\section{Two information axes: an $(n,d)$ phase diagram}\label{sec:phase}
+Local structural richness $d\,\delta_G^2$ governs whether the neighborhood can classify a node \emph{if the
+channel map were known}; population information $\lambda=\sqrt n\,\delta_G^2$ governs whether $n$ nodes suffice to
+\emph{learn} that map (\S\ref{sec:singular}). De-aliasing fails in two distinct ways---too little local structure,
+or enough structure but too little population information to learn how it maps to the states---and succeeds only
+when both are large.
+
+\section{Measurement design}\label{sec:design}
+\begin{corollary}[First-order design law]\label{cor:design}
+Independent channels add error exponents, so a design with $n$ replicated node measurements, $d$ structural views,
+and $m$ readings of a second instrument (per-reading information $C_2$) has effective information equal to the
+shared-$s$ exponent $\max_s\{nC_E(s)+dC_G(s)+mC_2(s)\}$, whose near-alias first-order value is
+$nC_E+dC_G+mC_2$. Iso-information surfaces give the substitution rates between structure, replication, and a
+second instrument; near the alias $C_E\to0$ and structure trades directly against the second instrument.
+\end{corollary}
+
+\section{Functional recovery without parameter identification}\label{sec:func}
+\begin{theorem}[Functional identifiability]\label{thm:func}
+$R_v=h(Z_v)$ is identified from the radius-$L$ neighborhood iff every pair $a,b$ with $h(a)\neq h(b)$ is
+structurally de-aliased. The recoverable functionals are exactly those measurable with respect to the coarsest
+emission-consistent lumpable partition; such an $R$ can be point-identified even when the latent state $Z$ and the
+emission channel $O$ are not.
+\end{theorem}
+
+\section{Unknown parameters and the singular local regime}\label{sec:singular}
+When $(T,O)$ are estimated from the same field, the plug-in risk is the oracle floor plus an estimation remainder
+$\varrho_n$ governed by $\lambda=\sqrt n\,\delta_G^2$: negligible as $\lambda\to\infty$ (plug-in asymptotically
+free), of the same order as the structural gain when $\lambda=O(1)$. The reason is that the parameter separating
+the aliased pair is \emph{singular} at the alias.
+\begin{proposition}[Singular structure]\label{prop:singular}
+Let $\eta$ parametrize the separation ($\eta=0$ full alias, $\delta_G\propto\eta$). By exchangeability of the
+aliased pair the likelihood is even, $L(\eta)=L(-\eta)$, so the score at $\eta=0$ vanishes and the information for
+$\eta$ is degenerate. The identifiable parameter is $\psi=\eta^2\ (\propto\delta_G^2)$, regular and
+$\sqrt n$-estimable; $\eta$ is estimable only at rate $n^{-1/4}$; the invariant local index is
+$\lambda=\sqrt n\,\delta_G^2$; and the \emph{sign} of $\eta$---the orientation of the pair, hence $R=h(Z)$---is
+not identified by the data.
+\end{proposition}
+\noindent \emph{Two stages.} Structural data identify the de-aliasing \emph{magnitude} $|\eta|=\sqrt\psi$ and the
+\emph{unordered} pair; a single anchor (or the prior) supplies the \emph{orientation} $\mathrm{sign}(\eta)$ and
+thus $R=h(Z)$. Orientation costs $O(1)$ external information regardless of $n$: structure identifies how much the
+states differ, and very little side information suffices to orient them.
+\begin{proposition}[Boundary posterior]\label{prop:boundary}
+Along $\lambda=\sqrt n\,\delta_{G,n}^2\to\lambda_0$, the posterior for the localized $\psi$ converges to a Gaussian
+truncated at the boundary $\psi\ge0$, with location set by $\lambda_0$---interpolating Bernstein--von Mises
+($\lambda_0=\infty$) and prior ($\lambda_0=0$); the orientation posterior is a prior/anchor-fixed Bernoulli. The
+divergence between two priors' functional posteriors is an explicit function of $\lambda_0$, giving a
+``learned-versus-imposed'' diagnostic.
+\end{proposition}
+
+\section{Illustration: bridge-blind retrieval}\label{sec:illus}
+Define the incremental structural information $\mathcal I_G=I(R_v;Y_{N(v)}\mid Y_v,X_v)$. Under log loss the
+optimal-risk reduction from the neighborhood equals $\mathcal I_G$, and by conditional Pinsker the improvement in
+any bounded-loss Bayes risk is at most $\sqrt{\mathcal I_G/2}$. In the retrieval problem, without a strong
+covariate $\mathcal I_G$ is large and structure recovers the grader's missed bridges; once a calibrated retriever
+covariate is present it is nearly sufficient for relevance, $\mathcal I_G\!\to\!0$, and \emph{no} structural
+procedure can materially help---the observed null is the theorem's predicted corner, not a failure of method.
+
+\section{Discussion}
+Aliasing turns latent-state recovery into a genuinely two-dimensional problem---local structure versus population
+information---with a singular local regime at its boundary. The open items are constants rather than existence:
+the exact field exponent (matching $C_G^{(\infty)}$ upper and lower via the branch recursion), the exact
+boundary-posterior scale, and the sharp phase-diagram constants. The framework is not specific to language models;
+it applies wherever an automated or weak measurement channel aliases scientifically distinct states that behave
+differently in a known dependency structure.
+
+\appendix
+\section{Proof sketches}
+\emph{Theorem~\ref{thm:rate}.} Conditional independence of the node emission and the $d$ neighbor subtrees given
+$Z_v$ makes the joint law a product; Hellinger affinities of products multiply and Chernoff exponents add under a
+shared tilt $s$; Bhattacharyya and Le Cam give the two-sided bound, Chernoff's theorem the sharp exponent, and the
+local CLT the $d^{-1/2}$ prefactor.\quad
+\emph{Theorem~\ref{thm:oracle}.} Marginal-mode optimality for additive $0$--$1$ loss; BP exactness on trees;
+$C_G^{(\ell)}$ increments decay at $\lambda_2$ by contraction.\quad
+\emph{Theorems~\ref{thm:forest}--\ref{thm:connected}.} Per-gadget/per-node Bayes upper bounds; Assouad lower
+bounds, valid on the forest by independence and on the connected tree by saturation plus $O(\lambda_2^\Delta)$
+correlation decay along a sparse antichain.\quad
+\emph{Proposition~\ref{prop:singular}.} The label-swap symmetry gives the even likelihood; reparametrizing to
+$\psi=\eta^2$ restores regularity, whence the $n^{-1/4}$ rate and the $\lambda=\sqrt n\,\delta_G^2$ index; the sign
+is a global relabeling the data cannot see.\quad
+\emph{Proposition~\ref{prop:boundary}.} Constrained Bernstein--von Mises in $\psi\ge0$; the truncation is
+irrelevant as $\lambda_0\to\infty$ and dominant as $\lambda_0\to0$.
+
+\smallskip\noindent\footnotesize\emph{Note.} This skeleton states the results in submission order; the companion
+working document records the derivations, numerical verification of every claim, and the empirical provenance.
+\normalsize
+\end{document}
