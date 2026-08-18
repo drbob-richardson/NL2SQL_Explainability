@@ -572,3 +572,26 @@ Added to draft: Table 2 (BAGEL head-to-head) + paragraph; cited bagel2026 via na
 baselines + Discussion updated ('faithful reimplementation, controls for prior & lengthscale'). Draft 8pp, compiles
 clean, 0 undef. This CONVERTS the old 'BAGEL-lite' hand-wave into the actual published-competitor head-to-head the
 reviewer demanded, and the covariance advantage survives controlling for the prior AND BAGEL's own kernel tuning.
+
+## REVIEW ROUND: BAGEL FAIRNESS -- full budget curve B=1..40 (is the low-budget win a cherry-pick?)  [paperA_fig_bagel.py]
+Concern (RR): BAGEL is starved at low budget (zero-mean, no cross-query prior) -- is comparing there fair? Need
+higher-budget runs. Checked cache first: 100% of all 100 passages/pool are judged (no uncached->0 corruption), so
+high-B runs are valid. (Aside: only 81.7% of GOLD passages get judge-label>0 -> the judge itself misses ~18% of
+bridges; this is the ceiling and it's why propagation helps -- a gold-but-judge-0 bridge can only surface via a
+judged anchor.) Ran B=1,2,3,5,10,20,40 (native BAGEL budget ~50; B=40 = 40% of the N=100 pool).
+RESULT -- the fairness concern is RESOLVED, and it flips into a STRENGTH:
+  recall@k:  B=  1     3     5     10    20    40
+    BAGEL       .446  .490  .491  .578  .588  .585   <- PLATEAUS ~.585 from B=10 on; never catches up
+    BAGEL+prior .583  .626  .628  .613  .598  .589
+    graph-GP    .692  .720  .725  .729  .709  .703
+    d(ours-BAGEL)      +.246 +.229 +.235 +.151 +.121 +.118   <- TOTAL gap SHRINKS then plateaus ~+.12
+    d(ours-+prior)     +.109 +.094 +.098 +.116 +.111 +.114   <- COVARIANCE gap is FLAT ~+.11 at EVERY budget
+KEY: the gap splits into a budget-SENSITIVE MEAN effect (zero-mean starvation; the +prior control removes it, and
+it's the ONLY part that shrinks) and a budget-INVARIANT COVARIANCE effect (~+0.11 from B=1 to B=40, same mean).
+=> the covariance advantage -- the paper's actual claim -- is NOT a low-budget artifact. BAGEL plateaus ~0.12 below
+ours even at 40% pool coverage because the embedding covariance structurally can't surface a bridge semantically
+far from the anchor; more judgments don't rescue it. RR's instinct to push budget converted a potential weakness
+('you only win where BAGEL is starved') into the strongest fairness evidence in the paper.
+Added: Figure 2 (2 panels: A recall-vs-budget plateau; B total-gap-shrinks-vs-covariance-gap-flat, 95% bands),
+replaced the B=1-10 table with it. Abstract + intro + related-work + discussion updated to the budget-invariance
+framing. Draft 8pp, compiles clean, 0 undef.

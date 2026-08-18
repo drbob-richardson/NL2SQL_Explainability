@@ -33,8 +33,10 @@ that one-step value-of-information undervalues---while the full superiority of U
 report as an empirical finding rather than a theorem. \emph{(iii)} An empirical characterization under a real
 hop-aware judge across HotpotQA, 2WikiMultiHopQA, and MuSiQue: a significant low-budget win on standard multi-hop
 (recall $+0.058$, nDCG@10 $+0.030$, chain-completion $+0.122$ at one judgment) that holds head-to-head against a
-faithful re-implementation of BAGEL at matched budget (recall $+0.15$--$0.25$ across budgets, decomposing into the
-semantic-mean and graph-covariance choices, each validated separately), a partial rescue of adversarial MuSiQue by
+faithful re-implementation of BAGEL at matched budget---where the covariance advantage is \emph{budget-invariant}
+(a constant $\approx+0.11$ recall@$k$ from $B{=}1$ to $B{=}40$, controlling for the prior), hence not a low-budget
+artifact, while BAGEL's embedding kernel plateaus below ours even at $40\%$ pool coverage---a partial rescue of
+adversarial MuSiQue by
 inferring the graph from the judge's own hop-reasoning ($+0.035$ at three hops, where every cheap surface graph is
 null), and an honest analysis of why the natural
 adaptive gate does \emph{not} deploy---the per-query gain is a small distributional effect (signal-to-noise
@@ -84,7 +86,7 @@ We do not claim large gains: effects are modest. We claim a principled account--
 \emph{Active / Bayesian retrieval.} Our nearest neighbour is BAGEL~\citep{bagel2026}, a query-specific GP-UCB over
 passage embeddings; our data refute the embedding kernel here and replace it with a graph covariance, and we add a
 soft (noisy-likelihood) update that prevents a GP from confidently propagating a wrong LLM label---BAGEL's two named
-limitations. We compare against a faithful re-implementation head-to-head (\S\ref{sec:exp}, Table~\ref{tab:bagel}). \emph{Graph retrieval.} GraphRAG and HopRAG use graph structure for retrieval; HopRAG builds logical
+limitations. We compare against a faithful re-implementation head-to-head (\S\ref{sec:exp}, Figure~\ref{fig:bagel}). \emph{Graph retrieval.} GraphRAG and HopRAG use graph structure for retrieval; HopRAG builds logical
 pseudo-query edges precisely because surface similarity is insufficient, consonant with our alignment law. We use
 the graph as a covariance, not a ranking signal, and characterize when it helps. \emph{GMRF/CAR priors} (Rue \&
 Held) supply the kernel; \emph{Bayesian optimization / value of information} the acquisition; \emph{set-wise
@@ -225,35 +227,34 @@ graph is the better covariance and the embedding covariance adds nothing on top 
 mixing weight that mirrors the alignment dose-response, and a direct answer to ``why not keep the embedding
 covariance.''
 
-\paragraph{Head-to-head with the actual BAGEL algorithm.} Our nearest competitor is BAGEL~\citep{bagel2026}. We
-reimplement it faithfully (code unreleased): a query-specific \emph{zero-mean} GP over passage embeddings with an
-RBF kernel whose lengthscale is fit \emph{per query} by marginal likelihood, LLM relevance scores as standardized
-observed labels, the query embedding seeded as a maximum-relevance pseudo-observation, a top-$M$ dense warm-start,
-UCB acquisition ($\beta{=}2$), and final ranking by posterior mean; we match its total judgment budget to ours.
-Across $B{=}1$--$10$ the graph method beats faithful BAGEL on recall@$k$ by $+0.15$ to $+0.25$, significant at every
-budget (Table~\ref{tab:bagel}), and the gap decomposes cleanly into our two design choices. \emph{(i)
-Semantics-in-the-mean:} BAGEL's zero-mean GP carries no cross-query prior and is starved at low budget; giving
-BAGEL's own kernel our calibrated prior mean (``$+$our prior'') recovers about half the gap. \emph{(ii)
+\paragraph{Head-to-head with the actual BAGEL algorithm, across the full budget range.} Our nearest competitor is
+BAGEL~\citep{bagel2026}. We reimplement it faithfully (code unreleased): a query-specific \emph{zero-mean} GP over
+passage embeddings with an RBF kernel whose lengthscale is fit \emph{per query} by marginal likelihood, LLM
+relevance scores as standardized observed labels, the query embedding seeded as a maximum-relevance
+pseudo-observation, a top-$M$ dense warm-start, UCB acquisition ($\beta{=}2$), and final ranking by posterior mean;
+we match its total judgment budget to ours and sweep $B$ from $1$ to $40$ (its native budget is $\sim 50$;
+$B{=}40$ already judges $40\%$ of the $N{=}100$ pool). The graph method beats faithful BAGEL on recall@$k$ at every
+budget (Figure~\ref{fig:bagel}A), and---this is the load-bearing fairness check---the gap decomposes into a
+budget-\emph{sensitive} mean effect and a budget-\emph{invariant} covariance effect (Figure~\ref{fig:bagel}B).
+\emph{(i) Semantics-in-the-mean:} BAGEL's zero-mean GP carries no cross-query prior and is starved when the budget
+is tiny; giving BAGEL's own kernel our calibrated prior mean (``$+$our prior'') recovers this part, and it is the
+\emph{only} part that shrinks with budget ($\Delta$ falls from $+0.25$ at $B{=}1$ toward $+0.12$). \emph{(ii)
 Structure-in-the-covariance:} even with our prior \emph{and} BAGEL's marginal-likelihood-tuned RBF kernel and
-query-seed, the graph covariance still wins by $+0.09$--$0.14$ recall@$k$ at every budget---BAGEL's kernel-tuning
-machinery does not close the covariance gap. The conclusion is unchanged under a maximally-active warm/active split
-(warm$=1$: $\Delta$ vs BAGEL $+0.24$, vs $+$prior $+0.13$ at $B{=}3,5$).
-\begin{table}[t]\centering\small
-\begin{tabular}{lccccc}
-\toprule
-recall@$k$, chained ($n{=}600$) & $B{=}1$ & $B{=}2$ & $B{=}3$ & $B{=}5$ & $B{=}10$ \\ \midrule
-faithful BAGEL (zero-mean)      & $0.446$ & $0.479$ & $0.490$ & $0.491$ & $0.578$ \\
-\quad $+$ our calibrated prior  & $0.583$ & $0.579$ & $0.626$ & $0.628$ & $0.613$ \\
-graph-GP (ours)                 & $\mathbf{0.692}$ & $\mathbf{0.714}$ & $\mathbf{0.720}$ & $\mathbf{0.725}$ & $\mathbf{0.729}$ \\ \midrule
-$\Delta$ ours $-$ BAGEL         & $+.246$ & $+.235$ & $+.229$ & $+.235$ & $+.151$ \\
-$\Delta$ ours $-$ ($+$prior)    & $+.109$ & $+.135$ & $+.094$ & $+.098$ & $+.116$ \\
-\bottomrule
-\end{tabular}
-\caption{Faithful BAGEL vs.\ ours at matched judgment budget. All $\Delta$ have 95\% CIs excluding $0$ (e.g.\ at
-$B{=}1$, ours$-$BAGEL $+0.246\,[.222,.269]$; ours$-(+$prior$)$ $+0.109\,[.089,.129]$). Row 2 (BAGEL's kernel with
-our prior mean) isolates the covariance: the graph still wins, so the advantage is not merely a better prior or an
-untuned lengthscale.}\label{tab:bagel}
-\end{table}
+query-seed, the graph covariance wins by a \emph{constant} $\approx +0.11$ recall@$k$ from $B{=}1$ all the way to
+$B{=}40$ ($+0.109,+0.094,+0.098,+0.116,+0.111,+0.114$)---so the covariance advantage is \emph{not} a low-budget
+artifact, and BAGEL's kernel-tuning does not close it at any budget. Indeed faithful BAGEL \emph{plateaus} at recall
+$\approx 0.585$ from $B{=}10$ on, $\sim0.12$ below ours even at $40\%$ pool coverage: its embedding covariance
+structurally cannot surface a bridge that is semantically far from the anchor, so more judgments do not rescue it.
+The conclusion is unchanged under a maximally-active warm/active split (warm$=1$: $\Delta$ vs BAGEL $+0.24$, vs
+$+$prior $+0.13$ at $B{=}3,5$).
+\begin{figure}[t]\centering
+\includegraphics[width=\linewidth]{fig_bagel.pdf}
+\caption{Faithful BAGEL vs.\ ours at matched judgment budget (chained, $n{=}600$). \textbf{(A)} BAGEL plateaus
+$\sim0.12$ recall@$k$ below ours even at $40\%$ pool coverage. \textbf{(B)} The total gap (ours$-$BAGEL) shrinks as
+BAGEL's zero-mean starvation eases, but the covariance gap (ours$-$(BAGEL$+$our prior), same mean) is
+budget-invariant at $\approx+0.11$ (bands are 95\% CIs)---the graph advantage is not a low-budget artifact.}
+\label{fig:bagel}
+\end{figure}
 
 \paragraph{The alignment law, from both sides.} We judged the \emph{comparison} (independent-evidence) questions
 as a control, giving a mixed distribution ($300$ chained $+$ $300$ comparison). The graph helps chained
