@@ -318,10 +318,15 @@ noise), so $\lambda_q\to0$; on a ``buried, connected'' query it is the whole gam
 $\lambda_q$ turns the fragile ``sometimes-helps-sometimes-hurts'' behaviour into a controlled, query-adaptive
 decision.
 \end{intuition}
-\PROP{An oracle-$\lambda$ ceiling (best fixed $\lambda$ per query, chosen with hindsight) shows a modest but
-significant residual headroom of $+0.03$--$0.045$ over the pure graph kernel, and the hindsight-best $\lambda$
-is predictable from connectivity/burial features---so the mixture is \emph{feasible}. The learned model and its
-cross-query pooling are not yet built.}
+\PARTIAL{\textbf{Status (now run).} An oracle-$\lambda$ ceiling (best fixed $\lambda$ per query, in hindsight)
+shows a modest residual headroom ($+0.03$--$0.045$) over the fixed graph kernel, and gold-free features \emph{do}
+predict the per-query graph advantage (top-$k$ cosine negatively---a confident prior means the graph adds less).
+\emph{But} a learned gate (5-fold CV, gold-free features) merely \emph{ties} the fixed graph kernel out-of-sample
+on \emph{chained-only} data ($-0.005$): the graph helps $\sim$86\% of chained queries, so there is almost nothing
+to route, and the oracle headroom is itself small and budget-inconsistent. $\lambda_q$'s value needs a
+\emph{mixed} query distribution including graph-\emph{unfavorable} (independent/comparison) queries where
+$\lambda_q\to0$; showing it requires those queries judged, which we have not done. So the learned gate is
+\emph{feasible and sensibly-signalled but not yet a demonstrated win}---an honest open item, not a result.}
 
 \section{Active Retrieval: Acquisition and the Exploration Mechanism}\label{sec:acq}
 The algorithm is: repeat $B$ times \{choose the highest-acquisition unjudged candidate, judge it, update
@@ -469,6 +474,26 @@ relevant but---if we ask the judge the right question---\emph{which hop} it serv
 reasoning can construct the chain graph within the budget. This unifies the two roles of structure (covariance
 here; identification in Paper B) and is the most plausible route to helping on adversarial corpora without a
 cheating oracle.}
+
+\section*{Running log: results and current thinking (this iteration)}
+\emph{This is a working record, not a submission draft.} Where things stand:
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Solid.} The mean/dependence decomposition; the correlation-form normalization \emph{finding}
+  (graph$-$cosine chain-completion roughly doubles, to $+0.12$--$0.15$); UCB beats \emph{even the genuine
+  one-step chain-completion VOI} on the graph kernel ($-0.08$--$0.11$), so the value of graph exploration is
+  multi-stage; the alignment law with the oracle ceiling ($+0.07$--$0.09$), positive on HotpotQA/2Wiki and a
+  clean boundary on MuSiQue (surface graphs cannot recover the chain there; only an oracle graph can).
+  \item \textbf{Ran, came back honest-negative-or-partial.} The learned gold-free $\lambda_q$ gate ties the
+  fixed graph kernel on chained-only data (needs a mixed distribution to show value); the MuSiQue autopsy shows
+  every cheap graph fails there because distractors are surface-similar to golds by construction.
+  \item \textbf{Open items that would firm the paper.} A real BAGEL head-to-head (not our re-implementation);
+  firming the 2Wiki end-task with more data; judging the independent/comparison questions so $\lambda_q$ has a
+  graph-unfavorable regime to route away from; a clean statement + proof of the alignment law under a block model.
+  \item \textbf{Best-fit venues on current evidence.} UAI/AISTATS (Bayesian + graphical-models + decision) read
+  as the most natural conceptual homes; TMLR is a low-risk archival fit. The individual primitives are known
+  (BAGEL; graph GPs; kernel normalization; set selection); the contribution is the \emph{combined mechanism +
+  the regime law}, positioned as a targeted BAGEL sequel.
+\end{itemize}
 
 \section{Conclusion}
 The corpus graph, worthless for ranking, is load-bearing as a covariance for budget-limited multi-hop

@@ -49,6 +49,14 @@ the target precise and confirm the fundamentals. Grey ``Intuition'' notes give t
 Status tags: \TESTED{} supported by measurements we already have;\ \PARTIAL{} partial;\ \PROP{} proposed, not
 yet run.
 
+\paragraph{\textcolor{red}{Important status update (this iteration).}} The central structural-correction claim
+has now been tested end to end, and it \emph{does not survive real retrieval data}: on real corpora the
+calibrated \emph{retriever prior}---not the graph---does the correction, because the passages the bridge-blind
+judge misses are still ranked above distractors by cosine. So ``structure is \emph{necessary} to correct the
+judge'' holds in a favorable simulation but fails where a cheap prior exists. The full arc, and what it implies,
+is in \S\ref{sec:status}; \textbf{read the model below as the target for a \emph{different}, no-prior domain}
+(e.g.\ correctness verification), where structure would be the only correction signal.
+
 \tableofcontents
 
 \section{Introduction}
@@ -358,6 +366,55 @@ that is \emph{differential} in a latent role refining the target; (ii) \emph{het
 graph structure (bridge $\leftrightarrow$ direct), where neighbours \emph{differ}; (iii) single-judge
 \emph{structural identification} through that heterophilic dependence, with semantics only naming states; and
 (iv) evaluation on intrinsic calibration and a downstream decision rather than agreement rates.
+
+\section{Current status: recent results and honest reassessment}\label{sec:status}
+\emph{A running record of what we actually ran this iteration, and where it leaves the paper.}
+
+\paragraph{1. Identification is real, but bridge-blindness is self-obscuring.}
+\TESTED{In simulation, a 3-role HMM with \emph{well-separated} emissions is cleanly recovered by chain-EM
+(dependence) while an i.i.d.\ fit cannot (emission error $0.07$ vs $0.70$)---the ``heterophilic dependence, not
+replication'' mechanism works, and a grade-2 anchor names the roles. \emph{But} the actual \emph{bridge-blind}
+regime is only weakly identified ($\approx0.20$): bridge-blindness \emph{is} bridge-emission $\approx$
+irrelevant-emission, so the phenomenon violates the separation condition the theorem needs. Chain length does not
+fix it---separation does. So the emission/bias magnitude is hard to identify from grades \emph{precisely because
+the judge is bridge-blind}.}
+
+\paragraph{2. In a favorable simulation the graph carries the \emph{correction} even with a fuzzy emission.}
+\TESTED{The deliverable is not $\Pi$ but the relevance posterior. With roles on a graph (an anchored relevant
+cluster, anchorless distractor clusters), a relevance-Potts prior, low-prior bridges, and a bridge-blind
+emission, Gibbs flips bridge grades to relevant: at coupling $\theta{=}1$ bridge recall $0.48\to0.64$ (to $0.85$
+at $\theta{=}2$) with distractor false-positives $0.049$ and AUC $0.965$; at $\theta{=}0$ (no graph) it
+\emph{fails} (bridge $0.14$, AUC $0.69$), so the graph is \emph{necessary}; and it is \emph{robust} to a
+deliberately misspecified emission (AUC $0.97$). This is the ``structure is necessary'' thesis, and it held.}
+
+\paragraph{3. On real data it fails---the retriever prior does the correction, not the graph.}
+\TESTED{The favorable simulation does \emph{not} survive real corpora. On real HotpotQA/2Wiki pools (real
+hop-aware grades, real title graph, real gold), the graph correction is marginal. Correcting the biased judge
+does help---gold-recovery AUC rises from $0.876$ (raw grade) to $0.968$ (prior$+$graph)---\emph{but the calibrated
+retriever prior alone reaches $0.941$}, and the graph adds only $+0.03$ overall ($+0.007$ on the missed bridges);
+a symmetric Potts actively \emph{hurts} as coupling rises. The diagnosis: real title graphs are sparse (golds
+have $\approx1.5$ neighbours) and only $\approx35\%$ of judge-missed bridges are even connected to a confident
+anchor---a hard reachability ceiling. The reason the prior wins is simple and damaging to the thesis: the
+bridges the judge misses have \emph{higher cosine than distractors}, so the retriever ranks them; the judge is
+bridge-blind, but the \emph{prior is not}.}
+
+\paragraph{What this means.} The distinctive claim---\emph{structure is necessary to correct a biased judge}---is
+\PROP{false in retrieval, because a cheap prior already recovers what the judge misses.} What survives is the
+\emph{empirical} finding: LLM relevance judges are systematically bridge-blind (a differential misclassification
+by latent role), and a calibrated retriever corrects most of it. That is a real result, but Findings-tier, not a
+statistics theorem. Three honest routes forward:
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Shrink} to the empirical paper (bridge-blindness $+$ prior-based correction), solidified by a
+  multi-judge $\times$ multi-prompt study showing the bias is a stable measurement property, not a prompt artifact.
+  \item \textbf{Pivot to a no-prior domain} where structure is the \emph{only} correction signal---most naturally
+  LLM \emph{correctness verification} (text-to-SQL), where ``correctness'' has no cheap embedding prior but query
+  \emph{structure} does. This is the route that keeps B a statistics paper and, by reusing the query-graph from
+  the companion schema work, \emph{unifies the whole program} around ``structure identifies/corrects biased AI
+  oracles where no cheap prior can.''
+  \item \textbf{Fold} bridge-blindness into the companion retrieval paper and accept one strong paper.
+\end{enumerate}
+The model developed above is retained deliberately: it is the right target for route 2, read with ``passage /
+retriever prior'' replaced by ``item / (absent) prior.''
 
 \section{Discussion}
 The theme---\emph{rigorous Bayesian treatment of imperfect LLM oracles}---extends well beyond retrieval. The
