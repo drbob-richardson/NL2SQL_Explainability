@@ -142,9 +142,18 @@ $\Delta(p,q)=\Pr[\text{surface}\mid K^G]-\Pr[\text{surface}\mid K^E]$ is $0$ at 
 monotone increasing in $p-q$; \emph{(iii)} $q\to0,p\to1$ (gold clique) is the oracle-graph ceiling, and $p\approx
 q$ (edges independent of the chain---surface-similar distractors) gives $\Delta\approx0$.
 \end{theorem}
-Proof in Appendix~\ref{app:proof}. We verify it on a synthetic SBM instance: the graph advantage rises
-monotonically from $+0.007$ at $p=q$ to $+0.115$ at $p-q=0.95$, essentially $0$ at $p=q$, while the embedding
-kernel stays at chance.
+Proof in Appendix~\ref{app:proof}. We verify it on a synthetic SBM instance (Figure~\ref{fig:align}A): the graph
+advantage rises monotonically from $+0.007$ at $p=q$ to $+0.115$ at $p-q=0.95$, essentially $0$ at $p=q$, while the
+embedding kernel stays at chance. The real data (Figure~\ref{fig:align}B) trace the same law, from aligned
+(chained) through neutral (comparison) to the adversarial MuSiQue boundary.
+\begin{figure}[t]\centering
+\includegraphics[width=\linewidth]{fig_alignment.pdf}
+\caption{The alignment law. \textbf{(A)} Synthetic SBM: the graph kernel's gain rises with graph--chain alignment
+$p-q$ and is $\approx 0$ at $p=q$; the embedding kernel is at chance throughout. \textbf{(B)} Real graph$-$cosine
+margins under a real hop-aware judge: positive on chained (aligned), neutral on comparison, null for cheap graphs
+on adversarial MuSiQue, partially recovered by an LLM hop-assignment graph, up to the oracle ceiling. Bars are
+$95\%$ CIs.}\label{fig:align}
+\end{figure}
 \begin{remark}[Measurable alignment]
 In practice $p-q$ is estimated by \emph{gold-connectivity} (are gold passages connected to each other more than to
 distractors). Theorem~\ref{thm:align} explains why this single scalar predicts the gain, why the oracle ceiling
