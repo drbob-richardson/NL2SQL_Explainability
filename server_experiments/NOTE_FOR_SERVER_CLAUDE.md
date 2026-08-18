@@ -139,3 +139,50 @@ hand avoids us both editing the same script.
 
 Your two deviations were both the right call — holding effective batch at 16 via `--grad-accum 8` (in-dist
 reproduced at 0.783), and fast-forwarding the 111 commits. No concerns.
+
+---
+
+# NEW SERVER RUN — open-weight generator (TMLR revision, R1's "most important" ask)
+
+**Why.** All three reviewers flag that our generators are all OpenAI (gpt-4o-mini/4.1-mini/4o). R1 calls a broader
+generator selection the single most important change; hFAr ties it to "claims not fully supported." We want to
+check that the verification-beats-black-box finding holds on a **non-OpenAI, open-weight** generator.
+
+**Your job = generation only (GPU).** No BIRD databases and no API keys are needed on the box: the prompts are
+pre-exported (`data/bird_prompts.json`, 800 questions, byte-identical to what the OpenAI generators saw). You just
+run the model; execution vs gold, self-consistency signals, and LLM-judging happen back on the laptop.
+
+```
+git pull                                  # get data/bird_prompts.json + the scripts
+pip install vllm                          # torch/transformers already in requirements.txt
+# smoke first (first 20 questions, ~1 min once the model downloads):
+python server_experiments/exp7_openweight_gen.py --smoke
+# full run (default Qwen2.5-Coder-7B-Instruct; ~6400 generations = 800 x K=8, a few minutes on one GPU):
+python server_experiments/exp7_openweight_gen.py --model Qwen/Qwen2.5-Coder-7B-Instruct
+```
+- **Model choice:** default `Qwen/Qwen2.5-Coder-7B-Instruct` (open-weight, different family, ~mid-scale — the right
+  regime for this paper). For a stronger check you can also run `--model Qwen/Qwen2.5-Coder-32B-Instruct --tp 2`
+  (needs 2 GPUs). The 7B is the priority; 32B is a bonus.
+- Settings match the paper: K=8, temperature 0.7, max_tokens 160. Output:
+  `server_experiments/results/bird_samples_<model>_raw.json` (raw SQL samples + mean-token logprobs; **not** yet
+  executed — that needs the databases, which live on the laptop).
+
+**Hand back:** commit + push the raw file(s):
+```
+git add server_experiments/results/bird_samples_*_raw.json
+git commit -m "Open-weight (Qwen2.5-Coder) BIRD generations" && git push
+```
+
+**Then on the laptop (laptop Claude handles this):**
+```
+./.venv/bin/python scripts/bird_openweight_finish.py server_experiments/results/bird_samples_Qwen2_5_Coder_7B_Instruct_raw.json
+# -> data/bird_samples_qwen_coder.json + prints modal-query accuracy
+./.venv/bin/python scripts/bird_verify.py --run --samples data/bird_samples_qwen_coder.json --model gpt-4o-mini
+./.venv/bin/python scripts/bird_verify.py --run --samples data/bird_samples_qwen_coder.json --model gpt-4o
+./.venv/bin/python scripts/bird_verify.py --run --samples data/bird_samples_qwen_coder.json --provider anthropic --model claude-sonnet-4-6 --elicit verbal
+./.venv/bin/python scripts/paper1_openweight_verify.py     # signal AUROCs + verifier dAUROC-vs-SC with CIs
+```
+Judging is ~\$4–5 total (same as the GPT-4o third-generator run). The result we want: on the Qwen generations,
+does a verifier's dAUROC-vs-self-consistency interval exclude 0? If yes (especially the independent Claude judge),
+the finding generalizes beyond OpenAI and R1's main concern is closed with evidence, not a caveat. Either way we
+report it honestly.
