@@ -542,3 +542,33 @@ budget/metric -- SAME dose-response ordering as Fig 1B but ACROSS corpora:
   B=2 Hotpot recall +0.090[.063,.118] comp +0.180[.130,.233];  2Wiki recall +0.051[.028,.077] comp +0.120[.077,.167]
 Added as Appendix B (Table 2) + one-line pointer in main results. Draft 7pp, compiles clean, 0 undef refs.
 Remaining review item: TRUE BAGEL runs (next).
+
+## REVIEW ROUND: FAITHFUL BAGEL head-to-head (reviewer's #1 empirical ask)  [paperA_bagel.py, bagel_results.json]
+Reimplemented BAGEL (Kim et al. 2026, arXiv 2604.17906; code unreleased) FAITHFULLY from the paper: query-specific
+ZERO-MEAN GP over passage embeddings; RBF kernel exp(-||x-x'||^2/2l^2) = exp(-(1-cos)/l^2), lengthscale l fit PER
+QUERY by marginal likelihood over [0.01,2]; LLM relevance scores = standardized observed labels (NOT a mean);
+COLD START = query embedding seeded as a max-relevance pseudo-observation + top-M dense (cosine) warm-start; UCB
+a=mu+sqrt(2)*sigma; noise alpha=0.001; final rank by posterior mean. Budget-matched to our judgment budget B
+(query-seed is free -- reuses the query embedding, not an LLM call); warm=ceil(B/2), active=rest.
+FIX (fairness): at tiny budget empirical label-standardization degenerates (std=0 when the top-cosine warm passage
+is judged relevant, giving all-zeros -> arbitrary ranking, tanked BAGEL to 0.25). Center at the known relevance
+midpoint 0.5 with floored scale max(std,0.25): well-defined at every B, HELPS BAGEL. Documented in code + paper.
+RESULT (chained N=100 real judge, n=600) -- graph-GP beats FAITHFUL BAGEL on recall@k at every budget, significant:
+  B:    1      2      3      5      10
+  BAGEL(0-mean) .446  .479  .490  .491  .578
+  +our prior    .583  .579  .626  .628  .613     <- BAGEL's kernel+query-seed+marglik-l WITH our calibrated mean
+  graph-GP(ours).692  .714  .720  .725  .729
+  d(ours-BAGEL) +.246 +.235 +.229 +.235 +.151    (all 95% CIs exclude 0; e.g. B=1 [.222,.269])
+  d(ours-+prior)+.109 +.135 +.094 +.098 +.116    (isolates COVARIANCE: same mean; all sig)
+DECOMPOSITION = our two design choices, each validated vs the real competitor:
+  (i) SEMANTICS-IN-THE-MEAN: BAGEL's zero-mean GP has no cross-query prior -> starved at low budget; adding our
+      calibrated prior to BAGEL's own kernel (+prior row) recovers ~HALF the gap.
+  (ii) STRUCTURE-IN-THE-COVARIANCE: even with our prior AND BAGEL's marglik-tuned RBF + query-seed, the graph
+      covariance STILL wins by +0.09..0.14 -> BAGEL's kernel-tuning machinery does NOT close the covariance gap.
+  Bonus: +prior (marglik-l) is ~tied-or-worse than our fixed-l cosine-GP -> per-query lengthscale fitting doesn't
+      help the embedding kernel here; the graph is simply the better covariance.
+ROBUST to warm/active split (warm=1 max-active: d-BAGEL +0.24, d-+prior +0.13 at B=3,5 -- unchanged).
+Added to draft: Table 2 (BAGEL head-to-head) + paragraph; cited bagel2026 via natbib + thebibliography; Setup
+baselines + Discussion updated ('faithful reimplementation, controls for prior & lengthscale'). Draft 8pp, compiles
+clean, 0 undef. This CONVERTS the old 'BAGEL-lite' hand-wave into the actual published-competitor head-to-head the
+reviewer demanded, and the covariance advantage survives controlling for the prior AND BAGEL's own kernel tuning.

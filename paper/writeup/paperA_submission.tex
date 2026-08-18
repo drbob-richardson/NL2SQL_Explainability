@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
+\usepackage{natbib}
 \usepackage{amsmath,amssymb,amsthm,bm,xcolor,hyperref,booktabs,enumitem,graphicx}
 \theoremstyle{plain}\newtheorem{theorem}{Theorem}\newtheorem{lemma}{Lemma}\newtheorem{proposition}{Proposition}
 \theoremstyle{definition}\newtheorem{assumption}{Assumption}\newtheorem{remark}{Remark}
@@ -73,10 +74,10 @@ We do not claim large gains: effects are modest. We claim a principled account--
 \emph{why}---and a method that did not significantly hurt in the regimes we tested, and is simple.
 
 \section{Related work}\label{sec:rel}
-\emph{Active / Bayesian retrieval.} Our nearest neighbour is BAGEL, a query-specific GP-UCB over passage
-embeddings; our data refute the embedding kernel here and replace it with a graph covariance, and we add a soft
-(noisy-likelihood) update that prevents a GP from confidently propagating a wrong LLM label---BAGEL's two named
-limitations. \emph{Graph retrieval.} GraphRAG and HopRAG use graph structure for retrieval; HopRAG builds logical
+\emph{Active / Bayesian retrieval.} Our nearest neighbour is BAGEL~\citep{bagel2026}, a query-specific GP-UCB over
+passage embeddings; our data refute the embedding kernel here and replace it with a graph covariance, and we add a
+soft (noisy-likelihood) update that prevents a GP from confidently propagating a wrong LLM label---BAGEL's two named
+limitations. We compare against a faithful re-implementation head-to-head (\S\ref{sec:exp}, Table~\ref{tab:bagel}). \emph{Graph retrieval.} GraphRAG and HopRAG use graph structure for retrieval; HopRAG builds logical
 pseudo-query edges precisely because surface similarity is insufficient, consonant with our alignment law. We use
 the graph as a covariance, not a ranking signal, and characterize when it helps. \emph{GMRF/CAR priors} (Rue \&
 Held) supply the kernel; \emph{Bayesian optimization / value of information} the acquisition; \emph{set-wise
@@ -182,7 +183,8 @@ failure are one axis, and why the effect saturates.
 \paragraph{Setup.} Pools of $N=100$ retrieved from a full-dev corpus (so the bridge is genuinely buried and the
 prior is weak); a graded $0$--$2$ hop-aware LLM judge (gpt-4o-mini) that explicitly credits linking passages; the
 soft GP with $\sigma^2$ tuned to judge reliability. Baselines: no-judge prior, passive verify-top-$B$,
-embedding-kernel GP (BAGEL-lite), and ceilings (oracle judge, oracle graph). Metrics: recall@$k$, chain-completion
+embedding-kernel GP, a faithful re-implementation of BAGEL~\citep{bagel2026}, and ceilings (oracle judge, oracle
+graph). Metrics: recall@$k$, chain-completion
 ($k=|\text{gold}|$), nDCG@10; paired bootstrap 95\% CIs; query-grouped splits. Datasets: HotpotQA,
 2WikiMultiHopQA, MuSiQue. A naive judge (``does this answer the question?'') is bridge-blind (gold recall $0.35$);
 the hop-aware prompt raises gold recall to $0.84$, isolating the prompt fix from model strength.
@@ -215,6 +217,36 @@ $0.323\to0.445$; the tuned optimum is $\alpha^\star=1$. Holding the mean fixed a
 graph is the better covariance and the embedding covariance adds nothing on top of it---a dose-response in the
 mixing weight that mirrors the alignment dose-response, and a direct answer to ``why not keep the embedding
 covariance.''
+
+\paragraph{Head-to-head with the actual BAGEL algorithm.} Our nearest competitor is BAGEL~\citep{bagel2026}. We
+reimplement it faithfully (code unreleased): a query-specific \emph{zero-mean} GP over passage embeddings with an
+RBF kernel whose lengthscale is fit \emph{per query} by marginal likelihood, LLM relevance scores as standardized
+observed labels, the query embedding seeded as a maximum-relevance pseudo-observation, a top-$M$ dense warm-start,
+UCB acquisition ($\beta{=}2$), and final ranking by posterior mean; we match its total judgment budget to ours.
+Across $B{=}1$--$10$ the graph method beats faithful BAGEL on recall@$k$ by $+0.15$ to $+0.25$, significant at every
+budget (Table~\ref{tab:bagel}), and the gap decomposes cleanly into our two design choices. \emph{(i)
+Semantics-in-the-mean:} BAGEL's zero-mean GP carries no cross-query prior and is starved at low budget; giving
+BAGEL's own kernel our calibrated prior mean (``$+$our prior'') recovers about half the gap. \emph{(ii)
+Structure-in-the-covariance:} even with our prior \emph{and} BAGEL's marginal-likelihood-tuned RBF kernel and
+query-seed, the graph covariance still wins by $+0.09$--$0.14$ recall@$k$ at every budget---BAGEL's kernel-tuning
+machinery does not close the covariance gap. The conclusion is unchanged under a maximally-active warm/active split
+(warm$=1$: $\Delta$ vs BAGEL $+0.24$, vs $+$prior $+0.13$ at $B{=}3,5$).
+\begin{table}[t]\centering\small
+\begin{tabular}{lccccc}
+\toprule
+recall@$k$, chained ($n{=}600$) & $B{=}1$ & $B{=}2$ & $B{=}3$ & $B{=}5$ & $B{=}10$ \\ \midrule
+faithful BAGEL (zero-mean)      & $0.446$ & $0.479$ & $0.490$ & $0.491$ & $0.578$ \\
+\quad $+$ our calibrated prior  & $0.583$ & $0.579$ & $0.626$ & $0.628$ & $0.613$ \\
+graph-GP (ours)                 & $\mathbf{0.692}$ & $\mathbf{0.714}$ & $\mathbf{0.720}$ & $\mathbf{0.725}$ & $\mathbf{0.729}$ \\ \midrule
+$\Delta$ ours $-$ BAGEL         & $+.246$ & $+.235$ & $+.229$ & $+.235$ & $+.151$ \\
+$\Delta$ ours $-$ ($+$prior)    & $+.109$ & $+.135$ & $+.094$ & $+.098$ & $+.116$ \\
+\bottomrule
+\end{tabular}
+\caption{Faithful BAGEL vs.\ ours at matched judgment budget. All $\Delta$ have 95\% CIs excluding $0$ (e.g.\ at
+$B{=}1$, ours$-$BAGEL $+0.246\,[.222,.269]$; ours$-(+$prior$)$ $+0.109\,[.089,.129]$). Row 2 (BAGEL's kernel with
+our prior mean) isolates the covariance: the graph still wins, so the advantage is not merely a better prior or an
+untuned lengthscale.}\label{tab:bagel}
+\end{table}
 
 \paragraph{The alignment law, from both sides.} We judged the \emph{comparison} (independent-evidence) questions
 as a control, giving a mixed distribution ($300$ chained $+$ $300$ comparison). The graph helps chained
@@ -256,8 +288,9 @@ average in the deep multi-hop regime (the alignment law)---not a per-query-predi
 is to use the graph in the multi-hop regime it targets; per-query adaptivity is neither feasible nor needed.
 
 \section{Discussion and limitations}\label{sec:disc}
-Effects are modest and low-budget; the win is over a re-implemented BAGEL; two of three benchmarks are standard
-multi-hop. The contribution is the account: a mean/dependence decomposition, a proved alignment law that unifies
+Effects are modest and low-budget; the BAGEL comparison is a faithful re-implementation (their code is unreleased),
+though we control for its prior and lengthscale-fitting so the covariance advantage is not an implementation
+artifact; two of three benchmarks are standard multi-hop. The contribution is the account: a mean/dependence decomposition, a proved alignment law that unifies
 the oracle ceiling and the adversarial boundary, an exploration mechanism, and an honest map of where the method
 helps (deep multi-hop with a chain-assortative graph), is neutral (independent evidence), and is only partially
 recoverable (adversarial corpora, via inferred structure). The deepest open direction is \emph{adaptive structure
@@ -298,4 +331,11 @@ significant at $B{=}1,2$; the more assortative corpus (HotpotQA) gains more.}\la
 
 \smallskip\noindent\footnotesize\emph{Reproducibility.} All experiments use cached judgments; scripts and the full
 experimental log accompany the submission. Total LLM spend for all runs reported here is under \$10.
+
+\normalsize
+\begin{thebibliography}{1}
+\bibitem[Kim et al.(2026)]{bagel2026} J.~Kim, A.~Korikov, J.~Liang, J.~Cui, Y.~S.~Liu, Q.~Wen, M.~Zhao, and
+S.~Sanner. Bayesian active learning with Gaussian processes guided by {LLM} relevance scoring for dense passage
+retrieval. \emph{arXiv preprint arXiv:2604.17906}, 2026.
+\end{thebibliography}
 \end{document}
