@@ -36,12 +36,15 @@ def akey(q, text):
     return hashlib.md5(f"{MODEL}||{q}||{text}".encode()).hexdigest()
 
 
-def assign_graph(p, hop, cross_only=True):
+def assign_graph(p, hop, mode="cross"):
     n = p["n"]; A = np.zeros((n, n))
     for i in range(n):
         for j in range(i + 1, n):
-            if hop[i] > 0 and hop[j] > 0 and (hop[i] != hop[j] or not cross_only):
-                A[i, j] = A[j, i] = 1.0                     # connect passages on (different) non-zero hops
+            if hop[i] > 0 and hop[j] > 0:
+                d = abs(hop[i] - hop[j])
+                link = (d >= 1) if mode == "cross" else (d == 1) if mode == "adj" else (d <= 1)  # coadj: same+adj
+                if link:
+                    A[i, j] = A[j, i] = 1.0
     return A
 
 
@@ -126,11 +129,12 @@ def main():
     from musique_decomp_graph import decomp_graph as cos_decomp
     de = json.load(open(os.path.join(ROOT, "data", "musique_decomp_emb.json")))
     subq_emb = {s: np.array(v) for s, v in de.items()}
-    def hopassign_graph(p):
-        hop = np.array([hc.get(akey(p["q"], p["texts"][i]), 0) for i in range(p["n"])])
-        return assign_graph(p, hop)
+    def hop_of(p):
+        return np.array([hc.get(akey(p["q"], p["texts"][i]), 0) for i in range(p["n"])])
     builders = {"cosine-decomp": lambda p: cos_decomp(p, subq_emb, 2),
-                "LLM hop-assign": hopassign_graph,
+                "LLM cross-hop": lambda p: assign_graph(p, hop_of(p), "cross"),
+                "LLM adj-hop": lambda p: assign_graph(p, hop_of(p), "adj"),
+                "LLM same+adj": lambda p: assign_graph(p, hop_of(p), "coadj"),
                 "ORACLE clique": oracle_clique}
     for name, build in builders.items():
         ps, qs, ds = [], [], []
