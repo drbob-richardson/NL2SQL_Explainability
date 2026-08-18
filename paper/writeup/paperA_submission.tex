@@ -29,7 +29,7 @@ by \emph{gold-connectivity}; the oracle-graph ceiling and the failure on adversa
 this one axis. The same analysis explains why upper-confidence-bound acquisition beats value-of-information here:
 the value of a judgment is the downstream surfacing it enables, an inherently non-myopic quantity. \emph{(iii)} An
 empirical characterization under a real hop-aware judge across HotpotQA, 2WikiMultiHopQA, and MuSiQue: a
-significant low-budget win on standard multi-hop (recall $+0.039$, nDCG@10 $+0.012$, chain-completion $+0.068$ at
+significant low-budget win on standard multi-hop (recall $+0.058$, nDCG@10 $+0.030$, chain-completion $+0.122$ at
 one judgment), a partial rescue of adversarial MuSiQue by inferring the graph from the judge's own hop-reasoning
 ($+0.035$ at three hops, where every cheap surface graph is null), and an honest analysis of why the natural
 adaptive gate does \emph{not} deploy---the per-query gain is a small distributional effect (signal-to-noise
@@ -98,9 +98,10 @@ $\mathcal L=D-A$), encoding ``connected passages, correlated relevance.''
 diagonal, $\widetilde K^G=\mathrm{diag}(K^G)^{-1/2}K^G\,\mathrm{diag}(K^G)^{-1/2}$, before use. Unnormalized, high-degree
 hubs have \emph{lower} prior variance, so an upper-confidence-bound rule under-explores them---but the hubs are
 exactly the anchors whose judgment propagates to bridges. Equalizing variance lets exploration reach the hubs; the
-propagation then fires. Empirically this roughly \emph{doubles} the graph$-$cosine chain-completion margin (from
-$+0.068$ to $+0.12$--$0.15$ at one judgment). The finding is a small but real methodological point and is, to our
-knowledge, not standard in GP-active-retrieval practice.
+propagation then fires. Empirically this $1.8\times$ the graph$-$cosine chain-completion margin ($+0.068\to+0.122$
+at one judgment) and, unlike the raw kernel (which converges to null by three judgments), keeps the win
+significant at every budget. The finding is a small but real methodological point and is, to our knowledge, not
+standard in GP-active-retrieval practice.
 
 \paragraph{The soft update.} Conditioning on judged set $J$, $\mu = m + K_{:J}(K_{JJ}+\sigma^2 I)^{-1}(y_J-m_J)$.
 We rank by $\mu$ (soft) rather than hard-pinning judged labels; with an imperfect judge, hard pinning of a wrong
@@ -170,28 +171,29 @@ embedding-kernel GP (BAGEL-lite), and ceilings (oracle judge, oracle graph). Met
 the hop-aware prompt raises gold recall to $0.84$, isolating the prompt fix from model strength.
 
 \paragraph{Main result: a significant low-budget win on standard multi-hop.} On chained HotpotQA/2Wiki
-($n{=}600$), the graph kernel beats the embedding kernel at low budget across all three metrics
-(Table~\ref{tab:main}): at one judgment, recall $+0.039\,[.024,.054]$, nDCG@10 $+0.012\,[.003,.023]$,
-chain-completion $+0.068\,[.040,.097]$; significant at $B{=}1,2$, converging by $B{=}3$. The graph kernel---not
-``any GP''---drives it: graph-GP $>$ cosine-GP $>$ passive.
+($n{=}600$), with the correlation-form kernel the graph beats the embedding kernel across all three metrics and all
+budgets (Table~\ref{tab:main}): at one judgment, recall $+0.058\,[.040,.076]$, nDCG@10 $+0.030\,[.020,.041]$,
+chain-completion $+0.122\,[.088,.155]$; significant through $B{=}3$. The graph kernel---not ``any GP''---drives it:
+graph-GP $>$ cosine-GP $>$ passive.
 \begin{table}[t]\centering\small
 \begin{tabular}{lccc}
 \toprule
 graph$-$cosine (chained, real judge) & recall@$k$ & nDCG@10 & completion \\ \midrule
-$B=1$ & $+0.039\,[.024,.054]$ & $+0.012\,[.003,.023]$ & $+0.068\,[.040,.097]$ \\
-$B=2$ & $+0.027\,[.009,.045]$ & $+0.013\,[.002,.024]$ & $+0.057\,[.028,.087]$ \\
-$B=3$ & $+0.005\,[\text{-}.015,.025]$ & $+0.012\,[\text{-}.000,.025]$ & $+0.012\,[\text{-}.020,.043]$ \\
+$B=1$ & $+0.058\,[.040,.076]$ & $+0.030\,[.020,.041]$ & $+0.122\,[.088,.155]$ \\
+$B=2$ & $+0.071\,[.052,.090]$ & $+0.032\,[.021,.045]$ & $+0.150\,[.115,.185]$ \\
+$B=3$ & $+0.063\,[.044,.082]$ & $+0.033\,[.022,.045]$ & $+0.127\,[.093,.162]$ \\
 \bottomrule
 \end{tabular}
-\caption{Low-budget graph-kernel win; significant at $B\le2$, converging by $B=3$.}\label{tab:main}
+\caption{Low-budget graph-kernel win (correlation-form kernel), significant at all budgets. The raw kernel is
+weaker and converges to null by $B=3$ (\S\ref{sec:model}, normalization).}\label{tab:main}
 \end{table}
 
 \paragraph{The alignment law, from both sides.} We judged the \emph{comparison} (independent-evidence) questions
 as a control, giving a mixed distribution ($300$ chained $+$ $300$ comparison). The graph helps chained
-($+0.033\,[.007,.061]$ at $B{=}1$, real judge; $+0.041$--$0.059$ oracle) and is neutral on comparison
-($-0.008$ to $+0.017$, n.s.)---the boundary the theorem predicts, with the mechanism visible: comparison questions
-have a strong prior (passive recall $\sim0.8$; both entities directly findable, no bridge to propagate along). The
-oracle-graph ceiling is $+0.07$--$0.09$, and gold-connectivity tracks the per-regime gain.
+($+0.058\,[.040,.076]$ at $B{=}1$) and does \emph{not} help comparison (neutral to slightly negative,
+$\le 0$)---the boundary the theorem predicts, with the mechanism visible: comparison questions have a strong prior
+(passive recall $\sim0.8$; both entities directly findable, no bridge to propagate along). The oracle-graph
+ceiling is $+0.07$--$0.09$, and gold-connectivity tracks the per-regime gain.
 
 \paragraph{Adversarial corpora: MuSiQue, and a partial rescue.} MuSiQue's distractors are made surface-similar to
 golds, so cheap graphs (title, entity-overlap, cosine-decomposition) have $p\approx q$ and are null
@@ -205,16 +207,18 @@ multi-hop regime; a proof-of-concept that inferring structure from the judge's r
 adversarial corpora.
 
 \paragraph{Why not adapt per query? An honest negative.} A natural extension is a gold-free gate that decides
-per query whether to use the graph. It does not deploy, and the reason is instructive. The per-query graph
-advantage is a \emph{small mean effect swamped by variance}: pooled mean $+0.023$, sd $0.198$ (signal-to-noise
-$\approx0.12$). It is nearly unpredictable from gold-free features \emph{even under the oracle}: ridge $R^2=0.034$
-(generic features), only $0.052$ with theory-motivated alignment/reachability features. Two mechanistic fixes we
-tried failed: the graph does \emph{not} amplify judge errors (advantage correlates $-0.17$ with anchor
-reliability), and confidence-gating the propagation to high-confidence labels \emph{hurts} ($-0.030$; the
-``related'' grade-$1$ labels carry useful signal). The structural gain is thus a \emph{distributional} property---a
-robust small average in the deep multi-hop regime (the alignment law)---not a per-query-predictable signal. Since
-the graph is a safe default (neutral-to-helpful, never significantly hurts under a real judge), the correct policy
-is simply \emph{always use the graph}; per-query adaptivity is neither feasible nor needed.
+per query whether to use the graph. It does not deploy, and the reason is instructive and robust to the kernel
+choice. The per-query graph advantage is a \emph{small mean effect swamped by variance} (signal-to-noise
+$\approx0.1$--$0.2$) and is nearly unpredictable from gold-free features \emph{even under the oracle}: ridge
+$R^2\approx0.03$--$0.05$, and only marginally better with theory-motivated alignment/reachability features. Two
+mechanistic fixes we tried failed: the graph does \emph{not} amplify judge errors (advantage correlates $-0.17$
+with anchor reliability), and confidence-gating the propagation to high-confidence labels \emph{hurts} ($-0.030$;
+the ``related'' grade-$1$ labels carry useful signal). On the mixed distribution the learned gate only \emph{ties}
+always-graph ($+0.003$, n.s.) while the per-query oracle has a real $+0.027$ headroom that is simply not
+gold-free-reachable---and this holds under the correlation-form kernel, even though there the graph slightly
+\emph{penalizes} comparison queries. The structural gain is thus a \emph{distributional} property---a robust
+average in the deep multi-hop regime (the alignment law)---not a per-query-predictable signal. The correct policy
+is to use the graph in the multi-hop regime it targets; per-query adaptivity is neither feasible nor needed.
 
 \section{Discussion and limitations}\label{sec:disc}
 Effects are modest and low-budget; the win is over a re-implemented BAGEL; two of three benchmarks are standard

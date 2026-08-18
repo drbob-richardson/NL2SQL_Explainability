@@ -482,3 +482,24 @@ helpful, never sig. hurts under a real judge); so 'ALWAYS USE THE GRAPH' is the 
 adaptive-lambda_q machinery is unnecessary. The DATA CHARACTERISTIC that predicts the gain is the REGIME (hop-depth
 / chain structure = the alignment law), not any per-query feature. This converts the routing negative into a
 principled design recommendation + closes the 'adaptivity' open item honestly.
+
+## KERNEL-NORMALIZATION CORRECTION + NORMALIZED HEADLINE (Paper A, overnight)  [paperA_metrics.py, paperA_routing_normalized.py]
+CAUGHT during the write-up: all this session's analysis (mixed alignment #1, negative-result, metrics) used the
+RAW kernel kern_graph=(I+lam L)^{-1}, but the paper's METHOD is the NORMALIZED correlation-form kernel
+(unit-diagonal) -- so every session number UNDERSTATED the effect by ~2x (that IS the normalization finding).
+Recomputed with normalized kernels (the correct method):
+  HEADLINE (chained N=100 real judge, correlation-form): recall +0.058[.040,.076] / nDCG@10 +0.030[.020,.041] /
+    completion +0.122[.088,.155] @B=1; +0.071/.032/.150 @B=2; +0.063/.033/.127 @B=3 -- SIGNIFICANT AT EVERY
+    BUDGET (raw converged to null by B=3). Normalization ablation: completion +0.068 raw -> +0.122 norm (1.8x).
+  ALIGNMENT LAW SHARPER with normalized kernels: graph HELPS chained (+0.058 sig) and does NOT help comparison
+    (metrics -0.026 sig / routing-recompute ~0; sign is prior-calibration-sensitive -> reported conservatively as
+    'neutral to slightly negative, <=0'). Cleaner both-sides boundary than the raw-kernel neutral.
+  ROUTING NEGATIVE HOLDS under normalized kernels too: learned gold-free gate only TIES always-graph
+    (+0.003[-0.004,+0.009] n.s.); oracle-regime routing +0.000; oracle PER-QUERY +0.027[.018,.036] headroom exists
+    but is NOT gold-free-reachable. So the SNR/predictability wall + the 'per-query routing infeasible' conclusion
+    are ROBUST to the (correct) kernel; the negative is real, not a raw-kernel artifact. Note: because normalized
+    graph slightly penalizes comparison, 'always-graph' is scoped to the multi-hop regime it targets (not a
+    universal safe default), but per-query gating still can't capture the small penalty.
+DRAFT (paperA_submission.tex) updated with all correct normalized numbers; fig_alignment.pdf regenerated. This
+correction STRENGTHENS the paper (bigger, all-budget-significant headline; sharper alignment law) while the
+routing negative survives -- exactly the honesty we want before submission.

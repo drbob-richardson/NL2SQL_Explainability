@@ -9,10 +9,22 @@ sys.path.insert(0, os.path.dirname(__file__))
 import numpy as np
 from graphrag_active_scale import calib, kern_graph, kern_cos, post, CHAINED
 from graphrag_downstream_qa import DATASETS, ci
-from graphrag_lambda_mixed import load_pools
+from graphrag_lambda_mixed import load_pools, INDEP
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 SN2 = 1.0
+
+
+def _unit(K):                                              # correlation (unit-diagonal) form -- the paper's method
+    d = np.sqrt(np.clip(np.diag(K), 1e-9, None)); return K / np.outer(d, d)
+
+
+def kgraph(p):
+    return _unit(kern_graph(p))
+
+
+def kcos(p):
+    return _unit(kern_cos(p))
 
 
 def jk(q, t):
@@ -60,7 +72,16 @@ def main():
         p["yj"] = np.array([jc.get(jk(p["q"], p["titles"][i]), 0) for i in range(p["n"])], float) / 2.0
     print(f"chained N=100 real-judge set: {len(data)} queries.\n")
 
-    METH = [("passive", None, False), ("cosine-GP", kern_cos, True), ("graph-GP", kern_graph, True)]
+    METH = [("passive", None, False), ("cosine-GP", kcos, True), ("graph-GP", kgraph, True)]   # NORMALIZED kernels
+    # normalization ablation: raw vs correlation-form graph kernel, chain-completion @B=1
+    raw_c, nrm_c = [], []
+    for p in data:
+        rk_r = rank_full(p, prior, kern_graph, True, 1, p["yj"]); rk_n = rank_full(p, prior, kgraph, True, 1, p["yj"])
+        rk_c = rank_full(p, prior, kcos, True, 1, p["yj"]); k = p["k"]
+        raw_c.append(float(p["gi"][rk_r[:k]].sum() == k) - float(p["gi"][rk_c[:k]].sum() == k))
+        nrm_c.append(float(p["gi"][rk_n[:k]].sum() == k) - float(p["gi"][rk_c[:k]].sum() == k))
+    print(f"  NORMALIZATION ablation (graph-cosine chain-completion @B=1): raw {np.mean(raw_c):+.3f}  ->  "
+          f"correlation-form {np.mean(nrm_c):+.3f}  ({np.mean(nrm_c)/max(np.mean(raw_c),1e-9):.1f}x)\n")
     for B in (1, 2, 3):
         met = {m: {"rec": [], "ndcg": [], "comp": []} for m, _, _ in METH}
         for p in data:
@@ -79,7 +100,22 @@ def main():
             lbl = {"rec": "recall@k", "ndcg": "nDCG@10", "comp": "completion"}[metric]
             print(f"    graph-cosine {lbl:<11}: {m:+.3f}[{c[0]:+.3f},{c[1]:+.3f}]")
         print()
-    print("  => nDCG@10 (reviewer-standard) tracks the recall/completion story: the graph kernel's low-budget win.")
+    # alignment law both-sides (NORMALIZED kernels): graph-cosine recall margin by regime
+    comp = []
+    for ds, path, tw, emb in DATASETS:
+        d, _ = load_pools(path, tw, os.path.join(ROOT, emb), args.n, args.subset, args.pool, INDEP)
+        comp += d
+    for p in comp:
+        p["prior"] = prior
+        p["yj"] = np.array([jc.get(jk(p["q"], p["titles"][i]), 0) for i in range(p["n"])], float) / 2.0
+    print("\n  ALIGNMENT LAW both-sides (NORMALIZED kernels), graph-cosine recall@k margin:")
+    for name, dset in (("chained", data), ("comparison", comp)):
+        for B in (1, 2):
+            g = [p["gi"][rank_full(p, prior, kgraph, True, B, p["yj"])[:p["k"]]].sum() / p["k"] for p in dset]
+            c = [p["gi"][rank_full(p, prior, kcos, True, B, p["yj"])[:p["k"]]].sum() / p["k"] for p in dset]
+            m, cc = ci(g, c)
+            print(f"    {name:<11} B={B}: {m:+.3f}[{cc[0]:+.3f},{cc[1]:+.3f}]")
+    print("\n  => nDCG@10 tracks recall/completion; the graph helps chained (aligned), neutral on comparison.")
 
 
 if __name__ == "__main__":

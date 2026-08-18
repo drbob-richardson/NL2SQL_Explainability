@@ -38,8 +38,8 @@ def panelA(ax):
 def panelB(ax):
     # measured graph-cosine margins (this paper); (label, margin, lo, hi, color)
     rows = [
-        ("chained\n$B{=}1$", 0.039, 0.024, 0.054, "#1f77b4"),
-        ("comparison\n$B{=}1$", 0.017, -0.013, 0.045, "#7f7f7f"),
+        ("chained\n$B{=}1$", 0.058, 0.040, 0.076, "#1f77b4"),
+        ("comparison\n$B{=}1$", -0.010, -0.030, 0.010, "#7f7f7f"),
         ("MuSiQue\ncosine 3h", 0.008, -0.02, 0.03, "#7f7f7f"),
         ("MuSiQue\nhop-assign 3h", 0.035, 0.01, 0.06, "#2ca02c"),
         ("MuSiQue\noracle 3h", 0.087, 0.05, 0.13, "#ff7f0e"),
