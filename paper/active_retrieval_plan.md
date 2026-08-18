@@ -395,3 +395,29 @@ n.s. even at n=600). => this is an IR/recall + characterization contribution, NO
 paper. Framing: SIGIR IR-track / short, or a component of the RSS Discussion Paper's 'where Bayesian structure
 earns its keep in retrieval' thesis. Remaining if pursued standalone: BAGEL head-to-head (real, not lite),
 MuSiQue as a 3rd dataset, nDCG alongside recall, hierarchical-prior cold-start.
+
+## MIXED-DISTRIBUTION ROUTING + COMPARISON-QUESTION CONTROL (Paper A firm-up #1)  [scripts/graphrag_lambda_mixed.py, graphrag_judge_comparison.py]
+Judged the INDEPENDENT (comparison) N=100 pools with the same hop-aware judge (30k calls, $1.26; judge recall on
+gold 0.841) so the alignment law and lambda_q routing can run on a REAL mixed distribution (300 chained + 300
+comparison, both datasets), not chained-only.
+(A) ALIGNMENT LAW ON A MIXED DISTRIBUTION -- firmed. graph-cosine recall@k:
+   ORACLE judge: CHAINED +0.045..+0.059 (sig); COMPARISON -0.008..+0.017 (n.s., slightly neg @B=2/3). Sharp boundary.
+   REAL judge:   CHAINED +0.033[+.007,+.061]@B=1 (sig), +0.020@B=2 (n.s.); COMPARISON +0.012@B=1 / +0.025@B=2(sig)/-0.004@B=3.
+   => the graph helps chained and is NEUTRAL-to-slightly-helpful on comparison under a real judge (never hurts).
+      Mechanism visible: comparison Qs have a STRONG prior (passive recall 0.79-0.83, both entities directly
+      findable, no bridge to bury), so there is nothing to propagate. This is the both-sides alignment-law result.
+(B) ROUTING -- honest split. Reframed the lambda_q decision from KERNEL (cosine<->graph, ~null: graph is neutral
+   not harmful on comparison so 'always graph' is near-optimal) to the meaningful EXPLORATION decision (spend
+   budget with the graph-GP vs trust the prior/passive):
+   ORACLE judge: learned gold-free gate BEATS BOTH fixed policies @B=2: +0.013[+.003,+.024] vs always-graph,
+     +0.027[+.015,+.040] vs passive (both sig). Routes graph on 0.66 chained vs 0.53 comparison.
+   REAL judge:   learned gate TIES always-graph (-0.004@B=2 n.s.); ties passive. BUT the ORACLE gate has +0.040
+     headroom (0.729 vs 0.689 @B=2) -- the routing SIGNAL exists, it just is not capturable gold-free under judge
+     noise on this data. Same oracle-win / real-judge-washout pattern as the core GraphRAG arc.
+   => HONEST takeaway: under a realistic judge the graph is a SAFE neutral-to-helpful default across query types,
+      so adaptive gating is NOT needed for deployment (always-graph is near-optimal); the adaptive routing is an
+      ORACLE-only mechanism (headroom real, gold-free predictor insufficient). Robustness positive, not a routing win.
+NET for the paper: the alignment law is now demonstrated on a real MIXED distribution (comparison control) under a
+real judge -- a genuine firm-up of Sec 'When does structure help'. The lambda_q 'learns when to use structure'
+contribution stays PROPOSED/oracle-only; the deployable message is 'graph is a safe default, no gate needed'.
+Total extra spend: $1.26.
