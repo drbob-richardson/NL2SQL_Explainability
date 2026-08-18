@@ -365,12 +365,27 @@ graph kernel  & \textbf{0.445} & 0.362 & 0.367 \\ \bottomrule
 Why does even the \emph{correct} one-step rule lose? The graph's payoff is a \emph{two-stage} play: judge the
 confident \emph{anchor} now, and the covariance surfaces the \emph{bridge} at the \emph{next} decision. A
 one-step VOI values only the immediate change in completion risk, and judging the anchor barely moves that risk
-this turn (the anchor is already inside the top-$k$), so the myopic rule spends the budget elsewhere and never
-triggers the propagation. UCB, indifferent to the immediate decision, happily judges the high-uncertainty
-hub---the move that pays off a stage later. \textbf{So this is not ``a bad surrogate backfires'': myopic
-Bayes-optimal acquisition is genuinely inferior here because the value of graph exploration is multi-stage.}
-Characterizing that gap---one-step VOI versus the optimal sequential (POMDP) policy---is a theoretical opening
-this paper flags rather than closes.
+this turn (the anchor is already inside the top-$k$), so the myopic rule spends the budget elsewhere. \textbf{So
+this is not ``a bad surrogate backfires''---but, importantly, it is \emph{not} about horizon either.}
+\end{intuition}
+
+\paragraph{We chased this down, and it is a balance, not a horizon.}
+\TESTED{We raced UCB against four alternatives on the graph kernel: one-step VOI, a genuine \emph{two-step}
+lookahead, pure \emph{information-gain} (maximal posterior-variance reduction), and pure \emph{exploration}
+(maximal posterior variance). All four lose to UCB in chain completion, significantly at every budget. The
+two-step lookahead does \emph{not} help ($-0.078/-0.108/-0.143$ vs UCB)---so the cause is \emph{not} myopia;
+information-gain also loses ($-0.09/-0.10/-0.11$)---so it is \emph{not} pure information; pure exploration is the
+\emph{closest} ($-0.05/-0.07/-0.09$) but still below.}
+\begin{intuition}
+The winner is UCB's exploitation--exploration \emph{balance}. Its mean term \emph{focuses} exploration onto
+high-prior nodes---the anchors whose judgment propagates through the graph to a buried bridge---whereas pure
+exploration wanders to graph-\emph{peripheral} high-variance nodes that propagate nowhere useful, and
+decision-VOI chases the current top-$k$ boundary. ``Explore, but among the plausibly-relevant'' is exactly what
+$\mu+\beta s$ encodes, and it is exactly what a graph covariance rewards. The clean analytic centerpiece we still
+owe is a toy theorem: construct an anchor already inside the top-$k$, a buried connected bridge, and a distractor,
+and exhibit a regime where one-step VOI assigns $\approx0$ value to judging the anchor while its observation
+nonetheless raises the later probability of retrieving the bridge---so \emph{no} decision-focused rule judges it,
+but focused optimism does.
 \end{intuition}
 
 \section{When Does Structure Help? The Alignment Law}\label{sec:law}

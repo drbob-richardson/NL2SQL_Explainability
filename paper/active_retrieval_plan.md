@@ -233,6 +233,20 @@ payoff needs a MIXED query distribution including INDEPENDENT (comparison) quest
 but chained-only data lacks the graph-unfavorable queries to demonstrate routing value; do NOT claim a
 learned-lambda_q win until the mixed distribution is run.
 
+## NON-MYOPIC + EXPLORATION ACQUISITION (graphrag_lookahead.py, $0) -- UCB uniquely best; value = FOCUSED exploration
+Review #3's top A move: is the UCB>1-step-VOI gap about DELAYED value (non-myopia)? Raced on the normalized graph
+kernel (chain completion), vs UCB @B=1/2/3: 1-step VOI -0.080/-0.103/-0.113; **2-STEP lookahead -0.078/-0.108/
+-0.143 (NO horizon help -- REFUTES 'delayed value')**; pure INFO-GAIN (max variance reduction) -0.087/-0.103/
+-0.108 (not pure information either); pure EXPLORATION (max-var) -0.048/-0.070/-0.092 (CLOSEST but still below).
+=> the value is NOT horizon (2-step fails), NOT pure info (infogain fails), NOT pure exploration (maxvar closest).
+It's UCB's mean+sd BALANCE: the mean term FOCUSES exploration on high-prior nodes = the anchors whose judgment
+PROPAGATES through the graph to buried bridges; maxvar wanders to graph-peripheral nodes (no propagation);
+VOI/infogain chase the decision boundary / raw uncertainty. CLEAN CHARACTERIZATION: across VOI (1&2-step),
+info-gain, and pure exploration, none beats UCB -- structural information is realized by FOCUSED optimistic
+exploration, not decision-theoretic acquisition at any horizon. Corrected paperA (the old 'multi-stage value'
+intuition was wrong). Still-owed analytic centerpiece = the TOY THEOREM (anchor in top-k, buried bridge, distractor:
+a regime where 1-step VOI gives ~0 value to judging the anchor but its observation raises later P(retrieve bridge)).
+
 ## HETEROPHILIC CHAIN-IDENTIFICATION SIM (paperB_identify_sim.py, $0) -- mechanism CONFIRMED, but a real tension
 3-state role-HMM (irrelevant/bridge/direct), heterophilic transition (low diagonal); recover emission by
 Baum-Welch (CHAIN, uses dependence) vs mixture-EM (I.I.D., dependence removed). Min-perm emission error, best-of-4:
