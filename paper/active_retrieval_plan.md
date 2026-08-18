@@ -527,3 +527,18 @@ structure-CONSTRUCTION experiment (not budget-fair competitor); the fair version
 SAME judge call (the adaptive sequel). (d) Wording: 'safe (never sig hurts)' -> 'did not sig hurt in the regimes
 tested'; 'always use the graph' -> 'global graph policy better supported than per-query routing in the multi-hop
 regime'; gold-connectivity -> assortativity p_hat-q_hat. Draft now 7pp, compiles. Theorem soundness = fixed.
+
+## REVIEW ROUND: two cheap $0 empirical additions (Paper A)  [paperA_mixture.py, paperA_perdataset.py]
+(1) COMBINED-KERNEL BASELINE (reviewer: "why throw away the embedding covariance?"). Fixed convex family
+K_alpha=(1-alpha)~K_E + alpha ~K_G (both corr-form, SAME calibrated mean), single global alpha swept on chained
+N=100 (n=600). recall@1 MONOTONE in graph weight: 0.634 (a=0, embedding cov) -> 0.692 (a=1, graph); completion
+0.323 -> 0.445. Tuned optimum alpha*=1 (pure graph). Holding the mean fixed and varying only the covariance, the
+graph IS the better covariance and embedding covariance adds nothing on top -> a dose-response in the mixing weight
+mirroring the alignment dose-response. Direct answer to the reviewer. Added as a paragraph after Table 1.
+(2) PER-DATASET BREAKDOWN (reviewer: report Hotpot & 2Wiki separately, not just pooled n=600). Both individually
+significant at B=1,2 across all 3 metrics; pooling masks nothing. Hotpot (assort p-q=0.75) > 2Wiki (0.59) at every
+budget/metric -- SAME dose-response ordering as Fig 1B but ACROSS corpora:
+  B=1 Hotpot recall +0.073[.048,.098] comp +0.153[.103,.203];  2Wiki recall +0.043[.020,.068] comp +0.090[.047,.137]
+  B=2 Hotpot recall +0.090[.063,.118] comp +0.180[.130,.233];  2Wiki recall +0.051[.028,.077] comp +0.120[.077,.167]
+Added as Appendix B (Table 2) + one-line pointer in main results. Draft 7pp, compiles clean, 0 undef refs.
+Remaining review item: TRUE BAGEL runs (next).

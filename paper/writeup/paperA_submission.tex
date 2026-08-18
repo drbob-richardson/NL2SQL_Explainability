@@ -191,7 +191,8 @@ the hop-aware prompt raises gold recall to $0.84$, isolating the prompt fix from
 ($n{=}600$), with the correlation-form kernel the graph beats the embedding kernel across all three metrics and all
 budgets (Table~\ref{tab:main}): at one judgment, recall $+0.058\,[.040,.076]$, nDCG@10 $+0.030\,[.020,.041]$,
 chain-completion $+0.122\,[.088,.155]$; significant through $B{=}3$. The graph kernel---not ``any GP''---drives it:
-graph-GP $>$ cosine-GP $>$ passive.
+graph-GP $>$ cosine-GP $>$ passive. The win is individually significant in \emph{each} corpus, larger on the more
+assortative one (HotpotQA $>$ 2Wiki; Appendix~\ref{app:perds}).
 \begin{table}[t]\centering\small
 \begin{tabular}{lccc}
 \toprule
@@ -204,6 +205,16 @@ $B=3$ & $+0.063\,[.044,.082]$ & $+0.033\,[.022,.045]$ & $+0.127\,[.093,.162]$ \\
 \caption{Low-budget graph-kernel win (correlation-form kernel), significant at all budgets. The raw kernel is
 weaker and converges to null by $B=3$ (\S\ref{sec:model}, normalization).}\label{tab:main}
 \end{table}
+
+\paragraph{Is the graph just a proxy the embedding covariance could supply? No: the mixture picks pure graph.}
+A natural worry is that we discard useful embedding covariance. We test the fixed convex family
+$K_\alpha=(1-\alpha)\widetilde K^E+\alpha\widetilde K^G$ (both correlation-form, \emph{same} calibrated mean),
+sweeping a single global $\alpha$ on the chained set. Recall@$k$ rises \emph{monotonically} in the graph weight,
+$0.634\ (\alpha{=}0,\text{embedding covariance})\to0.692\ (\alpha{=}1,\text{graph})$ at $B{=}1$, and completion
+$0.323\to0.445$; the tuned optimum is $\alpha^\star=1$. Holding the mean fixed and varying only the covariance, the
+graph is the better covariance and the embedding covariance adds nothing on top of it---a dose-response in the
+mixing weight that mirrors the alignment dose-response, and a direct answer to ``why not keep the embedding
+covariance.''
 
 \paragraph{The alignment law, from both sides.} We judged the \emph{comparison} (independent-evidence) questions
 as a control, giving a mixed distribution ($300$ chained $+$ $300$ comparison). The graph helps chained
@@ -265,6 +276,25 @@ $q$. \emph{(ii)} $(I+\lambda L)^{-1}=I-\lambda L+O(\lambda^2)$ with $L=D-A$, so 
 $K_{ij}=\lambda A_{ij}+O(\lambda^2)$; correlation normalization divides by $\sqrt{K_{ii}K_{jj}}=1+O(\lambda)$ and
 preserves the first-order term, whence $\E[K_{ba}-K_{da}]=\lambda(p-q)+O(\lambda^2)$. \emph{(iii)} Immediate from
 $\Delta_{\mathrm{align}}=(p-q)(1-q)^{|D|}$: maximal at $q{=}0,p{=}1$, zero at $p=q$. \hfill$\square$
+
+\section{Per-dataset breakdown}\label{app:perds}
+The pooled headline (Table~\ref{tab:main}) is significant in \emph{each} dataset separately, so pooling is not
+masking a null (Table~\ref{tab:perds}). HotpotQA, whose chained graph is more chain-assortative
+($\hat p-\hat q=0.75$ vs.\ $0.59$ for 2Wiki), shows the larger gain at every budget and metric---the same
+dose-response ordering as Figure~\ref{fig:align}B, now \emph{across} standard corpora rather than within one.
+\begin{table}[h]\centering\small
+\begin{tabular}{llccc}
+\toprule
+$B$ & dataset ($n{=}300$) & recall@$k$ & nDCG@10 & completion \\ \midrule
+$1$ & HotpotQA & $+0.073\,[.048,.098]$ & $+0.041\,[.026,.055]$ & $+0.153\,[.103,.203]$ \\
+$1$ & 2Wiki    & $+0.043\,[.020,.068]$ & $+0.020\,[.005,.035]$ & $+0.090\,[.047,.137]$ \\
+$2$ & HotpotQA & $+0.090\,[.063,.118]$ & $+0.040\,[.025,.056]$ & $+0.180\,[.130,.233]$ \\
+$2$ & 2Wiki    & $+0.051\,[.028,.077]$ & $+0.025\,[.008,.041]$ & $+0.120\,[.077,.167]$ \\
+\bottomrule
+\end{tabular}
+\caption{Graph$-$cosine margin per dataset (correlation-form kernel, pooled calibration). Both are individually
+significant at $B{=}1,2$; the more assortative corpus (HotpotQA) gains more.}\label{tab:perds}
+\end{table}
 
 \smallskip\noindent\footnotesize\emph{Reproducibility.} All experiments use cached judgments; scripts and the full
 experimental log accompany the submission. Total LLM spend for all runs reported here is under \$10.
