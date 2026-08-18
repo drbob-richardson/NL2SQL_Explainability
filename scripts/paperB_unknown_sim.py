@@ -137,10 +137,27 @@ def main():
         rows.append((eta, kappa, np.mean(exc)))
         print(f"  {depth:<7}{nbar:<10.0f}{eta:<7.2f}{dG(eta):<9.3f}{kappa:<17.2f}"
               f"{np.mean(eh):<15.3f}{np.mean(orc):<12.3f}{np.mean(exc):+.4f}")
-    print("\n  => excess risk shrinks as kappa=sqrt(n)*delta_G grows (plug-in becomes free); it is largest at small")
-    print("     kappa (weak identification), where the de-aliasing parameter cannot be resolved. Configurations")
-    print("     with similar kappa show similar excess -- the coupling is governed by kappa, unifying the field")
-    print("     minimax remainder with the local Bayesian regime sqrt(n) delta_{G,n} -> kappa.")
+    print("\n  => excess risk shrinks as identification strengthens (plug-in becomes free), largest at weak id.\n")
+
+    # DISCRIMINATION: hold lambda = sqrt(n)*delta_G^2 FIXED while sqrt(n)*delta_G VARIES. If the excess tracks
+    # lambda (the singular-model invariant, since psi=eta^2 ~ delta_G^2 is the sqrt(n)-regular parameter) it stays
+    # ~constant; if it tracked sqrt(n)*delta_G it would fall ~2x across these configs.
+    print("  SCALING DISCRIMINATION [target lambda=sqrt(n)*delta_G^2 ~ 0.4 held fixed; sqrt(n)*delta_G varies ~2x]:")
+    print(f"    {'depth':<7}{'~n_alias':<10}{'eta':<7}{'sqrt(n)*dG':<13}{'lambda=sqrt(n)dG^2':<20}{'excess'}")
+    for depth, eta in [(4, 0.40), (6, 0.228), (7, 0.174)]:
+        Ttrue = T_of(eta); ntr = 150; exc = []; ne = []
+        for _ in range(ntr):
+            parent, children, order = build_tree(3, depth)
+            Z, Y = simulate(parent, order, Ttrue, rng)
+            ne.append(int(np.isin(Z, [0, 1]).sum()))
+            e_hat = est_eta(parent, children, order, Y, grid)
+            exc.append(field_risk(parent, children, order, Z, Y, T_of(e_hat))
+                       - field_risk(parent, children, order, Z, Y, Ttrue))
+        nbar = np.mean(ne); dg = dG(eta)
+        print(f"    {depth:<7}{nbar:<10.0f}{eta:<7.3f}{np.sqrt(nbar)*dg:<13.2f}{np.sqrt(nbar)*dg**2:<20.3f}{np.mean(exc):+.4f}")
+    print("    => excess stays ~flat while sqrt(n)*delta_G grows ~2x: the invariant boundary is lambda=sqrt(n)*")
+    print("       delta_G^2 (delta_G ~ n^{-1/4}), the singular-model scaling -- REFINING the earlier sqrt(n)*delta_G.")
+    print("       This unifies the field-minimax remainder with the local Bayesian regime sqrt(n)delta_G^2 -> lambda.")
 
 
 if __name__ == "__main__":

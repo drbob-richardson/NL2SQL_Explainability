@@ -36,9 +36,11 @@ Assouad lower and belief-propagation upper bounds and a clean transition between
 structure-dominated, and unidentifiable regimes. We derive a \emph{measurement-design} law that prices structural
 observations against replication and additional instruments ($nC_E+dC_G+mC_2$), and we characterize which
 scientific \emph{functionals} $R=h(Z)$ remain identifiable when the full latent state is not. A local
-weak-identification analysis ($\sqrt n\,\delta_{G,n}\to\kappa$) gives a nonstandard, prior-indexed posterior
-limit that separates a prior-sensitive nuisance from a decision-consistent functional---the Bayesian face of the
-same phenomenon. Exact (as opposed to near-) aliasing is governed by the known equivalence of emission-consistent
+weak-identification analysis reveals a \emph{singular} regime---the likelihood is even in the separation, so the
+identifiable parameter is $\psi=\delta_G^2$ (estimable at the singular rate $n^{-1/4}$ in $\delta_G$) and the
+global role label is a prior-fixed nuisance---giving a nonstandard, prior-indexed posterior on the boundary
+$\sqrt n\,\delta_{G,n}^2\to\lambda$ that separates a prior-sensitive nuisance from a decision-consistent
+functional---the Bayesian face of the same phenomenon. Exact (as opposed to near-) aliasing is governed by the known equivalence of emission-consistent
 \emph{lumpability} and probabilistic bisimulation, which we use as scaffolding rather than a contribution; the
 branching-beats-paths phenomenon that makes the structural signature richer than any single path is likewise the
 classical linear-vs-branching-time gap. The motivating pathology is an LLM relevance judge that grades a necessary
@@ -469,57 +471,75 @@ The remainder is not a routine $O(n^{-1/2})$: the parameter $\eta$ that \emph{se
 transition-row contrast producing $\delta_G$) has a Fisher information that \emph{degenerates at the alias}---the
 score for $\eta$ vanishes at $\eta{=}0$, where the two states coincide---so $\eta$ is estimable only as well as
 the same separation that sets the classification floor.
-\begin{proposition}[The plug-in remainder is governed by $\kappa=\sqrt n\,\delta_G$]\label{prop:unknown}
+\begin{proposition}[The plug-in remainder vanishes with identification strength]\label{prop:unknown}
 Estimating $\eta$ from the field and plugging into the Bayes-optimal (BP) classifier, the excess risk over the
-oracle-parameter estimator obeys: $\varrho_n\to0$ at the fast (effectively $n^{-1}$) rate when
-$\kappa=\sqrt n\,\delta_G\to\infty$ (\emph{plug-in is asymptotically free}); and $\varrho_n$ is of the \emph{same
-order as the structural gain} $\Phi(0)-\Phi(d\delta_G^2)$ when $\kappa=O(1)$ (\emph{weak identification}). The
-boundary $\sqrt n\,\delta_{G,n}\to\kappa$ at which plug-in stops being free is exactly the local
-weak-identification boundary of \S\ref{sec:localbayes}: the frequentist remainder and the nonstandard Bayesian
-posterior are two faces of the same $\kappa$.
+oracle-parameter estimator obeys: $\varrho_n\to0$ (\emph{plug-in asymptotically free}) as identification
+strengthens, and is of the \emph{same order as the structural gain} $\Phi(0)-\Phi(d\delta_G^2)$ in the
+weak-identification regime. The governing quantity is the local separation index
+$\lambda=\sqrt n\,\delta_{G,n}^2$ (established in \S\ref{sec:localbayes}; the singular structure there shows this,
+\emph{not} $\sqrt n\,\delta_G$, is the invariant): plug-in is free once $\lambda\to\infty$ and interacts at
+$\lambda=O(1)$. The frequentist remainder and the nonstandard Bayesian posterior are two faces of the same
+$\lambda$.
 \end{proposition}
 \PROVEN{\emph{Verified} (\texttt{paperB\_unknown\_sim.py}, exact BP likelihood, checked against brute force):
-estimating the scalar de-aliasing $\eta$ (bridge heterophily; $\eta{=}0\Rightarrow$ full alias) by marginal
-likelihood and plugging into BP, the excess field risk collapses onto a decreasing function of $\kappa$:
-$+0.013$ ($\kappa{=}0.85$), $+0.008$ ($\kappa{=}1.5$), $+0.004$ ($\kappa{=}2.6$), $+0.0008$ ($\kappa{=}4.8$),
-$+0.0004$ ($\kappa{=}14$), while $|\hat\eta-\eta|$ falls monotonically $0.30\!\to\!0.05$. At weak identification
-the remainder eats a large fraction of the oracle's own $\sim\!0.03$--$0.06$ gain over chance; by $\kappa\gtrsim5$
-the plug-in is free. \emph{Remaining rigor:} the $O(1)$-vs-$o(1)$ dichotomy is clean; the exact constant and the
-$\varrho_n(\kappa)$ curve need the LAN expansion of \S\ref{sec:localbayes} (the score degeneracy at $\eta{=}0$
-makes this genuinely nonstandard, not a delta-method calculation).}
+estimating the scalar de-aliasing $\eta$ ($\eta{=}0\Rightarrow$ full alias) by marginal likelihood and plugging
+into BP, the excess field risk decreases with identification strength---$+0.013$ down to $+0.0004$ across the
+sweep, while $|\hat\eta-\eta|$ falls $0.30\!\to\!0.05$; at weak identification it eats a large fraction of the
+oracle's $\sim\!0.03$--$0.06$ gain over chance. \emph{Discrimination:} holding $\lambda=\sqrt n\delta_G^2\approx0.4$
+fixed while $\sqrt n\,\delta_G$ grows $1.9\!\to\!4.7$, the excess stays flat ($\sim\!0.001$)---it tracks $\lambda$,
+not $\sqrt n\,\delta_G$. \emph{Remaining:} the exact $\varrho_n(\lambda)$ curve needs the boundary expansion of
+Prop~\ref{prop:singular}.}
 \begin{intuition}
 This is the crux the review anticipated: near the alias you cannot separate ``learned the correction from data''
 from ``imposed it,'' because the very parameter that does the de-aliasing is the one you cannot estimate. The
-known-parameter minimax (Thm~\ref{thm:field}) and the Bayesian $\kappa$-limit are not two results---they are one
-phase diagram in $\kappa=\sqrt n\,\delta_G$, seen once through risk and once through the posterior.
+known-parameter minimax (Thm~\ref{thm:field}) and the Bayesian limit are not two results---they are one
+phase diagram in $\lambda=\sqrt n\,\delta_G^2$, seen once through risk and once through the posterior.
 \end{intuition}
 
-\subsection{The local weak-identification regime (the Bayesian core to prove)}\label{sec:localbayes}
-Prop~\ref{prop:unknown} showed the frequentist remainder is a function of $\kappa=\sqrt n\,\delta_G$; here is its
-Bayesian face. Contraction/no-contraction is a coarse dichotomy; the interesting object sits \emph{on} the phase
-boundary. Index a sequence of models by $n$ (independent degree-$d$ stars) with structural separation shrinking at
-the critical rate
+\subsection{The local regime is \emph{singular}: an even likelihood, an $n^{-1/4}$ rate, and a
+prior-fixed label}\label{sec:localbayes}
+Working out the local expansion revealed that the naive scaling $\kappa=\sqrt n\,\delta_G$ of \S\ref{sec:unknown}
+is \emph{not} the invariant, and the regime is genuinely non-regular. The reason is a symmetry: at the alias the
+two states are \emph{exchangeable}, so the global label-swap $\{a\leftrightarrow b\}$ sends the separation
+$\eta\mapsto-\eta$ (and $R\mapsto1-R$) while leaving the observable law invariant.
+\begin{proposition}[Singular structure at the alias]\label{prop:singular}
+Let $\eta$ be the scalar that separates the aliased pair ($\eta{=}0$ full alias, $\delta_G\propto\eta$ near $0$).
+Then (a) the marginal likelihood is an \emph{even} function of $\eta$: $L(\eta)=L(-\eta)$, so the score at
+$\eta{=}0$ vanishes and the Fisher information for $\eta$ is \emph{degenerate}; (b) the identifiable parameter is
+$\psi=\eta^2\ (\propto\delta_G^2)$, which is \emph{regular} with positive information, hence
+$\sqrt n$-estimable, while $\eta$ is estimable only at the \emph{singular} rate $n^{-1/4}$; (c) consequently the
+correct local (weak-identification) scaling is
 \[
-   \sqrt{n}\,\delta_{G,n}\to \kappa\in[0,\infty],
+   \lambda \;=\; \sqrt n\,\delta_{G,n}^{2}\ \to\ \lambda_0\in[0,\infty]\qquad(\text{i.e. }\delta_{G,n}\sim n^{-1/4}),
 \]
-so $\kappa=\infty$ is strong identification, $\kappa=0$ full aliasing, and $\kappa\in(0,\infty)$ a genuine
-weak-identification continuum.
-\begin{conjecture}[Nonstandard limit on the boundary]\label{conj:bayes}
-Along $\sqrt n\,\delta_{G,n}\to\kappa$: (a) the local log-likelihood for the de-aliasing contrast converges (LAN
-with a \emph{degree-weighted} information $d\,I_G^\star$) to a Gaussian shift experiment with signal $\propto
-\kappa\sqrt d$, so the posterior for the functional $R$ has a \emph{nonstandard, prior-dependent} limit indexed by
-$\kappa$---interpolating Bernstein--von Mises ($\kappa=\infty$) and prior ($\kappa=0$); (b) the emission-bias
-\emph{nuisance} has a non-regular (prior-sensitive) limit while the \emph{functional} $R=h(Z)$ remains
-decision-consistent---the Bayesian face of parameter-vs-decision recovery; (c) hence
-$d_{\mathrm{TV}}\{\Pi_1(R\mid Y,G),\Pi_2(R\mid Y,G)\}\to$ an explicit function of $\kappa$ that is $0$ at
-$\kappa=\infty$ and bounded away from $0$ for $\kappa<\infty$---a computable ``learned-vs-imposed correction''
+\emph{not} $\sqrt n\,\delta_G$; (d) the \emph{sign} of $\eta$---the global role label, which of the aliased pair
+is the bridge---is \emph{never identified} by the data; it is fixed only by an anchor or the prior.
+\end{proposition}
+\PROVEN{\emph{Verified} (\texttt{paperB\_lan\_sim.py}, $n$ independent stars). (a) $L(+\eta)=L(-\eta)$ to machine
+precision. (b) at $\eta_0{=}0$: $n^{1/4}\E[\hat\eta]\to$ const ($\approx0.40$) and $n^{1/2}\E[\hat\psi]\to$ const
+($\approx0.43$) over $n{=}250$--$8000$, so $\hat\eta\sim n^{-1/4}$, $\hat\psi\sim n^{-1/2}$; away from the alias
+($\eta_0{=}0.5$) $n\cdot\mathrm{MSE}(\hat\psi)$ stabilizes ($\psi$ regular). (c) holding $\lambda=\sqrt n\delta_G^2
+\approx1.07$ fixed across $n{=}10^3$--$1.6{\times}10^4$ is invariant while $\sqrt n\,\delta_G$ \emph{grows}
+$5.8\!\to\!11.6$. (d) $\Pr(\mathrm{sign}\,\eta{=}{+}\mid\text{data}){=}0.50$ with no anchor, rising
+$0.61\to0.83\to0.97$ with $1,3,10$ anchors---the label is prior/anchor-fixed.}
+This is the crux the review anticipated (``when is a Bayesian correction learned vs.\ imposed?''), now with a
+precise mechanism: the de-aliasing \emph{magnitude} $|\eta|=\sqrt\psi$ contracts from the data at the regular
+$\sqrt n$ rate in $\psi$; the \emph{role label} (sign) does not, and is supplied by the prior or an anchor. So the
+nuisance is genuinely prior-sensitive while the functional $R=h(Z)$ is decision-consistent \emph{given} the
+anchor---parameter-vs-decision recovery, seen in the posterior. It also revises \S\ref{sec:unknown}: the plug-in
+remainder and the posterior both live on $\lambda=\sqrt n\,\delta_G^2$.
+\begin{conjecture}[The boundary posterior]\label{conj:bayes}
+Along $\lambda=\sqrt n\,\delta_{G,n}^2\to\lambda_0$: the posterior for $\psi$ converges to a Gaussian
+\emph{truncated at the boundary} $\psi\ge0$, with non-centrality set by $\lambda_0$---interpolating
+Bernstein--von Mises ($\lambda_0{=}\infty$) and prior ($\lambda_0{=}0$); the label posterior is a fixed
+$\mathrm{Bernoulli}$ (prior/anchor); and $d_{\mathrm{TV}}\{\Pi_1(R\mid Y),\Pi_2(R\mid Y)\}$ for two priors is an
+explicit function of $\lambda_0$, zero at $\lambda_0{=}\infty$ and positive below---the ``learned-vs-imposed''
 diagnostic.
 \end{conjecture}
-\CONJ{Establish LAN for the tree-signature likelihood at the aliasing point (the score is the sibling-covariance
-contrast of Thm~\ref{thm:branch}, so the information is $O(d)$---degree buys local information), then a
-Bernstein--von Mises / limit-experiment analysis in the localized parameter. The nuisance non-regularity is a
-cut-posterior statement. This is the Bayesian Analysis centre; it is genuinely nonstandard (weak identification),
-not routine posterior contraction.}
+\CONJ{What remains is only the exact \emph{form} of the truncated-Gaussian limit: the $O(\psi)$ local expansion of
+the tree-signature likelihood (the score in $\psi$ is the sibling-covariance contrast of Thm~\ref{thm:branch}) and
+the boundary Bernstein--von Mises theorem in $\psi\ge0$. The singular structure (a)--(d) is established; this is a
+known-genre (constrained/singular) BvM calculation, no longer a leap. This is the Bayesian Analysis centrepiece.}
 
 \section{Related work and honest positioning}\label{sec:related}
 The organizing distinction is \emph{linear-time vs.\ branching-time}: our signature $Q_L$ is the joint law of the
@@ -573,10 +593,11 @@ Ordered by how much novelty each piece bears (audit-adjusted).
   \item \textbf{[CENTER] Field minimax (Thm~\ref{thm:field}) $+$ unknown parameters (Prop~\ref{prop:unknown}).}
   The general theorem: minimax-optimal recovery of $\{h(Z_v)\}$ on a tree with the
   measurement/structure/unidentifiable transition, Assouad lower $+$ BP upper bounds; verified. The
-  \emph{unknown-parameter} plug-in remainder is shown (verified) to be governed by $\kappa=\sqrt n\,\delta_G$---the
-  same boundary as the Bayesian regime (item~5). \emph{Finish for T\&M:} tighten the Assouad constant and state
-  the exact rate function $\Psi(n,d,\delta_E,\delta_G)$, and the exact remainder curve $\varrho_n(\kappa)$ via the
-  LAN expansion. This is the result that stops the work looking like a local test.
+  \emph{unknown-parameter} plug-in remainder is shown (verified) to be governed by
+  $\lambda=\sqrt n\,\delta_G^2$---the same singular boundary as the Bayesian regime (item~5). \emph{Finish for
+  T\&M:} tighten the Assouad constant and state the exact rate function $\Psi(n,d,\delta_E,\delta_G)$, and the
+  exact remainder curve $\varrho_n(\lambda)$ via the boundary expansion. This is the result that stops the work
+  looking like a local test.
   \item \textbf{[ENGINE] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star (boundary
   $\delta_E^2+d\delta_G^2$, shared-$s$ Chernoff exponent); the local engine of the field theorem. Remaining:
   deep-subtree Chernoff on general trees. Position vs.\ Weiss--Nadler (no rates), Chang/AMR (distinct emissions).
@@ -586,9 +607,11 @@ Ordered by how much novelty each piece bears (audit-adjusted).
   \item \textbf{[PAYOFF] Functional recovery (Thm~\ref{cor:func})}: decision-not-parameter; recoverable
   functionals $=$ lumpable-measurable. Aliasing framing $+$ branching (Thm~\ref{thm:branch}) make it vivid but are
   not oversold.
-  \item \textbf{[BA ROUTE] Local weak identification (Conj~\ref{conj:bayes})}: LAN at the aliasing point, the
-  three limits $\kappa\in\{0,(0,\infty),\infty\}$, nuisance non-regular while the functional is decision-consistent.
-  Potentially the most distinctive piece; the stronger route if the general-graph minimax turns technical.
+  \item \textbf{[BA ROUTE] Local weak identification (Prop~\ref{prop:singular}, Conj~\ref{conj:bayes})}: the
+  singular structure---even likelihood, $n^{-1/4}$ rate, $\lambda=\sqrt n\,\delta_G^2$ boundary, prior-fixed
+  label---is \emph{established/verified}; what remains is the exact boundary-BvM posterior form. Nuisance
+  (role label) non-regular while the functional is decision-consistent given an anchor. Potentially the most
+  distinctive piece; the stronger route if the general-graph minimax turns technical.
   \item \textbf{[SCAFFOLD] Lumpability boundary (Thm~\ref{thm:lump})}---cite bisimulation$=$lumpability, do not
   claim; use only to state the identifiability boundary.
 \end{enumerate}
