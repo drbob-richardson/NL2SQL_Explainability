@@ -50,5 +50,10 @@ to its venue, status, and files. (Last updated 2026-08-18.)
 - (Removed) the old `paper/tex/` and `paper/writeup/` dirs — sources moved into the per-paper folders; only build artifacts remained, so they were deleted.
 - `paper-overleaf/`, `paper-overleaf-subgraph/`, `paper-overleaf-tas/` are **separate Overleaf git-bridge clones** (own `.git`) — the authoritative submission copies for #1/#2/#3. Edit/commit inside them; don't relocate (`sync-tas.sh` points at `paper-overleaf-tas/`).
 - `archive/` (repo root) — unused reference/export material (course PDF, paper zips); safe to ignore.
-- `scripts/` (~170 files) and `data/` (~3 GB) are **shared infrastructure** — the scripts cross-import and read `data/` via one relative path, so they are intentionally NOT split per-project (splitting would silently break pipelines). `server_experiments/` = GPU jobs for #1; `src/bnp_nl2sql` + `tests/` = the package.
+- `scripts/` (~170 files) and `data/` (~3 GB) are **shared infrastructure**, kept flat but fully mapped:
+  - **`scripts/SCRIPTS_INDEX.md`** — every script → its paper (★ marks shared modules imported across papers).
+  - **`data/DATA_INDEX.md`** — every data file → its paper (owner / shared / apparently-unused-verify-first).
+  They are intentionally NOT split into per-paper folders: scripts cross-import with non-uniform `sys.path`
+  bootstraps, and ~35 scripts build `data/` paths dynamically (f-strings/helpers), so physically relocating
+  either would silently break pipelines. `server_experiments/` = GPU jobs for #1; `src/bnp_nl2sql` + `tests/` = the package.
 - Compile a draft from inside its folder, e.g. `cd paper/4-graphrag-A && pdflatex paperA_submission.tex`.
