@@ -460,3 +460,25 @@ FULL-SET result (n=200/200/83 at 2/3/4-hop), rec-margin@B2 graph-cosine w/ 95% C
 PAPER TAKEAWAY: MuSiQue is PARTIALLY rescuable -- inferring structure from the judge's own hop-reasoning recovers a
 significant fraction of the oracle gain at 3-hop where every cheap surface graph is null. A proof-of-concept for
 the alignment-law prescription + the adaptive-structure-learning direction (the bridge to Paper B), not a knockout.
+
+## WHY THE ROUTING GATE FAILS -- negative-result investigation (Paper A, $0)  [scripts/paperA_negative_analysis.py]
+Dissected why the deployable lambda_q / exploration gate ties always-graph under the real judge. Clean answer:
+  (1) SNR WALL: the per-query graph advantage (graph-cosine recall@2) is a SMALL MEAN effect swamped by LARGE
+      per-query variance -- pooled mean +0.023, sd 0.198 => SNR mean/sd = 0.12. recall@k is discrete/coarse;
+      whether the buried bridge surfaces on a given query is idiosyncratic (exact cosine ranks, boundary
+      distractors, realized edges). The average is a stable small +, the per-query realization is ~+-0.2 noise.
+  (2) NEARLY UNPREDICTABLE, EVEN UNDER ORACLE: gold-free ridge R^2 of the advantage = 0.034 (6 generic feats) and
+      only 0.052 with THEORY-MOTIVATED feats (graph-Laplacian prior roughness, anchor->buried reachability,
+      edge prior-gap 'bridging potential'); corr(adv, reachability) -0.02, corr(adv, bridging-pot) -0.03. So it is
+      NOT a feature-engineering failure -- the per-query advantage is not a learnable function of cheap features.
+  (3) MY MECHANISTIC FIXES REFUTED (honest): H1 judge-error amplification is NOT the mechanism (corr(adv_real,
+      anchor reliability) = -0.17, opposite sign; graph helps MORE with a mislabeled anchor, not less); H3
+      confidence-gated propagation (only grade==2 anchors propagate) HURTS -0.030[-0.044,-0.017] -- the grade-1
+      'related but not clearly needed' labels carry useful propagation signal, so the soft graded design is right.
+PRINCIPLED TAKEAWAY (the paper's answer to 'why the negative'): the structural gain is a DISTRIBUTIONAL property --
+a robust small AVERAGE win in the deep-multi-hop/chained regime (the alignment law) -- NOT a per-query-predictable
+signal. Per-query adaptive routing is infeasible (SNR ~0.12, R^2 ~0.05); the graph is a SAFE default (neutral-to-
+helpful, never sig. hurts under a real judge); so 'ALWAYS USE THE GRAPH' is the correct, simple deployment and the
+adaptive-lambda_q machinery is unnecessary. The DATA CHARACTERISTIC that predicts the gain is the REGIME (hop-depth
+/ chain structure = the alignment law), not any per-query feature. This converts the routing negative into a
+principled design recommendation + closes the 'adaptivity' open item honestly.
