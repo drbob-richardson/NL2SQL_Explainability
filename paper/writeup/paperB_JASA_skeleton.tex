@@ -24,17 +24,19 @@ participate \emph{differently} in the dependency structure, and the question we 
 rate can the structural observations de-alias states the channel cannot? For a node with $d$ conditionally
 independent structural views, the effective information combines measurement and structural separation as
 $\delta_E^2+d\,\delta_G^2$, with error decaying at the Chernoff exponent between the structural signatures. We lift
-this to a field minimax theorem for recovering the functional field $\{h(Z_v)\}$ on a tree: the belief-propagation
-marginal-mode estimator attains the rate, and a correlation-decay Assouad argument matches it up to constants
-under a spectral-gap condition, because deeper subtree information saturates and distant nodes decouple. Two
-distinct information axes emerge---local structural richness $d\,\delta_G^2$ (classification) and population size
-via $\lambda=\sqrt n\,\delta_G^2$ (learning the channel)---yielding a two-dimensional phase diagram with two
-separate failure modes. We give a measurement-design law that prices structural views against replication and a
-second instrument, and we show a scientific functional $R=h(Z)$ can be point-identified while the latent state and
-the confusion matrix are not. Finally, the local weak-identification regime is genuinely \emph{singular}: an
-exchangeability symmetry makes the likelihood even in the separation, so the identifiable parameter is
-$\psi=\delta_G^2$ (estimable at rate $n^{-1/4}$ in $\delta_G$) with a boundary-truncated Gaussian posterior, and
-the orientation of the states is fixed not by the data but by a single anchor. A natural-language--to--evidence
+this to the field problem of recovering $\{h(Z_v)\}$ on a tree: the belief-propagation marginal-mode estimator is
+Bayes, the forest minimax risk has \emph{exactly} the single-gadget Chernoff exponent, and a data-processing
+\emph{branch-information sandwich}---an entire branch reveals a node at most as well as its first hidden
+neighbour---pins the known-channel field rate on any tree under a mild observability condition, with no spectral
+gap or packing argument. Two distinct information axes emerge---local structural richness $d\,\delta_G^2$
+(classification) and population size via $\lambda=\sqrt n\,\delta_G^2$ (learning the channel)---yielding a
+two-dimensional phase diagram with two separate failure modes. We give a measurement-design law that prices
+structural views against replication and a second instrument, and we show a scientific functional $R=h(Z)$ can be
+point-identified while the latent state and the confusion matrix are not. Finally, the local weak-identification
+regime is genuinely \emph{singular}: an exchangeability symmetry makes the likelihood even in the separation, so
+the identifiable \emph{magnitude} $\psi=\delta_G^2$ is regular (estimable at rate $n^{-1/4}$ in $\delta_G$) with a
+data-driven boundary-truncated-Gaussian posterior, while the \emph{orientation} of the states is not identified by
+the data and is fixed by a single anchor. A natural-language--to--evidence
 retrieval problem, where an LLM grader is blind to bridging evidence, is the running illustration and a predicted
 corner ($\mathcal I_G\!\to\!0$) of the same theory.
 
@@ -65,10 +67,11 @@ the theory, not an anomaly.
 views, the two-point Bayes error for the aliased pair decays as $\exp(-\Theta(\delta_E^2+d\,\delta_G^2))$, with the
 sharp exponent the shared-$s$ Chernoff information between the structural signatures. This is a \emph{rate} where
 the prior literature on aliased-state hidden Markov models gives only identifiability and consistency.
-\item \textbf{Field minimax rates} (\S\ref{sec:field}). For recovering the field $\{h(Z_v)\}$ on a tree under
-average Hamming loss, the belief-propagation marginal-mode estimator attains the per-node rate, and a
-correlation-decay Assouad argument matches it up to constants on a \emph{connected} tree under a spectral-gap
-condition. A clean transition separates measurement-dominated, structure-dominated, and unidentifiable regimes.
+\item \textbf{Field estimation} (\S\ref{sec:field}). Under average Hamming loss the marginal-mode estimator is
+Bayes; the forest minimax risk has \emph{exactly} the single-gadget Chernoff exponent; and a data-processing
+branch-information sandwich pins the known-channel field rate on \emph{any} tree under a mild observability
+condition---no spectral gap or packing. A clean transition separates measurement-dominated, structure-dominated,
+and unidentifiable regimes.
 \item \textbf{A two-dimensional phase diagram} (\S\ref{sec:phase}). Local structural richness $d\,\delta_G^2$
 (can we classify if the channel map were known?) and population information $\lambda=\sqrt n\,\delta_G^2$ (can we
 learn the map?) are distinct axes, with two separate failure modes.
@@ -115,43 +118,45 @@ $\delta_G^2=H^2\big((TO)_a,(TO)_b\big)$ for the squared-Hellinger node and struc
 \section{The near-aliasing rate}\label{sec:rate}
 \begin{theorem}[Near-aliasing rate]\label{thm:rate}
 Test $Z_v=a$ vs $Z_v=b$ from the node measurement and $d$ conditionally independent radius-$L$ views. With
-per-channel Chernoff divergences $C_E(s),C_G(s)$, the equal-prior Bayes error obeys
-$\tfrac14(\rho_E\rho_G^d)^2\le P_e\le\tfrac12\rho_E\rho_G^d$ (Bhattacharyya/Le Cam) and, sharply,
-$P_e\asymp d^{-1/2}\exp\!\big(-\max_s\{C_E(s)+d\,C_G(s)\}\big)$ (Bahadur--Rao, nonlattice). Consequently
-$P_e\to0$ iff $\delta_E^2+d\,\delta_G^2\to\infty$; near the alias the optimal tilt $s\to\tfrac12$ and the exponent
-is $\tfrac12(\delta_E^2+d\,\delta_G^2)(1+o(1))$.
+per-channel Chernoff divergences $C_E(s),C_G(s)$ and Bhattacharyya coefficients $\rho_E,\rho_G$, the equal-prior
+Bayes error obeys $\tfrac14(\rho_E\rho_G^d)^2\le P_e\le\tfrac12\rho_E\rho_G^d$; the exact consistency condition is
+$-\log\rho_E-d\log\rho_G\to\infty$, which \emph{near the alias} reads $\delta_E^2+d\,\delta_G^2\to\infty$. The sharp
+exponent is the shared-tilt Chernoff information $\max_s\{C_E(s)+d\,C_G(s)\}$, equal to
+$\tfrac12(\delta_E^2+d\,\delta_G^2)(1+o(1))$ near the alias; under a nonlattice, nondegenerate-variance condition
+the prefactor is $d^{-1/2}$ (for a fixed branch channel), and $(d\,\delta_G^2)^{-1/2}$ if the channel itself
+approaches aliasing with $d$.
 \end{theorem}
 \begin{proposition}[Branching de-aliasing]\label{prop:branch}
-There are models with node-aliased $a,b$ whose every single-measurement marginal coincides yet whose two-sibling
-joint differs; the de-aliasing exponent is the Chernoff information of the joint signatures, positive though the
-per-measurement Chernoff information is zero. Hence $\Lstr$ can be finite while $\Lpath=\infty$.
+There is a finite two-layer model with node-aliased $a,b$ whose every constituent single measurement is identically
+distributed yet whose two-sibling joint differs; the de-aliasing exponent is the positive Chernoff information of
+the joint signatures, though the per-measurement Chernoff information is zero. (This is the linear-vs-branching gap;
+we state only the finite two-layer form, not a homogeneous-chain $\Lpath=\infty$.)
 \end{proposition}
 
-\section{Field estimation and minimax rates}\label{sec:field}
-Under average Hamming loss $\mathcal L(\hat R,R)=n^{-1}\sum_v\I\{\hat R_v\neq R_v\}$, the Bayes rule is the vector
-of marginal posterior modes, computed exactly by belief propagation on a tree. Let $\Phi(x)\asymp e^{-cx}$ denote
-the per-node two-point Bayes floor and $C_G^{(\ell)}$ the depth-$\ell$ branch Chernoff information.
-\begin{theorem}[Oracle-model field risk; $\vartheta=(T,O)$ known]\label{thm:oracle}
-The marginal-mode field estimator has per-node Bayes risk $\asymp\Phi\big(\delta_E^2+d\,C_G^{(\infty)}\big)$, where
-$C_G^{(\infty)}=\lim_\ell C_G^{(\ell)}$ is finite; the increments $C_G^{(\ell+1)}-C_G^{(\ell)}$ decay geometrically
-at rate $\lambda_2(T)$, so $C_G^{(1)}\le C_G^{(\infty)}\le c_0\,C_G^{(1)}$ with $c_0$ bounded.
+\section{Field estimation: oracle risk, exact forest exponent, and the branch bottleneck}\label{sec:field}
+We keep the \emph{oracle} problem (channel $\vartheta{=}(T,O)$ known, latent field unknown) and the \emph{minimax}
+problem ($\vartheta$ unknown) sharply distinct. Under average Hamming loss the Bayes rule is the vector of marginal
+posterior modes, computed exactly by belief propagation, so the oracle risk is the average nodewise two-point
+Bayes error $P_e(v)$. Let $\Phi(x)\asymp e^{-cx}$.
+\begin{theorem}[Forest risk, exact exponent; $\vartheta$ known]\label{thm:forest}
+On the forest of $n$ disjoint depth-1 star gadgets, $P_e\le\mathcal R_{\mathrm{oracle}}\le 2P_e$, where $P_e$ is the
+single-gadget two-point Bayes error; hence the forest risk has \emph{exactly} the single-gadget Chernoff exponent
+$\max_s\{C_E(s)+dC_G(s)\}$, not merely an $\exp(-\Theta)$ rate.
 \end{theorem}
-\begin{theorem}[Forest minimax; $\vartheta$ in the near-aliasing class]\label{thm:forest}
-On the forest of $n$ disjoint depth-1 star gadgets, $\inf_{\hat R}\sup_\vartheta\E\,\mathcal L(\hat R,R)\asymp
-\Phi(\delta_E^2+d\,\delta_G^2)$, with matching per-gadget-Bayes (upper) and Assouad (lower) bounds, the gadgets
-being genuinely independent.
+\begin{theorem}[Branch-information sandwich and the known-channel field rate]\label{thm:sandwich}
+Writing each branch as the transition row passed through an observation channel, data processing gives, for every
+tilt $s$, $C_s\big((TO)_a,(TO)_b\big)\le C_s\big(G_a^{(\infty)},G_b^{(\infty)}\big)\le C_s(T_a,T_b)$: an entire
+branch reveals the centre state at most as well as the first hidden neighbour. Under the observability condition
+$C_s(T_a,T_b)\le K\,C_s((TO)_a,(TO)_b)$, therefore, the per-node Bayes error on \emph{any} bounded-degree tree
+satisfies $-\log P_e(v)=\Theta(\delta_E^2+d\,\delta_G^2)$, and the oracle field risk is
+$\mathcal R_{\mathrm{oracle}}\asymp\Phi(\delta_E^2+d\,\delta_G^2)$---with no spectral-gap, packing, or Assouad
+argument. If observability fails, deeper observations carry qualitatively new information: exactly the
+branching-de-aliasing regime of Prop.~\ref{prop:branch}.
 \end{theorem}
-\begin{theorem}[Connected-tree minimax, rate level, under contraction]\label{thm:connected}
-If $\lambda_2\equiv|\lambda_2(T)|<1$, then on a bounded-degree connected tree
-$\inf_{\hat R}\sup_\vartheta\E\,\mathcal L(\hat R,R)\asymp\Phi(\delta_E^2+d\,\delta_G^2)$. The lower bound follows
-from two facts: deeper subtree information \emph{saturates} ($C_G^{(\infty)}\le c_0 C_G^{(1)}$), so it changes only
-the constant; and flipping an antichain node's state perturbs the data at distance $\Delta$ by $O(\lambda_2^\Delta)$,
-so nodes at pairwise distance $\ge 2L_n$, $L_n\to\infty$, \emph{decouple} and Assouad's lemma applies at the
-per-node rate. The exact exponent constant is left open; the rate is pinned.
-\end{theorem}
-\noindent Three regimes follow: \emph{measurement-dominated} ($\delta_E^2\gg d\delta_G^2$),
-\emph{structure-dominated} ($\delta_E=0$, rate $d\delta_G^2$), and \emph{unidentifiable}
-($\delta_E^2+d\delta_G^2\to0$, risk $\to\tfrac12$).
+\noindent For \emph{unknown} $\vartheta$, the minimax risk is $\mathcal R_{\mathrm{oracle}}$ plus the singular
+estimation remainder governed by $\lambda=\sqrt n\,\delta_G^2$ (\S\ref{sec:singular}). Three regimes:
+\emph{measurement-dominated} ($\delta_E^2\gg d\delta_G^2$), \emph{structure-dominated} ($\delta_E=0$), and
+\emph{unidentifiable} ($\delta_E^2+d\delta_G^2\to0$, risk $\to\tfrac12$).
 
 \section{Two information axes: an $(n,d)$ phase diagram}\label{sec:phase}
 Local structural richness $d\,\delta_G^2$ governs whether the neighborhood can classify a node \emph{if the
@@ -171,10 +176,12 @@ second instrument; near the alias $C_E\to0$ and structure trades directly agains
 
 \section{Functional recovery without parameter identification}\label{sec:func}
 \begin{theorem}[Functional identifiability]\label{thm:func}
-$R_v=h(Z_v)$ is identified from the radius-$L$ neighborhood iff every pair $a,b$ with $h(a)\neq h(b)$ is
-structurally de-aliased. The recoverable functionals are exactly those measurable with respect to the coarsest
-emission-consistent lumpable partition; such an $R$ can be point-identified even when the latent state $Z$ and the
-emission channel $O$ are not.
+For a fixed oriented parameterization, $R_v=h(Z_v)$ is identified from the radius-$L$ neighborhood iff every pair
+$a,b$ with $h(a)\neq h(b)$ is structurally de-aliased; equivalently, the recoverable functionals are those constant
+on the observational-equivalence (emission-consistent lumpable) classes, and such an $R$ can be identified even
+when $Z$ and $O$ are not. In an \emph{unoriented} model, identification additionally requires invariance under all
+label automorphisms preserving the observed law (or an anchor). Distinguishing the classes is model-level
+identifiability---not exact recovery of an individual latent draw, whose error is $P_e>0$ (\S\ref{sec:rate}).
 \end{theorem}
 
 \section{Unknown parameters and the singular local regime}\label{sec:singular}
@@ -195,11 +202,12 @@ not identified by the data.
 thus $R=h(Z)$. Orientation costs $O(1)$ external information regardless of $n$: structure identifies how much the
 states differ, and very little side information suffices to orient them.
 \begin{proposition}[Boundary posterior]\label{prop:boundary}
-Along $\lambda=\sqrt n\,\delta_{G,n}^2\to\lambda_0$, the posterior for the localized $\psi$ converges to a Gaussian
-truncated at the boundary $\psi\ge0$, with location set by $\lambda_0$---interpolating Bernstein--von Mises
-($\lambda_0=\infty$) and prior ($\lambda_0=0$); the orientation posterior is a prior/anchor-fixed Bernoulli. The
-divergence between two priors' functional posteriors is an explicit function of $\lambda_0$, giving a
-``learned-versus-imposed'' diagnostic.
+By a local-asymptotic-normality expansion in $\psi$, along $\psi_n=\lambda_0/\sqrt n$ the posterior for the
+localized magnitude $h=\sqrt n\,\psi$ converges to $\N(\Delta/I_\psi,I_\psi^{-1})$ truncated to $[0,\infty)$, with
+$\Delta\sim\N(\lambda_0 I_\psi,I_\psi)$. The magnitude posterior is thus \emph{data-driven for every} $\lambda_0$
+(at $\lambda_0=0$ it is a data-driven truncated Gaussian, \emph{not} the prior); the permanently prior/anchor-fixed
+object is the \emph{orientation} (sign), a Bernoulli. Hence $|\eta|$ lives on the $n^{-1/4}$ scale, while signed
+$\eta$ is not estimable at any rate absent orientation.
 \end{proposition}
 
 \section{Illustration: bridge-blind retrieval}\label{sec:illus}
@@ -213,27 +221,26 @@ procedure can materially help---the observed null is the theorem's predicted cor
 \section{Discussion}
 Aliasing turns latent-state recovery into a genuinely two-dimensional problem---local structure versus population
 information---with a singular local regime at its boundary. The open items are constants rather than existence:
-the exact field exponent (matching $C_G^{(\infty)}$ upper and lower via the branch recursion), the exact
-boundary-posterior scale, and the sharp phase-diagram constants. The framework is not specific to language models;
-it applies wherever an automated or weak measurement channel aliases scientifically distinct states that behave
-differently in a known dependency structure.
+the exact within-$\Theta$ field constant, and the general-tree extension of the boundary-posterior scale
+$I_\psi(0)^{-1/2}$ (its shape is proved for the independent-star experiment). The framework is not specific to
+language models; it applies wherever an automated or weak measurement channel aliases scientifically distinct
+states that behave differently in a known dependency structure.
 
 \appendix
 \section{Proof sketches}
-\emph{Theorem~\ref{thm:rate}.} Conditional independence of the node emission and the $d$ neighbor subtrees given
-$Z_v$ makes the joint law a product; Hellinger affinities of products multiply and Chernoff exponents add under a
-shared tilt $s$; Bhattacharyya and Le Cam give the two-sided bound, Chernoff's theorem the sharp exponent, and the
-local CLT the $d^{-1/2}$ prefactor.\quad
-\emph{Theorem~\ref{thm:oracle}.} Marginal-mode optimality for additive $0$--$1$ loss; BP exactness on trees;
-$C_G^{(\ell)}$ increments decay at $\lambda_2$ by contraction.\quad
-\emph{Theorems~\ref{thm:forest}--\ref{thm:connected}.} Per-gadget/per-node Bayes upper bounds; Assouad lower
-bounds, valid on the forest by independence and on the connected tree by saturation plus $O(\lambda_2^\Delta)$
-correlation decay along a sparse antichain.\quad
+\emph{Theorem~\ref{thm:rate}.} Conditional independence of the node emission and the $d$ branches given $Z_v$ makes
+the joint law a product; Hellinger affinities multiply and Chernoff exponents add under a shared tilt; Bhattacharyya
+and Le Cam give the two-sided bound and Chernoff's theorem the sharp exponent.\quad
+\emph{Theorem~\ref{thm:forest}.} Uniform prior on the centre states gives Bayes risk $P_e$ (lower); independent
+per-gadget likelihood-ratio tests give $\le 2P_e$ (upper); hence the exact single-gadget Chernoff exponent.\quad
+\emph{Theorem~\ref{thm:sandwich}.} Each branch is a transition row through an observation channel, so the branch
+Chernoff information is sandwiched by data processing between the immediate-view and the transition-row values;
+observability makes both fences $\Theta(\delta_E^2+d\delta_G^2)$.\quad
 \emph{Proposition~\ref{prop:singular}.} The label-swap symmetry gives the even likelihood; reparametrizing to
-$\psi=\eta^2$ restores regularity, whence the $n^{-1/4}$ rate and the $\lambda=\sqrt n\,\delta_G^2$ index; the sign
-is a global relabeling the data cannot see.\quad
-\emph{Proposition~\ref{prop:boundary}.} Constrained Bernstein--von Mises in $\psi\ge0$; the truncation is
-irrelevant as $\lambda_0\to\infty$ and dominant as $\lambda_0\to0$.
+$\psi=\eta^2$ restores regularity, whence the $n^{-1/4}$ rate; the sign is a global relabeling the data cannot
+see.\quad
+\emph{Proposition~\ref{prop:boundary}.} LAN in $\psi$ with score $S=a/p_0$ and information $I_\psi$; Le~Cam's third
+lemma shifts the local score; a locally flat prior yields the truncated-Gaussian posterior for $h=\sqrt n\psi\ge0$.
 
 \smallskip\noindent\footnotesize\emph{Note.} This skeleton states the results in submission order; the companion
 working document records the derivations, numerical verification of every claim, and the empirical provenance.

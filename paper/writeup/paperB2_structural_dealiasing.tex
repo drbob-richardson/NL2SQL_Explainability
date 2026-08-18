@@ -30,13 +30,13 @@ node-level emission distributions coincide or nearly so---but the states partici
 dependency structure. Our main results are quantitative. We characterize the \emph{rate} at which structural
 observations de-alias the states: for a target node with $d$ conditionally-independent structural views the
 effective information combines measurement and structural separation as $\delta_E^2+d\,\delta_G^2$, with error
-decaying at the shared-$s$ Chernoff exponent between the structural signatures; and we lift this to a \emph{field
-minimax theorem}---estimating the functional field $\{h(Z_v)\}$ over a tree at minimax rate. The estimator is the
-belief-propagation marginal-mode field; for the lower bound we show that on a connected tree deeper subtree
-information only \emph{saturates} (changing the constant, not the rate) and distant nodes \emph{decouple}
-geometrically, so a correlation-decay Assouad argument matches the upper bound up to constants under a mild
-contraction condition. A clean transition separates measurement-dominated, structure-dominated, and
-unidentifiable regimes. We derive a \emph{measurement-design} law that prices structural
+decaying at the shared-$s$ Chernoff exponent between the structural signatures; and we lift this to the \emph{field
+problem} of estimating $\{h(Z_v)\}$ over a tree. The belief-propagation marginal-mode estimator is Bayes; the
+forest risk has \emph{exactly} the single-gadget Chernoff exponent ($P_e\le\mathcal R\le 2P_e$); and a
+data-processing \emph{branch-information sandwich}---an entire branch reveals a node at most as well as its first
+hidden neighbour, $C((TO)_a,(TO)_b)\le C^{(\infty)}\le C(T_a,T_b)$---pins the known-channel field rate on any tree
+under a mild observability condition, needing no spectral gap or Assouad. A clean transition separates
+measurement-dominated, structure-dominated, and unidentifiable regimes. We derive a \emph{measurement-design} law that prices structural
 observations against replication and additional instruments (first-order $nC_E+dC_G+mC_2$). A local
 weak-identification analysis reveals a \emph{singular} regime---by an exchangeability symmetry the likelihood is
 \emph{even} in the separation, so the identifiable parameter is $\psi=\delta_G^2$ (estimable at the singular rate
@@ -467,50 +467,52 @@ geometrically in branching, $0.241\!\to\!0.147$ as degree $2\!\to\!5$ (chance $0
 $-\log(\text{err}/\text{chance})/d\approx0.14$; three regimes: measurement-dominated $0.19$, structure-dominated
 $0.17$, unidentifiable $0.33\approx$ chance.}
 
-\begin{theorem}[Forest minimax; $\vartheta$ ranges over the near-aliasing class]\label{thm:forest}
-On the \emph{forest} $\Theta^\circ(\delta_E,\delta_G)$ of $n$ disjoint depth-$1$ star gadgets (each node's
-structural views truncated at radius $1$), the minimax risk for estimators \emph{knowing} $\vartheta$ is
-\emph{exactly} the star floor,
+\begin{theorem}[Forest risk, exact Chernoff exponent; $\vartheta$ known]\label{thm:forest}
+On the \emph{forest} of $n$ disjoint depth-$1$ star gadgets, the oracle risk is pinned two-sidedly by the
+single-gadget two-point Bayes error $P_e$:
 \[
-   \inf_{\hat R}\ \sup_{\vartheta\in\Theta^\circ}\ \E_\vartheta\,\mathcal L(\hat R,R)\ \asymp\
-   \Phi(\delta_E^2+d\,\delta_G^2),
+   P_e\ \le\ \mathcal R_{\mathrm{oracle}}(\mathrm{forest})\ \le\ 2P_e,
 \]
-with matching bounds: per-gadget Bayes (upper) and Assouad (lower)---now valid because the gadgets are
-\emph{genuinely independent} experiments. For estimators \emph{not} knowing $\vartheta$, add the estimation
-remainder $\varrho_n(\lambda)$ of Prop~\ref{prop:unknown}. Three regimes: \textbf{measurement-dominated}
-($\delta_E^2\gg d\delta_G^2$), \textbf{structure-dominated} ($\delta_E{=}0$), \textbf{unidentifiable}
-($\delta_E^2+d\delta_G^2\to0\Rightarrow$ risk $\to\tfrac12$).
+so it has \emph{exactly} the single-gadget Chernoff exponent $\max_s\{C_E(s)+dC_G(s)\}$ (not merely an
+$\exp(-\Theta)$ rate). \emph{Lower:} the uniform prior on centre states makes the Bayes risk $=P_e$;
+\emph{upper:} independent per-gadget likelihood-ratio tests give per-gadget error $\le\max(\alpha,\beta)\le
+\alpha+\beta=2P_e$. For \emph{unknown} $\vartheta$, add the remainder $\varrho_n(\lambda)$ of
+Prop~\ref{prop:unknown}. Three regimes: \textbf{measurement-dominated} ($\delta_E^2\gg d\delta_G^2$),
+\textbf{structure-dominated} ($\delta_E{=}0$), \textbf{unidentifiable} ($\delta_E^2+d\delta_G^2\to0$).
 \end{theorem}
-\begin{theorem}[Connected-tree field minimax, at the rate level, under contraction]\label{thm:connected}
-Assume $T$ is \emph{contractive}: $\lambda_2\equiv|\lambda_2(T)|<1$ (spectral gap / tree-mixing). On a
-bounded-degree \emph{connected} tree, the minimax per-node Hamming risk matches the oracle-model rate up to
-constants,
+\fbox{\parbox{\linewidth}{\small\color{workingnote}\textbf{Correction (review round 4).} An earlier version of
+this subsection proved the connected-tree rate via a ``saturation lemma'' ($C_G^{(\infty)}\le c_0 C_G^{(1)}$ under
+$\lambda_2<1$) plus a sparse-antichain Assouad argument. \emph{Both were wrong:} (i) spectral contraction along a
+path does not control aggregate information on a branching tree---and our own branching example
+(Thm~\ref{thm:branch}) shows $C_G^{(\infty)}\gg C_G^{(1)}$ is possible when the immediate channel is uninformative;
+(ii) a bounded-degree tree cannot hold $\Theta(n)$ nodes at pairwise distance $\ge2L_n$ with $L_n\to\infty$ (the
+packing number is $o(n)$). The correct treatment is the \emph{branch-information sandwich} below, which needs no
+spectral gap and no Assouad.}}
+\begin{theorem}[Known-channel field rate via the branch-information sandwich]\label{thm:connected}
+Write each branch as the first-neighbour transition row passed through an observation channel; by data processing,
+for every tilt $s$,
 \[
-   \inf_{\hat R}\ \sup_{\vartheta\in\Theta(\delta_E,\delta_G)}\ \tfrac1n\!\sum_v\E_\vartheta|\hat R_v-R_v|
-   \ \asymp\ \Phi(\delta_E^2+d\,\delta_G^2).
+   C_s\big((TO)_a,(TO)_b\big)\ \le\ C_s\big(G_a^{(\infty)},G_b^{(\infty)}\big)\ \le\ C_s(T_a,T_b)
 \]
+(an entire branch reveals $Z_v$ at most as well as its first hidden neighbour). Under the local observability
+condition $C_s(T_a,T_b)\le K\,C_s((TO)_a,(TO)_b)$, the per-node Bayes error on \emph{any} bounded-degree tree
+satisfies $-\log P_e(v)=\Theta(\delta_E^2+d\,\delta_G^2)$, so the oracle field risk (average nodewise error) is
+$\asymp\Phi(\delta_E^2+d\,\delta_G^2)$---with no mixing, packing, or Assouad argument.
 \end{theorem}
-\PROVEN{\emph{Proof via two ingredients, both verified.} \textbf{(I) Saturation.} The branch information
-$C_G^{(\ell)}$ increases in $\ell$ but its increments decay geometrically (at rate $\lambda_2$), so
-$C_G^{(1)}\le C_G^{(\infty)}\le c_0\,C_G^{(1)}$ with $c_0$ bounded (here $c_0\!\approx\!1.1$,
-\texttt{paperB\_subtree\_sim.py}); hence the per-node exponent $\delta_E^2+d\,C_G^{(\infty)}\asymp\delta_E^2+d\,
-\delta_G^2$ and the upper bound is Thm~\ref{thm:field}. \textbf{(II) Decoupling.} Flipping the state of an
-antichain node changes the data law at distance $\Delta$ by $O(\lambda_2^{\Delta})$ (correlation decay: the
-observable effect is $(T^{\Delta}O)_a$ vs.\ $(T^{\Delta}O)_b$, which contracts to the stationary law at rate
-$\lambda_2$; verified in \texttt{paperB\_lowerbound\_sim.py}, $\lambda_2{=}0.415$, TV $\lesssim\lambda_2^\Delta$).
-Take an antichain of $m=\Theta(n)$ nodes at pairwise distance $\ge2L_n$ with $L_n\to\infty$: each coordinate's flip
-has the full per-node signature (all $d$ branches, saturated), and cross-coordinate effects are $O(\lambda_2^{L_n})
-\to0$, so Assouad's per-coordinate TV terms equal the two-point rate up to $(1{+}o(1))$. Assouad's lemma then gives
-$\sum_j\E|\hat R_{v_j}-R_{v_j}|\ge c\,m\,\Phi(\delta_E^2+d\delta_G^2)$, i.e.\ average risk $\gtrsim
-\Phi(\delta_E^2+d\delta_G^2)$. \emph{Open:} the exact exponent constant (upper uses $C_G^{(\infty)}$, lower a
-bound); the \emph{rate} is pinned.}
+\PROVEN{Both sandwich inequalities are data-processing monotonicity of the Chernoff divergence (upper: the branch
+is $(T_a,T_b)$ pushed through the branch channel; lower: the first neighbour's own emission, law $(TO)_c$, is a
+coarsening of the branch). By conditional independence the per-node exponent is $\max_s\{C_E(s)+\sum_j C_s(\text{branch}_j)\}$,
+sandwiched between $\max_s\{C_E(s)+dC_s((TO))\}$ and $\max_s\{C_E(s)+dC_s(T)\}$; observability makes both fences
+$\Theta(\delta_E^2+d\delta_G^2)$. \textbf{Verified} (\texttt{paperB\_subtree\_sim.py}): $C((TO)_a,(TO)_b){=}0.116
+\le C^{(\infty)}{=}0.122\le C(T_a,T_b){=}0.226$, observability $K{=}1.94$.}
 \begin{intuition}
-This closes the reviewer's gap. The worry was that the optimal estimator, seeing the whole tree, beats the local
-rate. It does---but only by a \emph{constant} factor, because deeper information \emph{saturates} (I) and distant
-nodes \emph{decouple} (II). So the star Chernoff exponent is the minimax \emph{rate} on a connected tree (not just
-the forest), under the mild contraction $\lambda_2<1$. The forest theorem is the exact-constant version;
-Thm~\ref{thm:connected} is the general connected-tree rate. Either way the engine is the per-node exponent, and
-unknown $(T,O)$ add the weakly-identified remainder of \S\ref{sec:localbayes}.
+The reviewer's objection was right: the optimal estimator sees the whole tree, so disjoint-neighbourhood Assouad
+is invalid \emph{and} the packing is impossible. The clean replacement is that an infinite branch reveals $Z_v$ at
+most as well as its first hidden neighbour ($U_j\sim T_c$), so deeper structure changes only the constant---%
+\emph{unless} the immediate channel hides the transition-row contrast, which is exactly the branching-de-aliasing
+regime (Thm~\ref{thm:branch}) where observability fails. Known-channel field recovery thus needs no spectral gap
+and no antichain; the \emph{unknown}-channel minimax uses the independent forest (Thm~\ref{thm:forest}), where
+Assouad is exact, plus the weakly-identified remainder of \S\ref{sec:localbayes}.
 \end{intuition}
 
 \subsection{Unknown parameters: the estimation remainder \emph{is} weak identification}\label{sec:unknown}
@@ -590,24 +592,23 @@ $\Pr(\text{sign})$ from $0.50$ to $0.61$ and ten anchors to $0.97$, so orientati
 of $n$. The magnitude is the prior-insensitive part (regular $\sqrt n$ in $\psi$); the orientation is the
 prior/anchor-determined part---parameter-vs-decision recovery, now with the exact locus of prior-dependence named.
 It also revises \S\ref{sec:unknown}: the plug-in remainder and the posterior both live on $\lambda=\sqrt n\,\delta_G^2$.
-\begin{conjecture}[The boundary posterior]\label{conj:bayes}
-Along $\lambda=\sqrt n\,\delta_{G,n}^2\to\lambda_0$: the posterior for $\psi$ converges to a Gaussian
-\emph{truncated at the boundary} $\psi\ge0$, with non-centrality set by $\lambda_0$---interpolating
-Bernstein--von Mises ($\lambda_0{=}\infty$) and prior ($\lambda_0{=}0$); the label posterior is a fixed
-$\mathrm{Bernoulli}$ (prior/anchor); and $d_{\mathrm{TV}}\{\Pi_1(R\mid Y),\Pi_2(R\mid Y)\}$ for two priors is an
-explicit function of $\lambda_0$, zero at $\lambda_0{=}\infty$ and positive below---the ``learned-vs-imposed''
-diagnostic.
-\end{conjecture}
-\PROVEN{\textbf{Shape verified} (\texttt{paperB\_boundary\_sim.py}): the posterior of the localized parameter
-$u=\sqrt n\,\psi$ is $n$-\emph{stable} (its width is invariant across $n{=}10^3$--$1.6{\times}10^4$, confirming
-$\psi$ is $\sqrt n$-regular) and carries the truncation signature---at $\lambda_0{=}0$ the posterior mean sits at
-$+0.61$ above the boundary (a half-normal piled at $u{=}0$), and the boundary inflation shrinks toward $0$ as
-$\lambda_0$ grows (truncation becomes irrelevant $\Rightarrow$ Bernstein--von Mises). So the limit \emph{is} a
-Gaussian truncated at $u\ge0$ indexed by $\lambda_0$.}
-\CONJ{What remains is only the exact analytic \emph{constant}: the scale $I_\psi(0)^{-1/2}$ of the truncated
-Gaussian, from the $O(\psi)$ expansion of the tree-signature likelihood (the score in $\psi$ is the
-sibling-covariance contrast of Thm~\ref{thm:branch}) and the constrained Bernstein--von Mises theorem in
-$\psi\ge0$. Singular structure and limiting shape are now established/verified; this is a known-genre boundary-BvM
+\begin{proposition}[The boundary posterior]\label{conj:bayes}
+By local asymptotic normality in $\psi$ (score $S=a/p_0$, information $I_\psi$), along $\psi_n=\lambda_0/\sqrt n$
+the posterior for the localized magnitude $h=\sqrt n\,\psi$ converges to $\N(\Delta/I_\psi,I_\psi^{-1})$ truncated
+to $[0,\infty)$, with $\Delta\sim\N(\lambda_0 I_\psi,I_\psi)$ (Le~Cam's third lemma). \emph{Corrected
+interpretation:} the \emph{magnitude} posterior is data-driven for \emph{every} $\lambda_0$---at $\lambda_0{=}0$ it
+is a data-driven truncated Gaussian, \emph{not} the prior (the earlier ``interpolates between BvM and prior'' was
+wrong for the magnitude). The permanently prior/anchor-fixed object is the \emph{orientation} (sign), a
+$\mathrm{Bernoulli}$. Hence $|\eta|$ lives on the $n^{-1/4}$ scale; signed $\eta$ is not estimable at any rate
+without orientation.
+\end{proposition}
+\PROVEN{The LAN proof is in the proofs companion (\S boundary posterior). \textbf{Shape verified}
+(\texttt{paperB\_boundary\_sim.py}): the posterior of $u=\sqrt n\,\psi$ is $n$-\emph{stable} across
+$n{=}10^3$--$1.6{\times}10^4$ ($\psi$ is $\sqrt n$-regular) and \emph{data-driven} even at $\lambda_0{=}0$ (mean
+$+0.61$ above the boundary---a data-driven half-normal, not the prior), the boundary inflation vanishing as
+$\lambda_0$ grows.}
+\CONJ{What remains is only the general-tree extension of the exact scale $I_\psi(0)^{-1/2}$ (proved above for the
+independent-star experiment). This is a known-genre boundary-BvM
 calculation, no longer a leap. It is the Bayesian Analysis centrepiece.}
 
 \subsection{The $(n,d)$ phase diagram: two distinct ways de-aliasing fails}\label{sec:phase}
@@ -661,11 +662,11 @@ novel as the \emph{screen} for when structure can help \\
 \end{center}
 \noindent\textbf{Bottom line.} The qualitative backbone is largely a repackaging of bisimulation$=$lumpability and
 latent-tree identifiability, and we say so. The paper's weight rests on the \textbf{field results}
-(oracle-model rate Thm~\ref{thm:field} $+$ forest minimax Thm~\ref{thm:forest}, with the connected-tree lower
-bound the one flagged open item), the \textbf{near-aliasing rate} (Thm~\ref{thm:rate}), the \textbf{aliasing
-framing} no tree-identifiability result covers, the \textbf{$(n,d)$ phase diagram} (\S\ref{sec:phase}), the
-\textbf{design law} (Cor~\ref{cor:design}), and the \textbf{singular local asymptotics}
-(Prop~\ref{prop:singular}, Conj~\ref{conj:bayes}). We flag the latent-tree literature as large and phrase the
+(oracle-model rate Thm~\ref{thm:field}, \emph{exact-exponent} forest risk Thm~\ref{thm:forest}, and the
+branch-information-sandwich known-channel field rate Thm~\ref{thm:connected}), the \textbf{near-aliasing rate}
+(Thm~\ref{thm:rate}), the \textbf{aliasing framing} no tree-identifiability result covers, the \textbf{$(n,d)$
+phase diagram} (\S\ref{sec:phase}), the \textbf{design law} (Cor~\ref{cor:design}), and the \textbf{singular
+local asymptotics} (Prop~\ref{prop:singular}, Prop~\ref{conj:bayes}). We flag the latent-tree literature as large and phrase the
 aliasing-novelty as ``to our knowledge.''
 
 \section{The three empirical regimes as instances of one theory}\label{sec:regimes}
@@ -685,13 +686,13 @@ $\mathcal I_G$ axis of Theorem~\ref{thm:info}.
 Ordered by how much novelty each piece bears (audit-adjusted).
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
   \item \textbf{[CENTER] Field results (Thms~\ref{thm:field}--\ref{thm:connected}) $+$ unknown parameters
-  (Prop~\ref{prop:unknown}).} Oracle-model rate (marginal-mode BP, per-node $\Phi(\delta_E^2+d C_G^{(\infty)})$);
-  \emph{forest} minimax (star rate exactly minimax); and now the \textbf{connected-tree} minimax \emph{at the
-  rate level} (Thm~\ref{thm:connected}) via saturation $+$ correlation-decay Assouad, under the mild contraction
-  $\lambda_2(T)<1$---this settles the reviewer's gap at the rate. The unknown-parameter remainder is governed by
-  $\lambda=\sqrt n\,\delta_G^2$. \emph{Remaining:} the exact exponent constant $\Psi(n,d,\delta_E,\delta_G)$ (upper
-  uses $C_G^{(\infty)}$, lower a bound) and $\varrho_n(\lambda)$. The field theorem now has matching bounds on a
-  connected tree---the result that stops the work looking like a local test.
+  (Prop~\ref{prop:unknown}).} Oracle-model rate (marginal-mode BP); \emph{exact}-exponent forest risk
+  ($P_e\le\mathcal R\le2P_e$); and the \textbf{branch-information sandwich}
+  $C((TO)_a,(TO)_b)\le C^{(\infty)}\le C(T_a,T_b)$ (data processing) which pins the known-channel field rate on
+  \emph{any} tree under observability---\emph{replacing} the invalid saturation/correlation-decay-Assouad argument
+  of the previous draft (spectral contraction does not control tree-aggregate information, and the $\Theta(n)$
+  sparse antichain does not exist). The unknown-parameter remainder is governed by $\lambda=\sqrt n\,\delta_G^2$.
+  \emph{Remaining:} the exact within-$\Theta$ field constant and $\varrho_n(\lambda)$.
   \item \textbf{[ENGINE] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star (boundary
   $\delta_E^2+d\delta_G^2$, shared-$s$ Chernoff exponent); the local engine of the field theorem. Remaining:
   deep-subtree Chernoff on general trees. Position vs.\ Weiss--Nadler (no rates), Chang/AMR (distinct emissions).
@@ -701,20 +702,22 @@ Ordered by how much novelty each piece bears (audit-adjusted).
   \item \textbf{[PAYOFF] Functional recovery (Thm~\ref{cor:func})}: decision-not-parameter; recoverable
   functionals $=$ lumpable-measurable. Aliasing framing $+$ branching (Thm~\ref{thm:branch}) make it vivid but are
   not oversold.
-  \item \textbf{[BA ROUTE] Local weak identification (Prop~\ref{prop:singular}, Conj~\ref{conj:bayes})}: the
+  \item \textbf{[BA ROUTE] Local weak identification (Prop~\ref{prop:singular}, Prop~\ref{conj:bayes})}: the
   singular structure---even likelihood, $n^{-1/4}$ rate, $\lambda=\sqrt n\,\delta_G^2$ boundary, prior-fixed
-  label---is \emph{established/verified}; what remains is the exact boundary-BvM posterior form. Nuisance
-  (role label) non-regular while the functional is decision-consistent given an anchor. Potentially the most
-  distinctive piece; the stronger route if the general-graph minimax turns technical.
+  orientation---is \emph{established/verified}, and the boundary posterior is now \emph{proved} via LAN for the
+  independent-star experiment (magnitude data-driven, orientation prior-fixed); what remains is its general-tree
+  extension. Potentially the most distinctive piece; the stronger route if the general-graph minimax turns technical.
   \item \textbf{[SCAFFOLD] Lumpability boundary (Thm~\ref{thm:lump})}---cite bisimulation$=$lumpability, do not
   claim; use only to state the identifiability boundary.
 \end{enumerate}
-\noindent Per the review, we \emph{stop adding conceptual ingredients}. The connected-tree lower bound
-(Thm~\ref{thm:connected}) is now closed \emph{at the rate level} under contraction; what remains is
-\emph{constants}, not existence: \emph{(1)} the exact field exponent (matching $C_G^{(\infty)}$ upper and lower,
-via the branch recursion) rather than the up-to-constant rate; \emph{(2)} the exact boundary-BvM scale
-$I_\psi(0)^{-1/2}$ (shape already verified); \emph{(3)} the $(n,d)$ phase-diagram constants (\S\ref{sec:phase}).
-The conceptual synthesis and the rates are in place; the question is now the sharpness of the constants.
+\noindent Per the review (round 4), the field theory is rebuilt on the \textbf{branch-information sandwich}
+(exact, data-processing) rather than the invalid spectral-gap/Assouad route, and the forest risk is now
+\emph{exact}-exponent. What remains is \emph{constants}, not existence: \emph{(1)} the exact within-$\Theta$ field
+constant; \emph{(2)} the general-tree extension of the boundary-BvM scale $I_\psi(0)^{-1/2}$ (proved for the
+independent-star experiment); \emph{(3)} the $(n,d)$ phase-diagram constants. The rates and the conceptual
+synthesis are in place; the question is now the sharpness of the constants. \emph{The clean, correct theorem
+statements and full proofs are collected in the companion \texttt{paperB\_JASA\_skeleton.tex} and
+\texttt{paperB\_JASA\_proofs.tex}.}
 
 \paragraph{Ceiling assessment (audit-adjusted).} If the finished paper were mostly Thms~\ref{thm:dealias},
 \ref{thm:lump} and a star calculation, a T\&M referee who knows concurrency theory would rightly say the

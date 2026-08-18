@@ -73,6 +73,19 @@ def main():
         c, n = C_G(2, ell - 1, sgrid)
         print(f"    {ell:<12}{n:<9}{c:<14.4f}{c-prev:+.4f}"); prev = c
 
+    # BRANCH-BOTTLENECK SANDWICH (reviewer's replacement for the spectral-gap saturation lemma):
+    #   C_s((TO)_a,(TO)_b) <= C_s^{(inf)} <= C_s(T_a, T_b)   -- by data processing, EXACT, no spectral gap.
+    # An infinite branch reveals Z_v at most as well as the first hidden neighbour's state (row T_c).
+    def chern(p, q):
+        return max(-np.log((p ** s * q ** (1 - s)).sum()) for s in sgrid)
+    C1 = chern(T[A] @ O, T[B] @ O)          # C_s^{(1)}: immediate-measurement Chernoff (lower fence)
+    CT = chern(T[A], T[B])                   # C_s(T_a,T_b): first-neighbour-state Chernoff (upper fence)
+    cinf_chain, _ = C_G(1, 5, sgrid)
+    print(f"\n  BRANCH-BOTTLENECK SANDWICH:  C((TO)_a,(TO)_b) <= C^(inf) <= C(T_a,T_b)")
+    print(f"    lower fence C((TO)_a,(TO)_b) = {C1:.4f}   (=C_G^(1), immediate view)")
+    print(f"    chain C^(inf) (depth 6)      = {cinf_chain:.4f}   [inside the fence]")
+    print(f"    upper fence C(T_a,T_b)       = {CT:.4f}   (first hidden neighbour observed perfectly)")
+    print(f"    observability ratio K = C(T_a,T_b)/C((TO)_a,(TO)_b) = {CT/C1:.3f}  -> C^(inf) asymp C^(1) here.")
     c1 = C_G(1, 0, sgrid)[0]
     print(f"\n  => C_G^{{(1)}} (radius-1 view, the STAR rate) = {c1:.4f}.")
     print(f"     Deeper info GROWS then saturates to a finite C_G^{{(inf)}} (chain ~ {c_chain_inf:.4f}); branching")
