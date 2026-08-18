@@ -595,3 +595,10 @@ far from the anchor; more judgments don't rescue it. RR's instinct to push budge
 Added: Figure 2 (2 panels: A recall-vs-budget plateau; B total-gap-shrinks-vs-covariance-gap-flat, 95% bands),
 replaced the B=1-10 table with it. Abstract + intro + related-work + discussion updated to the budget-invariance
 framing. Draft 8pp, compiles clean, 0 undef.
+
+## BAGEL native-config confirmation: B=50 (25 warm + 25 active), BAGEL's EXACT published budget
+Ran BAGEL's exact native config to close the fairness door completely. At B=50 (half the N=100 pool judged):
+  BAGEL .578 | BAGEL+prior .585 | cosine-GP .677 | graph-GP .700 ; d(ours-BAGEL)=+0.122[.098,.145],
+  d(ours-+prior)=+0.114[.091,.138]. Even at its exact native budget BAGEL loses by +0.12 and the covariance gap is
+  still +0.114 -- unchanged from B=1. Extended the figure/JSON to B=1..50; paper now says 'from B=1 to BAGEL's
+  native B=50', plateau '~0.12 below ours even at its own native budget'. Fairness concern fully retired.
