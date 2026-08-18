@@ -1,88 +1,76 @@
-"""Verify the ALIGNMENT-LAW theorem for Paper A: the structural (graph-kernel) gain is a monotone function of
-graph-chain alignment, positive iff the graph is assortative on the reasoning chain (p>q), zero at p=q. $0.
+"""Verify the (CORRECTED) alignment-law theorem for Paper A. $0.
 
-Synthetic SBM retrieval instance (the theorem's model, not real data):
-  - N candidates; prior mean m: one ANCHOR (m=0.9, gold, findable), one BRIDGE (m=0.2, gold, BURIED below
-    distractors), the rest DISTRACTORS (m~U[0.3,0.5], not gold). k=2 gold; the bridge is the buried hop.
-  - Graph A ~ SBM: an edge within the reasoning chain (the gold pair) with prob p, any other edge with prob q.
-    Alignment = p - q (assortativity of the graph on the chain).
-  - Two kernels in correlation (unit-diagonal) form: GRAPH K_G=(I+lam L)^{-1}; EMBEDDING K_E = RBF on the prior
-    coordinate (so the buried bridge, m=0.2, is dissimilar to the anchor, m=0.9 -- the embedding buries it).
-  - Active loop: judge B=1 by UCB (picks the high-prior anchor), condition the GP, rank by posterior mean,
-    recall@k. Sweep p at fixed q and show graph-advantage over the embedding kernel vs (p-q): 0 at p=q, rising.
+Review caught that E[K_ba - max_d K_da] = beta[p-1+(1-q)^|D|] is NOT zero at p=q (the max over many distractors
+adds a penalty). The correct, cleaner theorem (reviewer's):
+  ONE-HOP exact: with unit-diagonal one-hop kernel and threshold 0<tau<beta, the bridge surfaces IFF A_ba=1 and
+    A_da=0 for all d, so  P(surface) = p (1-q)^|D|  (increasing in p, decreasing in q).
+  ALIGNMENT EXCESS vs a density-matched UNALIGNED graph (chain edge also at prob q):
+    Delta_align(p,q) = P_{p,q} - P_{q,q} = (p-q)(1-q)^|D|  ==> 0 at p=q, >0 iff p>q, linear in (p-q).
+  ACTUAL GMRF kernel K=(I+lam L)^{-1} (correlation-form): first-order expansion K_ij = lam A_ij + O(lam^2), so
+    E[K_ba - K_da] = lam (p-q) + O(lam^2)  -- a rigorous first-order alignment result for the real kernel.
+This script verifies all three, and that the raw surfacing is nonzero at p=q (an unaligned graph helps by luck)
+while the ALIGNMENT EXCESS is what vanishes.
 
   ./.venv/bin/python scripts/paperA_alignment_sim.py
 """
 from __future__ import annotations
 import numpy as np
 
-N = 30; SN2 = 0.05; BETA = 0.7; KATZ = 0.30; H = 0.22
+D = 10                                                   # number of distractors
+Q = 0.05                                                 # off-chain edge probability
 
 
 def corr(M):
     d = np.sqrt(np.clip(np.diag(M), 1e-12, None)); return M / np.outer(d, d)
 
 
-def instance(p, q, rng):
-    # anchor findable but UNSATURATED (m=0.5 -> big judgment signal y-m); bridge shallowly buried among distractors
-    m = np.concatenate([[0.50, 0.30], rng.uniform(0.30, 0.33, N - 2)])   # bridge shallowly buried in a tight cloud
-    gold = np.zeros(N); gold[0] = gold[1] = 1.0                        # anchor + bridge are the chain
-    A = np.zeros((N, N))
-    for i in range(N):
-        for j in range(i + 1, N):
-            pr = p if (gold[i] and gold[j]) else q
-            A[i, j] = A[j, i] = float(rng.random() < pr)
-    return m, gold, A
+def onehop_surface_rate(p, q, ntr, rng):
+    """Empirical P(surface) in the one-hop model: bridge surfaces iff edge(bridge,anchor) & no edge(distractor,anchor)."""
+    ba = rng.random((ntr,)) < p
+    da_none = np.all(rng.random((ntr, D)) >= q, axis=1)
+    return float(np.mean(ba & da_none))
 
 
-def K_graph(A):
-    rho = KATZ / (np.abs(np.linalg.eigvalsh(A)).max() + 1e-9)          # Katz/diffusion kernel, safely scaled
-    return corr(np.linalg.inv(np.eye(len(A)) - rho * A))
-
-
-def K_embed(m):
-    return corr(np.exp(-(m[:, None] - m[None, :]) ** 2 / (2 * H ** 2)))
-
-
-def gp_post(m, K, J, y):
-    J = list(J); KJJ = K[np.ix_(J, J)] + SN2 * np.eye(len(J)); Ki = np.linalg.inv(KJJ)
-    mu = m + K[:, J] @ (Ki @ (y[J] - m[J]))
-    var = np.clip(np.diag(K) - np.einsum('ij,jk,ik->i', K[:, J], Ki, K[:, J]), 0, None)
-    return mu, var
-
-
-def retrieve(m, K, gold, B):
-    N = len(m); k = int(gold.sum()); judged = []; y = np.zeros(N); mu, var = m.copy(), np.diag(K).copy()
-    for _ in range(B):
-        acq = mu + BETA * np.sqrt(var); rem = [i for i in range(N) if i not in set(judged)]
-        nxt = rem[int(np.argmax(acq[rem]))]; judged.append(nxt); y[nxt] = gold[nxt]   # oracle judge reveals gold
-        mu, var = gp_post(m, K, judged, y)
-    top = np.argsort(-mu)[:k]
-    return gold[top].sum() / k
+def gmrf_diff(p, q, lam, ntr, rng):
+    """Mean actual-GMRF (correlation-form) kernel differential K_ba - mean_d K_da over SBM graphs."""
+    n = 2 + D; diffs = []
+    for _ in range(ntr):
+        A = np.zeros((n, n))
+        A[0, 1] = A[1, 0] = float(rng.random() < p)      # 0=anchor,1=bridge (the chain)
+        for i in (0, 1):
+            for d in range(2, n):
+                A[i, d] = A[d, i] = float(rng.random() < q)
+        for i in range(2, n):
+            for j in range(i + 1, n):
+                A[i, j] = A[j, i] = float(rng.random() < q)
+        K = corr(np.linalg.inv(np.eye(n) + lam * (np.diag(A.sum(1)) - A)))
+        diffs.append(K[1, 0] - K[0, 2:].mean())
+    return float(np.mean(diffs))
 
 
 def main():
-    rng = np.random.RandomState(0); q = 0.05; ntr = 400
-    print(f"Alignment-law verification: SBM graph, chain-edge prob p vs off-chain q={q}; N={N}, B=1, k=2 gold.")
-    print(f"  (the buried bridge starts below distractors; it surfaces only if a judgment propagates to it)\n")
-    print(f"  {'p':<7}{'p-q':<8}{'K_ba-K_da':<12}{'graph rec':<11}{'embed rec':<11}{'graph advantage (CI)'}")
-    rows = []
-    for p in [0.05, 0.10, 0.20, 0.40, 0.60, 0.80, 1.00]:
-        adv = []; rg = []; re = []; diff = []
-        for _ in range(ntr):
-            m, gold, A = instance(p, q, rng); KG = K_graph(A)
-            diff.append(KG[1, 0] - KG[2:, 0].mean())                   # kernel differential: (bridge,anchor)-(distr,anchor)
-            g = retrieve(m, KG, gold, 1); e = retrieve(m, K_embed(m), gold, 1)
-            rg.append(g); re.append(e); adv.append(g - e)
-        adv = np.array(adv); se = adv.std() / np.sqrt(len(adv))
-        rows.append((p - q, adv.mean()))
-        print(f"  {p:<7.2f}{p-q:<8.2f}{np.mean(diff):<12.3f}{np.mean(rg):<11.3f}{np.mean(re):<11.3f}"
-              f"{adv.mean():+.3f} [{adv.mean()-1.96*se:+.3f},{adv.mean()+1.96*se:+.3f}]")
-    xs = np.array([r[0] for r in rows]); ys = np.array([r[1] for r in rows])
-    slope = np.polyfit(xs, ys, 1)[0]
-    print(f"\n  => graph advantage is ~0 at p=q and rises monotonically with alignment (p-q); slope {slope:+.3f}.")
-    print(f"     Positive iff p>q (assortative chain); the p>>q end is the oracle-clique ceiling, p~q is MuSiQue.")
-    print(f"     This is the alignment law: structure helps iff the graph is assortative on the reasoning chain.")
+    rng = np.random.RandomState(0); ntr = 40000
+    print(f"Corrected alignment law: |D|={D} distractors, off-chain q={Q}.\n")
+
+    print("(1) ONE-HOP surfacing probability  P(surface) = p (1-q)^|D|  (exact):")
+    print(f"    {'p':<7}{'empirical':<12}{'p(1-q)^|D|':<12}{'excess vs (q,q)':<17}{'(p-q)(1-q)^|D|'}")
+    base = onehop_surface_rate(Q, Q, ntr, rng)           # density-matched unaligned baseline P_{q,q}
+    for p in [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0]:
+        emp = onehop_surface_rate(p, Q, ntr, rng); pred = p * (1 - Q) ** D
+        exc = emp - base; exc_pred = (p - Q) * (1 - Q) ** D
+        print(f"    {p:<7.2f}{emp:<12.4f}{pred:<12.4f}{exc:<+17.4f}{exc_pred:+.4f}")
+    print(f"    => P(surface) matches p(1-q)^|D|; the ALIGNMENT EXCESS (p-q)(1-q)^|D| is 0 at p=q, linear in p-q.")
+    print(f"       (raw P(surface) at p=q is {base:.4f} > 0: an unaligned graph surfaces the bridge by luck; the")
+    print(f"        EXCESS due to alignment is what vanishes -- the statistically correct claim.)\n")
+
+    print("(2) ACTUAL GMRF kernel first-order:  E[K_ba - K_da] = lam (p-q) + O(lam^2)  (correlation-form):")
+    lam = 0.15
+    print(f"    lam={lam};  {'p-q':<9}{'measured E[K_ba-K_da]':<24}{'lam(p-q)':<12}{'ratio'}")
+    for p in [0.1, 0.3, 0.5, 0.8]:
+        meas = gmrf_diff(p, Q, lam, 3000, rng); pred = lam * (p - Q)
+        print(f"    {'':<4}{p-Q:<9.2f}{meas:<24.4f}{pred:<12.4f}{meas/max(pred,1e-9):.2f}")
+    print(f"    => the real GMRF kernel's anchor->bridge covariance advantage is ~lam(p-q) to first order:")
+    print(f"       a rigorous alignment result for the ACTUAL method, not a proxy kernel.")
 
 
 if __name__ == "__main__":

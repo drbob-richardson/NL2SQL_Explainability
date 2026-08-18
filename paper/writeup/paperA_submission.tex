@@ -66,10 +66,11 @@ $p-q$; the oracle ceiling and the adversarial failure are the two ends of one ax
 A corollary explains why UCB beats value-of-information (\S\ref{sec:acq}).
 \item \textbf{An honest empirical characterization} (\S\ref{sec:exp}) under a real hop-aware judge: a significant
 low-budget win on standard multi-hop; a partial rescue of adversarial MuSiQue via an LLM hop-assignment graph; and
-an analysis of why per-query adaptive routing does not deploy, yielding the simple ``always use the graph'' policy.
+an analysis of why per-query adaptive routing does not deploy, so that within the deep multi-hop regime studied a
+global graph policy is better supported than per-query routing.
 \end{enumerate}
 We do not claim large gains: effects are modest. We claim a principled account---\emph{when} structure helps and
-\emph{why}---and a method that is safe (never significantly hurts) and simple.
+\emph{why}---and a method that did not significantly hurt in the regimes we tested, and is simple.
 
 \section{Related work}\label{sec:rel}
 \emph{Active / Bayesian retrieval.} Our nearest neighbour is BAGEL, a query-specific GP-UCB over passage
@@ -108,14 +109,19 @@ We rank by $\mu$ (soft) rather than hard-pinning judged labels; with an imperfec
 label is catastrophic (a mislabeled gold is sunk), while the soft update degrades gracefully.
 
 \section{Acquisition: exploration, not information}\label{sec:acq}
-We select judgments by UCB, $\arg\max_i \mu_i+\beta\,\mathrm{sd}_i$. We tested principled alternatives---one-step
+We select judgments by UCB, $\arg\max_i \mu_i+\beta\,\mathrm{sd}_i$. Against principled alternatives---one-step
 value of information for chain completion ($1-\prod_j(1-p_j)$), two-step lookahead, pure information gain (maximum
-variance reduction), and pure exploration (maximum variance)---and \emph{all lose} to UCB on the graph kernel
-(chain-completion $-0.08$ to $-0.11$ at one judgment; two-step lookahead does not help). The reason, made precise
-by the alignment analysis below, is that the value of judging a high-prior anchor is not its own label but the
-\emph{downstream} surfacing of a connected bridge---an inherently multi-stage, non-myopic quantity that
-single-step VOI scores at nearly zero. UCB captures it because the mean term focuses exploration on the high-prior
-anchors along which belief propagates; kernel and acquisition are entangled, and the graph \emph{needs} UCB.
+variance reduction), and pure exploration (maximum variance)---UCB wins across the board on the graph kernel
+(chain-completion $-0.08$ to $-0.11$ at one judgment; two-step lookahead does not help either). We separate the
+mechanism from the empirical finding. \emph{Mechanism:} the value of judging a high-prior anchor is not its own
+label but the \emph{downstream} surfacing of a connected bridge (Lemma~\ref{lem:surface})---a delayed value that a
+myopic one-step completion objective structurally undervalues, which explains why one-step VOI loses. \emph{Open:}
+this does \emph{not} obviously explain why our two-step lookahead and information gain also lose---a faithful
+short-horizon policy should see the delayed value---so \emph{why optimism remains superior to short-horizon
+lookahead here is an empirical finding we do not fully explain.} What UCB does that the others miss is focus
+exploration, via its mean term, on the high-prior anchors along which belief propagates; kernel and acquisition
+are entangled, and the graph \emph{needs} UCB. (Theorem~\ref{thm:align} is a surfacing result conditional on
+judging the anchor; it is not itself an acquisition-optimality theorem.)
 
 \section{The alignment law}\label{sec:law}
 When does the graph help? We give an exact surfacing condition and lift it to a statistical law.
@@ -134,31 +140,42 @@ The mechanism is isolated: a judgment surfaces the bridge only through a kernel 
 anchor \emph{more} than it couples distractors. The embedding kernel has this differential $\le 0$ for a buried
 bridge, so it never surfaces it; the graph kernel can.
 
-\begin{theorem}[Structure helps iff chain-assortative]\label{thm:align}
-Let the graph be drawn from a stochastic block model with within-chain edge probability $p$ and off-chain $q$
-(alignment $p-q$). Then \emph{(i)} for the one-hop kernel $\corr(I+\beta A)$, $\E[K_{ba}-\max_d K_{da}]$ is
-strictly increasing in $p-q$ with leading term $\beta(p-q)$ and $0$ at $p=q$ (monotone for the diffusion kernel);
-\emph{(ii)} since the embedding kernel never surfaces the bridge, the expected structural gain
-$\Delta(p,q)=\Pr[\text{surface}\mid K^G]-\Pr[\text{surface}\mid K^E]$ is $0$ at $p=q$, positive iff $p>q$, and
-monotone increasing in $p-q$; \emph{(iii)} $q\to0,p\to1$ (gold clique) is the oracle-graph ceiling, and $p\approx
-q$ (edges independent of the chain---surface-similar distractors) gives $\Delta\approx0$.
+\begin{theorem}[Alignment law]\label{thm:align}
+Let the graph be a stochastic block model with within-chain edge probability $p$, off-chain $q$ (alignment
+$p-q$). \emph{(i) One-hop, exact.} For the one-hop kernel $\corr(I+\beta A)$ with $0<\tau<\beta$, the bridge
+surfaces iff $A_{ba}=1$ and $A_{da}=0\ \forall d$, so $\Pr(\text{surface})=p(1-q)^{|D|}$; the \emph{alignment
+excess} over a density-matched unaligned graph (chain edge also at rate $q$) is
+\[
+   \Delta_{\mathrm{align}}(p,q)=\Pr_{p,q}(\text{surface})-\Pr_{q,q}(\text{surface})=(p-q)\,(1-q)^{|D|},
+\]
+which is $0$ at $p=q$, positive iff $p>q$, and (fixed $q$) exactly linear in $p-q$. \emph{(ii) Actual GMRF, first
+order.} The method's kernel $\corr\big((I+\lambda L)^{-1}\big)$ has $\E[K_{ba}-K_{da}]=\lambda(p-q)+O(\lambda^2)$.
+\emph{(iii) Limits.} $q\to0,p\to1$ (gold clique) maximizes the excess; $p\approx q$ (edges independent of the
+chain---surface-similar distractors) gives $\Delta_{\mathrm{align}}\approx0$.
 \end{theorem}
-Proof in Appendix~\ref{app:proof}. We verify it on a synthetic SBM instance (Figure~\ref{fig:align}A): the graph
-advantage rises monotonically from $+0.007$ at $p=q$ to $+0.115$ at $p-q=0.95$, essentially $0$ at $p=q$, while the
-embedding kernel stays at chance. The real data (Figure~\ref{fig:align}B) trace the same law, from aligned
-(chained) through neutral (comparison) to the adversarial MuSiQue boundary.
+Proof in Appendix~\ref{app:proof}. Note the excess, not the raw surfacing probability, is what vanishes at $p=q$:
+an unaligned graph surfaces the bridge with probability $q(1-q)^{|D|}>0$ by chance, so the empirical gain at $p=q$
+is small but nonzero (Figure~\ref{fig:align}A); the alignment law governs the \emph{excess}. We verify all parts
+in \texttt{paperA\_alignment\_sim.py}: the one-hop rate matches $p(1-q)^{|D|}$, the excess matches
+$(p-q)(1-q)^{|D|}$, and the GMRF differential is $\propto p-q$. The real data (Figure~\ref{fig:align}B) trace the
+same law against empirical assortativity, from aligned (chained) through neutral (comparison) to the adversarial
+MuSiQue boundary.
 \begin{figure}[t]\centering
 \includegraphics[width=\linewidth]{fig_alignment.pdf}
-\caption{The alignment law. \textbf{(A)} Synthetic SBM: the graph kernel's gain rises with graph--chain alignment
-$p-q$ and is $\approx 0$ at $p=q$; the embedding kernel is at chance throughout. \textbf{(B)} Real graph$-$cosine
-margins under a real hop-aware judge: positive on chained (aligned), neutral on comparison, null for cheap graphs
-on adversarial MuSiQue, partially recovered by an LLM hop-assignment graph, up to the oracle ceiling. Bars are
-$95\%$ CIs.}\label{fig:align}
+\caption{The alignment law. \textbf{(A)} The alignment excess $(p-q)(1-q)^{|D|}$ vanishes at $p=q$ and is linear in
+$p-q$ (theory line and one-hop simulation), while the \emph{raw} surfacing probability $p(1-q)^{|D|}$ stays
+positive---an unaligned graph surfaces the bridge by chance, so the law governs the \emph{excess}, not the raw
+probability. \textbf{(B)} Empirical dose-response: real graph$-$cosine recall gain vs.\ empirical graph--chain
+assortativity $\hat p-\hat q$ across datasets and graph constructions---comparison ($\approx0$ assortativity,
+$\approx0$ gain), chained (high, positive), adversarial-MuSiQue cheap graphs (null) up to the oracle clique (max);
+the LLM hop-assignment graph slightly exceeds its global assortativity (better-placed edges). Bars are $95\%$ CIs.}
+\label{fig:align}
 \end{figure}
 \begin{remark}[Measurable alignment]
-In practice $p-q$ is estimated by \emph{gold-connectivity} (are gold passages connected to each other more than to
-distractors). Theorem~\ref{thm:align} explains why this single scalar predicts the gain, why the oracle ceiling
-and the adversarial failure are one axis, and why the effect saturates.
+In practice $p-q$ is estimated by the empirical graph--chain \emph{assortativity} $\widehat A=\hat p-\hat q$ (the
+gold--gold edge rate minus the gold--distractor edge rate); gold-connectivity alone estimates $\hat p$ only.
+Theorem~\ref{thm:align} explains why $\widehat A$ predicts the gain, why the oracle ceiling and the adversarial
+failure are one axis, and why the effect saturates.
 \end{remark}
 
 \section{Experiments}\label{sec:exp}
@@ -193,7 +210,8 @@ as a control, giving a mixed distribution ($300$ chained $+$ $300$ comparison). 
 ($+0.058\,[.040,.076]$ at $B{=}1$) and does \emph{not} help comparison (neutral to slightly negative,
 $\le 0$)---the boundary the theorem predicts, with the mechanism visible: comparison questions have a strong prior
 (passive recall $\sim0.8$; both entities directly findable, no bridge to propagate along). The oracle-graph
-ceiling is $+0.07$--$0.09$, and gold-connectivity tracks the per-regime gain.
+ceiling is $+0.07$--$0.09$, and the empirical assortativity $\hat p-\hat q$ tracks the per-regime gain
+(Figure~\ref{fig:align}B).
 
 \paragraph{Adversarial corpora: MuSiQue, and a partial rescue.} MuSiQue's distractors are made surface-similar to
 golds, so cheap graphs (title, entity-overlap, cosine-decomposition) have $p\approx q$ and are null
@@ -202,9 +220,15 @@ $+0.087\,[.05,.13]$---exactly the theorem's two ends. Following its prescription
 from the judge's \emph{own} reasoning: decompose the question into sub-questions and ask the judge which
 sub-question each pool passage answers, then connect passages on different hops. This recovers a significant
 $+0.035\,[.01,.06]$ at three hops---$\sim4\times$ the cosine graph and $\sim40\%$ of the oracle headroom, robust
-across graph constructions---where every surface graph is null. It is a partial rescue, concentrated in the deep
-multi-hop regime; a proof-of-concept that inferring structure from the judge's reasoning is the route to
-adversarial corpora.
+across graph constructions---where every surface graph is null. \emph{Budget accounting (important).} These
+hop-assignments are \emph{extra} LLM calls over the pool, outside the judgment budget $B$ that the retrieval
+methods share; we therefore report this as a \emph{structure-construction} experiment---evidence that a
+chain-assortative graph, once built, recovers the covariance gain the oracle predicts---\emph{not} as a
+budget-fair competitor. The budget-fair version is to elicit the hop/role assignment in the \emph{same} call as
+the relevance grade (one call per judged node returns \emph{(grade, role)}), turning graph construction into a
+by-product of the existing budget; realizing that adaptive ``judge $\to$ learn relevance $+$ role $\to$ update
+graph $\to$ choose next'' loop is the natural sequel. As reported, it is a proof-of-concept that inferring
+structure from the judge's reasoning is the route to adversarial corpora.
 
 \paragraph{Why not adapt per query? An honest negative.} A natural extension is a gold-free gate that decides
 per query whether to use the graph. It does not deploy, and the reason is instructive and robust to the kernel
@@ -232,16 +256,15 @@ on adversarial corpora without a gold-derived graph.
 
 \appendix
 \section{Proof of Theorem~\ref{thm:align}}\label{app:proof}
-\emph{(i)} After unit-diagonal normalization the one-hop kernel has $K_{ij}=\beta A_{ij}$ for $i\neq j$, so
-$\E[K_{ba}]=\beta p$, and the anchor--distractor edges being i.i.d.\ $\mathrm{Bernoulli}(q)$ gives
-$\E[\max_d K_{da}]=\beta(1-(1-q)^{|D|})$, whence $\E[K_{ba}-\max_d K_{da}]=\beta(p-1+(1-q)^{|D|})$: strictly
-increasing in $p$, decreasing in $q$, zero at $p=q$ to first order, $\le0$ for $p\le q$. The diffusion kernel adds
-$\rho^\ell$-weighted path counts, each increasing in $p$ relative to $q$, preserving sign and monotonicity.
-\emph{(ii)} By Lemma~\ref{lem:surface} the bridge surfaces under $K$ iff its differential exceeds $\tau>0$; the
-embedding differential is $\le0<\tau$, so the second term of $\Delta$ vanishes, and the first,
-$\Pr[K^G_{ba}-\max_d K^G_{da}>\tau]$, increases in $p-q$ by (i), is $0$ when the differential concentrates at $0$
-($p=q$), and positive once $p>q$. \emph{(iii)} At $q{=}0,p{=}1$ the differential is maximal; at $p=q$ it is $0$.
-\hfill$\square$
+\emph{(i)} The one-hop kernel has $K_{ij}=\beta A_{ij}$ for $i\neq j$, so by Lemma~\ref{lem:surface} surfacing
+requires $\beta(A_{ba}-\max_d A_{da})>\tau$; since $A\in\{0,1\}$ and $0<\tau<\beta$, this holds iff $A_{ba}=1$ and
+$\max_d A_{da}=0$. Independence of the edges gives $\Pr(\text{surface})=\Pr(A_{ba}=1)\prod_d\Pr(A_{da}=0)=
+p(1-q)^{|D|}$. The density-matched unaligned graph replaces $p$ by $q$, giving $q(1-q)^{|D|}$; subtracting yields
+$\Delta_{\mathrm{align}}=(p-q)(1-q)^{|D|}$, which is $0$ at $p=q$, positive iff $p>q$, and linear in $p-q$ at fixed
+$q$. \emph{(ii)} $(I+\lambda L)^{-1}=I-\lambda L+O(\lambda^2)$ with $L=D-A$, so the off-diagonal is
+$K_{ij}=\lambda A_{ij}+O(\lambda^2)$; correlation normalization divides by $\sqrt{K_{ii}K_{jj}}=1+O(\lambda)$ and
+preserves the first-order term, whence $\E[K_{ba}-K_{da}]=\lambda(p-q)+O(\lambda^2)$. \emph{(iii)} Immediate from
+$\Delta_{\mathrm{align}}=(p-q)(1-q)^{|D|}$: maximal at $q{=}0,p{=}1$, zero at $p=q$. \hfill$\square$
 
 \smallskip\noindent\footnotesize\emph{Reproducibility.} All experiments use cached judgments; scripts and the full
 experimental log accompany the submission. Total LLM spend for all runs reported here is under \$10.

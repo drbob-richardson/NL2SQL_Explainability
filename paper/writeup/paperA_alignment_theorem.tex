@@ -1,102 +1,108 @@
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb,amsthm,bm,hyperref,enumitem}
-\theoremstyle{plain}\newtheorem{theorem}{Theorem}\newtheorem{lemma}{Lemma}
+\theoremstyle{plain}\newtheorem{theorem}{Theorem}\newtheorem{lemma}{Lemma}\newtheorem{proposition}{Proposition}
 \theoremstyle{definition}\newtheorem{assumption}{Assumption}\newtheorem{remark}{Remark}
 \newcommand{\E}{\mathbb{E}}\newcommand{\Pf}{\mathbb{P}}\newcommand{\N}{\mathcal{N}}\newcommand{\corr}{\mathrm{corr}}
 \title{\textbf{The Alignment Law for Structure-as-Covariance Retrieval}\\[3pt]
-\large When a graph kernel helps active retrieval: a stochastic-block-model theorem (Paper A)}
+\large A surfacing lemma, an exact one-hop law, and a first-order result for the GMRF kernel (Paper A)}
 \author{Robert Richardson}\date{\today}
 \begin{document}\maketitle
 
-\noindent This note turns the paper's measured characterization---\emph{structure helps iff the graph aligns with
-the reasoning chain}---into a proved statement under a stochastic block model, with an exact surfacing lemma and
-numerical verification. It also explains, as corollaries, the oracle-graph ceiling and the adversarial (MuSiQue)
-boundary as the two ends of a single alignment axis.
+\noindent This note turns the measured characterization---\emph{structure helps iff the graph aligns with the
+reasoning chain}---into a proved statement. We give (i) an exact surfacing condition, (ii) an exact one-hop
+\emph{alignment law} for the excess surfacing probability, which is zero at zero alignment, positive iff the graph
+is chain-assortative, and linear in the alignment $p-q$, and (iii) a first-order alignment result for the
+\emph{actual} GMRF kernel used by the method. The oracle-graph ceiling and the adversarial (MuSiQue) boundary are
+the two ends of this axis.
 
 \section{Model}
 Candidates $[N]$ carry prior means $m_i\in[0,1]$ (calibrated retriever scores) and a positive-definite
-\emph{correlation-form} kernel $K$ ($K_{ii}=1$). Latent relevance is $f\sim\N(m,K)$; judging candidate $j$ reveals
-$y_j$ under Gaussian noise $\sigma^2$. The active retriever selects judgments by upper-confidence bound
-($\mathrm{UCB}_i=\mu_i+\beta\,\mathrm{sd}_i$), conditions the GP, and ranks by posterior mean; recall@$k$ is
-$|\text{top-}k\cap\text{gold}|/k$. We analyze the canonical multi-hop instance.
+correlation-form kernel $K$ ($K_{ii}=1$). Latent relevance is $f\sim\N(m,K)$; judging candidate $j$ reveals $y_j$
+under Gaussian noise $\sigma^2$. The active retriever selects judgments by UCB, conditions the GP, and ranks by
+posterior mean; recall@$k$ is $|\text{top-}k\cap\text{gold}|/k$.
 \begin{assumption}[Buried bridge]\label{ass:bridge}
 Gold $=\{a,b\}$ with $m_a=\max_i m_i$ (a \emph{findable anchor}) and $m_b<\min_{d\in D}m_d$ (a \emph{bridge}
-buried below the distractors $D$). Judging is informative: $y_a>m_a$.
+buried below the distractors $D$, $|D|=N-2$). Judging is informative, $y_a>m_a$.
 \end{assumption}
 
-\section{The one-step surfacing lemma}
-\begin{lemma}[Surfacing condition]\label{lem:surface}
-Under Assumption~\ref{ass:bridge}, with unit prior variances the first UCB pick is the anchor $a$. Conditioning on
-$y_a$, the correlation-form posterior mean is $\mu_i=m_i+\tfrac{K_{ia}}{1+\sigma^2}(y_a-m_a)$, and the bridge
-$b$ enters the top-$k$ (surfaces above every distractor) if and only if the \emph{kernel differential} exceeds the
-burial threshold,
+\section{The surfacing lemma}
+\begin{lemma}[Surfacing]\label{lem:surface}
+Under Assumption~\ref{ass:bridge}, with unit prior variances the first UCB pick is the anchor $a$; conditioning on
+$y_a$ gives $\mu_i=m_i+\tfrac{K_{ia}}{1+\sigma^2}(y_a-m_a)$, and the bridge enters the top-$k$ iff the
+\emph{kernel differential} exceeds the burial threshold,
 \[
-   K_{ba}-\max_{d\in D}K_{da}\ >\ \tau\ :=\ \frac{(1+\sigma^2)\,\big(\max_{d}m_d-m_b\big)}{\,y_a-m_a\,}.
+   K_{ba}-\max_{d\in D}K_{da}\ >\ \tau:=\frac{(1+\sigma^2)(\max_d m_d-m_b)}{y_a-m_a}\ >\ 0.
 \]
 \end{lemma}
 \begin{proof}
-With $K_{ii}=1$ and equal prior variances, $\mathrm{UCB}_i=m_i+\beta$ is maximized at $a$ (largest $m$), which is
-judged first. The single-point GP update at $J=\{a\}$ is $\mu_i=m_i+K_{ia}(K_{aa}+\sigma^2)^{-1}(y_a-m_a)=
-m_i+\tfrac{K_{ia}}{1+\sigma^2}(y_a-m_a)$. Since $a$ is gold, it holds top rank; $b$ takes the second slot iff
-$\mu_b>\mu_d$ for all $d\in D$, i.e.\ $m_b+\tfrac{K_{ba}}{1+\sigma^2}(y_a-m_a)>m_d+\tfrac{K_{da}}{1+\sigma^2}
-(y_a-m_a)$ for all $d$. Rearranging (using $y_a-m_a>0$) gives the stated threshold at the maximizing $d$.
+With $K_{ii}=1$ and equal prior variances $\mathrm{UCB}_i=m_i+\beta$ is maximized at $a$, judged first. The
+single-point update is $\mu_i=m_i+K_{ia}(1+\sigma^2)^{-1}(y_a-m_a)$; as $a$ is gold it holds top rank, and $b$
+takes the second slot iff $\mu_b>\mu_d\ \forall d$, i.e.\ $(K_{ba}-K_{da})\tfrac{y_a-m_a}{1+\sigma^2}>m_d-m_b$,
+which rearranges to the stated threshold at the maximizing $d$.
 \end{proof}
-The lemma isolates the mechanism: a judgment surfaces the buried bridge \emph{only} through a kernel that couples
-$b$ to the findable anchor \emph{more} than it couples the distractors---the differential $K_{ba}-\max_d K_{da}$.
-The threshold $\tau$ grows with the burial gap and noise and shrinks with the anchor's signal $y_a-m_a$.
 
 \section{The alignment law}
-Let the graph $A$ be drawn from a stochastic block model: an edge within the reasoning chain (the gold pair) with
-probability $p$, any other edge with probability $q$; the \emph{alignment} is $p-q$ (assortativity of the graph on
-the chain). Let $K^G$ be the induced correlation-form graph kernel and $K^E$ the embedding kernel, which is tied to
-the priors (candidates with similar retriever scores are similar).
-\begin{theorem}[Structure helps iff the graph is chain-assortative]\label{thm:align}
-Under Assumption~\ref{ass:bridge} and the SBM graph:
-\begin{enumerate}[label=(\roman*),leftmargin=*,itemsep=1pt]
-\item \emph{(Differential $\propto$ alignment.)} For the one-hop kernel $K^G=\corr(I+\beta A)$,
-$\E[K^G_{ba}-\max_d K^G_{da}]$ is a strictly increasing function of $p-q$ with leading term $\beta(p-q)$, and is
-$0$ at $p=q$; for the diffusion/Katz kernel $\corr\big((I-\rho A)^{-1}\big)$ it is monotone increasing in $p-q$
-with the same sign (higher-order paths add same-sign contributions).
-\item \emph{(Gain iff aligned.)} The embedding kernel has $K^E_{ba}-\max_d K^E_{da}\le 0$ for a buried bridge
-(its retriever similarity to the anchor is small), so it never surfaces $b$. Hence the expected structural gain
-$\Delta(p,q):=\Pf[b\text{ surfaces}\mid K^G]-\Pf[b\text{ surfaces}\mid K^E]$ is $0$ at $p=q$, is \emph{positive iff
-$p>q$}, and is monotone increasing in the alignment $p-q$.
-\item \emph{(The two ends of the axis.)} As $q\to0,\,p\to1$ (the gold clique) $\Delta$ attains the oracle-graph
-ceiling; at $p\approx q$ (edges independent of the chain---surface-similar distractors) $\Delta\approx0$.
-\end{enumerate}
+Let the graph be drawn from a stochastic block model: an edge within the chain (the gold pair $\{a,b\}$) with
+probability $p$ and any other edge with probability $q$; \emph{alignment} $=p-q$.
+\begin{theorem}[Exact one-hop alignment law]\label{thm:onehop}
+Consider the one-hop kernel $K=\corr(I+\beta A)$, so $K_{ij}=\beta A_{ij}$ for $i\neq j$, and suppose
+$0<\tau<\beta$. Then the bridge surfaces iff $A_{ba}=1$ and $A_{da}=0$ for all $d$, so
+\[
+   \Pf(\text{surface})=p\,(1-q)^{|D|},
+\]
+which is strictly increasing in $p$ and strictly decreasing in $q$. Relative to a \emph{density-matched unaligned}
+graph (chain edge also present with probability $q$), the \emph{alignment excess} is
+\[
+   \Delta_{\mathrm{align}}(p,q)\ :=\ \Pf_{p,q}(\text{surface})-\Pf_{q,q}(\text{surface})\ =\ (p-q)\,(1-q)^{|D|},
+\]
+which is $0$ at $p=q$, strictly positive iff $p>q$, and---holding $q$ fixed---exactly linear in the alignment
+$p-q$.
 \end{theorem}
 \begin{proof}
-\emph{(i)} After unit-diagonal normalization the one-hop kernel has $K^G_{ij}=\beta A_{ij}$ for $i\neq j$, so
-$\E[K^G_{ba}]=\beta p$ and $\E[K^G_{da}]=\beta q$; the anchor--distractor edges are i.i.d.\ $\mathrm{Bernoulli}(q)$,
-so $\E[\max_d K^G_{da}]=\beta\,\E[\max_d A_{da}]=\beta(1-(1-q)^{|D|})$, whence
-$\E[K^G_{ba}-\max_d K^G_{da}]=\beta\big(p-1+(1-q)^{|D|}\big)$, strictly increasing in $p$, decreasing in $q$, with
-first-order (small-$q$) value $\beta(p-q|D|\,{+}\,o(q))$; it vanishes on the diagonal $p=q$ to first order and is
-$\le0$ for $p\le q$. The Katz kernel adds $\rho^\ell$-weighted path counts, each with expectation increasing in $p$
-relative to $q$, preserving monotonicity and sign. \emph{(ii)} By Lemma~\ref{lem:surface}, $b$ surfaces under
-kernel $K$ iff its differential exceeds $\tau>0$; the embedding differential is $\le0<\tau$, so $b$ never surfaces
-and the second term of $\Delta$ is $0$. The first term $\Pf[K^G_{ba}-\max_d K^G_{da}>\tau]$ is increasing in $p-q$
-by (i) and the monotonicity of the threshold event, is $0$ when the differential concentrates at $0$ (i.e.\
-$p=q$), and positive once $p>q$ pushes the differential past $\tau$ with positive probability. \emph{(iii)} At
-$q=0,p=1$ the differential is maximal ($b$ deterministically connected to $a$, no distractor connected), the
-oracle-clique configuration; at $p=q$ it is $0$ by (i).
+By Lemma~\ref{lem:surface} and $K_{ij}=\beta A_{ij}$, surfacing requires $\beta(A_{ba}-\max_d A_{da})>\tau$; since
+$A\in\{0,1\}$ and $0<\tau<\beta$, this holds iff $A_{ba}=1$ and $\max_d A_{da}=0$. The edges are independent, so
+$\Pf(\text{surface})=\Pf(A_{ba}=1)\prod_{d}\Pf(A_{da}=0)=p(1-q)^{|D|}$. The density-matched unaligned graph replaces
+$p$ by $q$, giving $q(1-q)^{|D|}$; subtracting yields $(p-q)(1-q)^{|D|}$.
+\end{proof}
+\begin{remark}[The raw probability does \emph{not} vanish at $p=q$]
+At $p=q$ the raw surfacing probability is $q(1-q)^{|D|}>0$: an \emph{unaligned} random graph occasionally surfaces
+the bridge by luck. What the alignment law asserts is that the \emph{excess} due to alignment vanishes; this is the
+statistically correct statement and explains the small nonzero synthetic gain observed at $p=q$. (An earlier
+version claimed $\E[K_{ba}-\max_d K_{da}]=\beta[p-1+(1-q)^{|D|}]$ is zero at $p=q$ and positive iff $p>q$; both are
+false because of the maximum-over-distractors penalty. The excess formulation above is the correct object.)
+\end{remark}
+
+\begin{proposition}[First-order alignment for the actual GMRF kernel]\label{prop:gmrf}
+The method's kernel is the correlation form of the GMRF/CAR covariance $(I+\lambda L)^{-1}$, $L=D-A$. Its
+anchor-to-bridge covariance advantage over a random distractor is, to first order,
+\[
+   \E\big[K_{ba}-K_{da}\big]\ =\ \lambda\,(p-q)\ +\ O(\lambda^2).
+\]
+\end{proposition}
+\begin{proof}
+$(I+\lambda L)^{-1}=I-\lambda L+O(\lambda^2)$, and for $i\neq j$ the off-diagonal of $-\lambda L=-\lambda D+\lambda A$
+is $\lambda A_{ij}$, so $K_{ij}=\lambda A_{ij}+O(\lambda^2)$; correlation normalization divides by
+$\sqrt{K_{ii}K_{jj}}=1+O(\lambda)$ and preserves the first-order off-diagonal term. Taking expectations,
+$\E[K_{ba}]=\lambda p+O(\lambda^2)$ and $\E[K_{da}]=\lambda q+O(\lambda^2)$, giving the claim.
 \end{proof}
 
-\paragraph{Numerical verification} (\texttt{paperA\_alignment\_sim.py}). $N{=}30$, $q{=}0.05$, Katz kernel,
-$B{=}1$: the kernel differential rises $-0.001\to0.113$ and the graph advantage over the embedding kernel rises
-$+0.007\to+0.115$ as $p-q:0\to0.95$---monotone, essentially $0$ at $p=q$---while the embedding kernel stays at
-chance ($0.500$) throughout, unable to surface the buried bridge. The advantage is linear in $p-q$ (slope
-$\approx0.11$), matching Theorem~\ref{thm:align}(i)--(ii).
+\paragraph{Numerical verification} (\texttt{paperA\_alignment\_sim.py}, $|D|=10$, $q=0.05$). The one-hop
+surfacing rate matches $p(1-q)^{|D|}$ to Monte-Carlo error across $p\in[0.05,1]$; the excess matches
+$(p-q)(1-q)^{|D|}$, is $\approx 0$ at $p=q$ (empirical $-0.001$), and rises linearly to $+0.57$ at $p-q=0.95$. For
+the actual GMRF kernel ($\lambda=0.15$), $\E[K_{ba}-K_{da}]$ is proportional to $p-q$ with slope $\approx\lambda$
+(ratio $\approx 0.8$, the balance the $O(\lambda^2)$ term).
 
-\begin{remark}[Why UCB, not VOI]
-The anchor is judged first \emph{because} UCB weights the prior mean; a myopic value-of-information rule that
-scores only expected label information can judge elsewhere and forfeit the propagation that surfaces $b$. This is
-the mechanism behind the paper's ``UCB beats VOI'' finding: the value of the anchor judgment is not its own label
-but the \emph{downstream} surfacing it enables---an inherently non-myopic quantity.
-\end{remark}
 \begin{remark}[Measurable alignment]
-In practice the alignment $p-q$ is estimated by \emph{gold-connectivity}. Theorem~\ref{thm:align} explains why that
-single scalar predicts the structural gain, why the oracle-graph ceiling and the adversarial (MuSiQue) failure are
-the two ends of one axis, and why the effect is bounded: the gain saturates as $p-q\to$ its clique maximum.
+In practice $p-q$ is estimated by the empirical graph--chain \emph{assortativity}
+$\widehat A=\hat p-\hat q$ (gold--gold edge rate minus gold--distractor edge rate); gold-connectivity alone
+estimates $\hat p$ only. Theorem~\ref{thm:onehop} explains why $\widehat A$ predicts the gain, why the oracle-graph
+ceiling ($q\to0,p\to1$) and the adversarial failure ($p\approx q$) are the two ends of one axis, and why the
+effect saturates.
+\end{remark}
+\begin{remark}[Scope: this is a surfacing result, not an acquisition theorem]
+Lemma~\ref{lem:surface} and Theorem~\ref{thm:onehop} describe what happens \emph{conditional on judging the
+anchor}. They do not by themselves prove that UCB is the optimal acquisition rule; the empirical superiority of UCB
+over value-of-information and lookahead is reported separately and its full explanation is left open.
 \end{remark}
 \end{document}

@@ -503,3 +503,27 @@ Recomputed with normalized kernels (the correct method):
 DRAFT (paperA_submission.tex) updated with all correct normalized numbers; fig_alignment.pdf regenerated. This
 correction STRENGTHENS the paper (bigger, all-budget-significant headline; sharper alignment law) while the
 routing negative survives -- exactly the honesty we want before submission.
+
+## REVIEW ROUND: THEOREM REPAIR + figure + honesty fixes (Paper A)  [paperA_alignment_sim.py, paperA_assortativity.py]
+Reviewer caught Theorem 1 is FALSE as written: E[K_ba - max_d K_da] = beta[p-1+(1-q)^|D|] is NOT zero at p=q
+(the max-over-distractors adds a penalty), so 'positive iff p>q' is wrong. Adopted the reviewer's cleaner correct
+theorem (verified paperA_alignment_sim.py, |D|=10, q=.05):
+  ONE-HOP EXACT: bridge surfaces iff A_ba=1 AND A_da=0 forall d => P(surface)=p(1-q)^|D| (empirical matches).
+  ALIGNMENT EXCESS vs density-matched unaligned graph (chain edge also at q): Delta=(p-q)(1-q)^|D| -- ZERO at p=q,
+    >0 iff p>q, LINEAR in p-q (matches). The RAW surfacing is q(1-q)^|D|>0 at p=q (graph helps by luck); the
+    EXCESS is what vanishes -- the statistically correct claim, and explains the small nonzero synthetic gain.
+  ACTUAL GMRF kernel (not the proxy corr(I+beta A)): (I+lam L)^{-1}=I-lam L+O(lam^2) => K_ij=lam A_ij+O(lam^2),
+    corr-normalization preserves it => E[K_ba-K_da]=lam(p-q)+O(lam^2). Rigorous first-order alignment for the REAL
+    kernel (verified, slope ~lam). Dropped the bogus 'diffusion paths preserve sign/monotonicity' hand-wave.
+Also: (a) FIGURE 1 rebuilt -- panel A = corrected excess-vanishes-at-p=q; panel B = empirical DOSE-RESPONSE, real
+graph-cos gain vs empirical ASSORTATIVITY p_hat-q_hat (not gold-connectivity, which is p_hat only) across
+datasets: Hotpot-ch (p-q=0.748, +0.053), 2Wiki-ch (0.588, +0.016), comparison (~0, ~0/neg), MuSiQue cosine
+(0.272,+0.008)/hop-assign(0.216,+0.035)/oracle(1.0,+0.087). Rough positive dose-response; hop-assign slightly
+exceeds its global assortativity (better-PLACED edges -- honest wrinkle). (b) UCB story SOFTENED+HONEST: mechanism
+(delayed value undervalued by 1-step VOI) explains 1-step; but 2-step lookahead ALSO loses => 'why optimism beats
+short-horizon lookahead is an empirical finding we do not fully explain' (open); NOT a theorem corollary. (c)
+MuSiQue BUDGET-FAIRNESS made explicit: hop-assignment uses EXTRA calls outside budget B -> labeled a
+structure-CONSTRUCTION experiment (not budget-fair competitor); the fair version = elicit (grade, role) in the
+SAME judge call (the adaptive sequel). (d) Wording: 'safe (never sig hurts)' -> 'did not sig hurt in the regimes
+tested'; 'always use the graph' -> 'global graph policy better supported than per-query routing in the multi-hop
+regime'; gold-connectivity -> assortativity p_hat-q_hat. Draft now 7pp, compiles. Theorem soundness = fixed.
