@@ -18,25 +18,16 @@ data/*_backup.json
 # Third-party / copyrighted material (not ours to redistribute)
 *.pdf
 
-# LaTeX build artifacts
-paper/tex/*.aux
-paper/tex/*.log
-paper/tex/*.out
-paper/tex/*.toc
-paper/tex/*.fls
-paper/tex/*.fdb_latexmk
-paper/tex/*.synctex.gz
-paper/tex/*.bbl
-paper/tex/*.blg
-paper/writeup/*.aux
-paper/writeup/*.log
-paper/writeup/*.out
-paper/writeup/*.toc
-paper/writeup/*.fls
-paper/writeup/*.fdb_latexmk
-paper/writeup/*.synctex.gz
-paper/writeup/*.bbl
-paper/writeup/*.blg
+# LaTeX build artifacts (any paper subdir)
+paper/**/*.aux
+paper/**/*.log
+paper/**/*.out
+paper/**/*.toc
+paper/**/*.fls
+paper/**/*.fdb_latexmk
+paper/**/*.synctex.gz
+paper/**/*.bbl
+paper/**/*.blg
 
 # abandoned partial Gemini caches (billing never activated)
 data/bird_verify_gemini*

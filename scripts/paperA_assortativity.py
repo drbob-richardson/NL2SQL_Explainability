@@ -52,7 +52,7 @@ def main():
     print("\n  MuSiQue points (from musique_hopassign_graph, 3-hop): cosine-decomp p-q=0.272 gain +0.008;")
     print("  LLM hop-assign p-q=0.216 gain +0.035; oracle-clique p-q=1.000 gain +0.087.")
     json.dump([{"label": p[0], "pq": p[1], "gain": p[2], "lo": p[3], "hi": p[4]} for p in pts],
-              open(os.path.join(ROOT, "paper", "writeup", "assort_points.json"), "w"), indent=1)
+              open(os.path.join(ROOT, "paper", "4-graphrag-A", "assort_points.json"), "w"), indent=1)
     print("  wrote assort_points.json")
 
 

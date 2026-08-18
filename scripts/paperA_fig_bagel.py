@@ -17,7 +17,7 @@ ROOT = os.path.join(os.path.dirname(__file__), "..")
 
 
 def main():
-    R = json.load(open(os.path.join(ROOT, "paper", "writeup", "bagel_results.json")))
+    R = json.load(open(os.path.join(ROOT, "paper", "4-graphrag-A", "bagel_results.json")))
     B = sorted(int(b) for b in R)
     def series(key): return np.array([R[str(b)]["recall"][key] for b in B])
     fig, (a, b) = plt.subplots(1, 2, figsize=(8.6, 3.3))
@@ -48,7 +48,7 @@ def main():
     b.legend(fontsize=7.6, loc="upper right", frameon=False); b.grid(alpha=0.25); b.set_ylim(-0.02, 0.30)
 
     fig.tight_layout()
-    out = os.path.join(ROOT, "paper", "writeup", "fig_bagel.pdf")
+    out = os.path.join(ROOT, "paper", "4-graphrag-A", "fig_bagel.pdf")
     fig.savefig(out, bbox_inches="tight"); print(f"wrote {out}")
 
 

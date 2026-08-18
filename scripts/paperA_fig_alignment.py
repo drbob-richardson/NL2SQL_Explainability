@@ -34,7 +34,7 @@ def panelA(ax):
 
 
 def panelB(ax):
-    pts = json.load(open(os.path.join(ROOT, "paper", "writeup", "assort_points.json")))
+    pts = json.load(open(os.path.join(ROOT, "paper", "4-graphrag-A", "assort_points.json")))
     # + MuSiQue points (3-hop) from musique_hopassign_graph
     pts += [{"label": "MuSiQue cosine", "pq": 0.272, "gain": 0.008, "lo": -0.02, "hi": 0.03},
             {"label": "MuSiQue hop-assign", "pq": 0.216, "gain": 0.035, "lo": 0.01, "hi": 0.06},
@@ -63,7 +63,7 @@ def main():
     fig, (a, b) = plt.subplots(1, 2, figsize=(8.4, 3.3))
     panelA(a); panelB(b)
     fig.tight_layout()
-    out = os.path.join(ROOT, "paper", "writeup", "fig_alignment.pdf")
+    out = os.path.join(ROOT, "paper", "4-graphrag-A", "fig_alignment.pdf")
     fig.savefig(out, bbox_inches="tight"); print(f"wrote {out}")
 
 

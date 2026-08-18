@@ -1,52 +1,53 @@
 # Papers index
 
-Five papers live in this repo. This index maps each to its venue, status, and files so nothing gets
-lost across the `paper/`, `paper/writeup/`, `paper/tex/`, `paper-overleaf*/`, and `scripts/` locations.
-(Last updated 2026-08-18.)
+Five papers live in this repo, now organized into per-paper folders under `paper/`. This index maps each
+to its venue, status, and files. (Last updated 2026-08-18.)
 
-| # | Short name | Venue | Status | Deadline |
-|---|---|---|---|---|
-| 1 | **Text2SQL UQ** — selective prediction / SQL-correctness verifiers | **TMLR** | In revision (3 reviews: 2 addressable + 1 positive) | rolling |
-| 2 | **Bayes Schema Subgraph** — hierarchical autologistic schema-subset selection | **JASA A&CS** | Submitted (reframed after Bayesian Analysis reject; AoAS backup) | — |
-| 3 | **How can Bayes help retrieval** — broad thesis-driven synthesis | **JRSS (invited Discussion/Read Paper)** | Drafting; cites #2, #4 rather than reproducing | **20 Nov 2026** |
-| 4 | **GraphRAG "Paper A"** — structure-as-covariance active retrieval | **AISTATS** | Draft firmed (BAGEL head-to-head, alignment law); review items addressed | — |
-| 5 | **"Paper B"** — structural de-aliasing under differential misclassification | **JASA T&M** | Theory near-complete (rate + field minimax + singular local regime) | — |
+| # | Short name | Venue | Status | Deadline | Folder |
+|---|---|---|---|---|---|
+| 1 | **Text2SQL UQ** — selective prediction / SQL-correctness verifiers | **TMLR** | In revision (3 reviews: 2 addressable + 1 positive) | rolling | `paper/1-text2sql-uq/` |
+| 2 | **Bayes Schema Subgraph** — hierarchical autologistic schema-subset selection | **JASA A&CS** | Submitted (reframed after Bayesian Analysis reject; AoAS backup) | — | `paper/2-subgraph/` |
+| 3 | **How can Bayes help retrieval** — broad thesis-driven synthesis | **JRSS (invited Discussion/Read Paper)** | Drafting; cites #2, #4 rather than reproducing | **20 Nov 2026** | `paper/3-retrieval-jrss/` |
+| 4 | **GraphRAG "Paper A"** — structure-as-covariance active retrieval | **AISTATS** | Draft firmed (BAGEL head-to-head, alignment law); review items addressed | — | `paper/4-graphrag-A/` |
+| 5 | **"Paper B"** — structural de-aliasing under differential misclassification | **JASA T&M** | Theory near-complete (rate + field minimax + singular local regime) | — | `paper/5-dealiasing-B/` |
 
 ## Where each paper's files are
 
-### 1. Text2SQL UQ  →  TMLR
-- **Paper:** `paper/tex/paper1_correctness.tex` (local) · `paper-overleaf/` (Overleaf sync clone)
-- **Plan / revision:** `paper/paper1_correctness_uq.md` · `paper-overleaf/REVISION_LOG.md`
+### 1. Text2SQL UQ  →  TMLR — `paper/1-text2sql-uq/`
+- **Paper:** `paper1_correctness.tex` (+ `references.bib`) — *authoritative submission copy is the Overleaf clone `paper-overleaf/`*; `paper.tex` is a legacy alt draft (shares `references.bib`)
+- **Plan:** `paper1_correctness_uq.md` · revision log `paper-overleaf/REVISION_LOG.md`
 - **Scripts:** `scripts/bird_*.py`, `scripts/paper1_*.py`, `scripts/verifier_probe.py`; `server_experiments/exp*.py`
-- **Open (GPU):** Table-4 CIs (reviewer #8) — prepped in `server_experiments/RUN_TABLE4_CIS.md`; handoff `server_experiments/NOTE_FOR_SERVER_CLAUDE.md`
-- **Thesis:** what predicts SQL execution-correctness is *verification* (reasoning judges), not black-box statistical UQ; independent-provider judges ensemble to AUROC 0.82; trained verifiers overfit schemas and don't transfer.
+- **Open (GPU):** Table-4 CIs (reviewer #8) — `server_experiments/RUN_TABLE4_CIS.md`; handoff `server_experiments/NOTE_FOR_SERVER_CLAUDE.md`
+- **Thesis:** what predicts SQL correctness is *verification* (reasoning judges), not black-box statistical UQ; independent-provider judges ensemble to AUROC 0.82; trained verifiers overfit schemas and don't transfer.
 
-### 2. Bayes Schema Subgraph  →  JASA A&CS
-- **Paper:** `paper-overleaf-subgraph/` (Overleaf clone — do not move)
-- **Plans:** `paper/bayes_subgraph_stats_plan.md`, `paper/schema_linking_uq.md`, `paper/paper2_*.md`
+### 2. Bayes Schema Subgraph  →  JASA A&CS — `paper/2-subgraph/`
+- **Paper:** Overleaf clone `paper-overleaf-subgraph/` (do not move); local `recovery_theorem.tex` (graph-coupling recovery theorem)
+- **Plans:** `bayes_subgraph_stats_plan.md`, `schema_linking_uq.md`, `paper2_schema_linking.md`, `paper2_bnp_decision_exploration.md`, `paper2_options_and_roadmap.md`, `paper2_theorem1_sketch.md`
 - **Scripts:** `scripts/bayes_subgraph_*.py`, `scripts/bayes_schema_*.py`, `scripts/ambrosia_*.py`
 - **Thesis:** hierarchical autologistic schema-subset selection + asymmetric-cost decision rule (containment set, coverage guarantee); scales to 97-table BEAVER.
 
-### 3. How can Bayes help retrieval  →  JRSS Discussion (Read) Paper  *(due 20 Nov 2026)*
-- **Paper:** `paper/tex/tas_bayes_ir.tex` (+ `tas_refs.bib`) · `paper-overleaf-tas/` (Overleaf clone — do not move)
-- **Plan:** `paper/tas_bayes_ir.md`
+### 3. How can Bayes help retrieval  →  JRSS Discussion (Read) Paper — `paper/3-retrieval-jrss/`  *(due 20 Nov 2026)*
+- **Paper:** `tas_bayes_ir.tex` (+ `tas_refs.bib`) — *authoritative copy is the Overleaf clone `paper-overleaf-tas/`*
+- **Plans:** `tas_bayes_ir.md`, `research_program.md`, `retrieval_exploration.md`, `hier_fewshot.md`
 - **Note:** reframe from "retrieval audit" to a thesis-driven Read Paper; **cite, don't reproduce** #2 (BEAVER) and #4. May wait until #4/#5 firm up.
 
-### 4. GraphRAG "Paper A"  →  AISTATS
-- **Paper:** `paper/writeup/paperA_submission.tex` (+ `fig_alignment.pdf`, `fig_bagel.pdf`); theorem note `paper/writeup/paperA_alignment_theorem.tex`
-- **Plan / running log:** `paper/active_retrieval_plan.md`
-- **Scripts:** `scripts/graphrag_*.py`, `scripts/paperA_*.py`, `scripts/musique_*.py`
+### 4. GraphRAG "Paper A"  →  AISTATS — `paper/4-graphrag-A/`
+- **Paper:** `paperA_submission.tex` (+ `fig_alignment.pdf`, `fig_bagel.pdf`, data `assort_points.json`, `bagel_results.json`); theorem note `paperA_alignment_theorem.tex`; older draft `paperA_active_graph_retrieval.tex`
+- **Plan / running log:** `active_retrieval_plan.md`; related `ecir_plan.md`
+- **Scripts:** `scripts/graphrag_*.py`, `scripts/paperA_*.py`, `scripts/musique_*.py` — the `paperA_fig_*.py`/`paperA_bagel.py`/`paperA_assortativity.py` write figs+data into this folder
 - **Parked (GPU):** N=500 larger-pool BAGEL runs (fairness bulletproofing) — not urgent
 - **Thesis:** the corpus graph is useless for ranking but load-bearing as the GP *covariance* (semantics sets the mean, structure sets the dependence); beats a faithful BAGEL at matched budget, with a budget-invariant covariance gap.
 
-### 5. "Paper B"  →  JASA T&M
-- **Paper (submission):** `paper/writeup/paperB_JASA_skeleton.tex` + proofs `paper/writeup/paperB_JASA_proofs.tex`; working doc `paper/writeup/paperB2_structural_dealiasing.tex`
-- **Plans:** `paper/paper2_bnp_decision_exploration.md`, `paper/paper2_theorem1_sketch.md`
+### 5. "Paper B"  →  JASA T&M — `paper/5-dealiasing-B/`
+- **Paper (submission):** `paperB_JASA_skeleton.tex` + proofs `paperB_JASA_proofs.tex`; working doc `paperB2_structural_dealiasing.tex`; measurement-error framing `paperB_llm_oracle_measurement_error.tex`
+- **Plans:** in `paper/2-subgraph/` some `paper2_*` overlap; B-specific exploration lives with the drafts here
 - **Scripts:** `scripts/paperB_*.py` (rate / branch / field / unknown / lan / subtree / boundary / lowerbound sims)
 - **Thesis:** when a biased oracle's errors mimic true negatives, measurements are structurally silent about the bias, so the correction must come from inter-item dependence; near-aliasing minimax rate + field minimax + singular n^{-1/4} local regime.
 
 ## Repo layout notes
-- `paper-overleaf/`, `paper-overleaf-subgraph/`, `paper-overleaf-tas/` are **separate Overleaf git-bridge clones** (own `.git`). Edit/commit inside them; don't relocate.
-- `scripts/` (~170 files) share `data/` and cross-import; classify by the prefixes above.
-- `server_experiments/` = GPU jobs for #1 (trained-verifier experiments).
-- Legacy / unclassified: `paper/tex/paper.tex`, `paper/tex/recovery_theorem.tex` (verify before reusing).
+- `paper/_shared/` — cross-cutting docs (`CHECKPOINT.md`, `lit_review.md`); `paper/_archive/` — superseded early "BNP-over-query-graph" drafts (`manuscript/master/methods/theory.md`).
+- `paper/figures/` — **shared** figure outputs (paper1_*, schema_growth, phase_transition_*, reliability_*); `paper1_correctness.tex` references these via `../figures/`.
+- `paper/tex/` and `paper/writeup/` — now hold only legacy build artifacts (sources moved out); safe to delete later.
+- `paper-overleaf/`, `paper-overleaf-subgraph/`, `paper-overleaf-tas/` are **separate Overleaf git-bridge clones** (own `.git`) — the authoritative submission copies for #1/#2/#3. Edit/commit inside them; don't relocate.
+- `scripts/` (~170 files) share `data/`; classify by the prefixes above. `server_experiments/` = GPU jobs for #1.
+- Compile a draft from inside its folder, e.g. `cd paper/4-graphrag-A && pdflatex paperA_submission.tex`.

@@ -168,7 +168,7 @@ def main():
                    "gminusbagel": [gb, gbc[0], gbc[1]], "gminusbagelprior": [gp2, gp2c[0], gp2c[1]],
                    "gminusbagel_comp": [cb, cbc[0], cbc[1]]}
     if WARM == "half":
-        json.dump(dump, open(os.path.join(ROOT, "paper", "writeup", "bagel_results.json"), "w"), indent=1)
+        json.dump(dump, open(os.path.join(ROOT, "paper", "4-graphrag-A", "bagel_results.json"), "w"), indent=1)
         print("  wrote bagel_results.json")
 
 
