@@ -26,13 +26,17 @@ graph covariance---together with the initially surprising finding that the graph
 optimistic exploration reaches the propagating anchors. \emph{(ii)} An \emph{alignment law}: we prove, under a
 stochastic block model, that the structural gain is zero when the graph is unaligned with the reasoning chain,
 positive iff the graph is chain-\emph{assortative}, and monotone in a scalar alignment $p-q$ estimated in practice
-by \emph{gold-connectivity}; the oracle-graph ceiling and the failure on adversarial corpora are the two ends of
-this one axis. The same analysis explains why upper-confidence-bound acquisition beats value-of-information here:
-the value of a judgment is the downstream surfacing it enables, an inherently non-myopic quantity. \emph{(iii)} An
-empirical characterization under a real hop-aware judge across HotpotQA, 2WikiMultiHopQA, and MuSiQue: a
-significant low-budget win on standard multi-hop (recall $+0.058$, nDCG@10 $+0.030$, chain-completion $+0.122$ at
-one judgment), a partial rescue of adversarial MuSiQue by inferring the graph from the judge's own hop-reasoning
-($+0.035$ at three hops, where every cheap surface graph is null), and an honest analysis of why the natural
+by the empirical \emph{assortativity} $\hat p-\hat q$; the oracle-graph ceiling and the failure on adversarial
+corpora are the two ends of this one axis. The same analysis gives a \emph{mechanism} for why optimistic
+exploration suits this problem---the value of a judgment is the downstream surfacing it enables, a delayed quantity
+that one-step value-of-information undervalues---while the full superiority of UCB over multi-step lookahead we
+report as an empirical finding rather than a theorem. \emph{(iii)} An empirical characterization under a real
+hop-aware judge across HotpotQA, 2WikiMultiHopQA, and MuSiQue: a significant low-budget win on standard multi-hop
+(recall $+0.058$, nDCG@10 $+0.030$, chain-completion $+0.122$ at one judgment) that holds head-to-head against a
+faithful re-implementation of BAGEL at matched budget (recall $+0.15$--$0.25$ across budgets, decomposing into the
+semantic-mean and graph-covariance choices, each validated separately), a partial rescue of adversarial MuSiQue by
+inferring the graph from the judge's own hop-reasoning ($+0.035$ at three hops, where every cheap surface graph is
+null), and an honest analysis of why the natural
 adaptive gate does \emph{not} deploy---the per-query gain is a small distributional effect (signal-to-noise
 $\approx 0.1$--$0.2$) rather than a per-query-predictable signal, so using the graph across the multi-hop regime
 it targets is the correct, simple policy. Effects are modest but principled.
@@ -63,10 +67,13 @@ $1.8\times$s its effect (chain-completion margin $+0.068\to+0.122$) by equalizin
 exploration reaches the propagating anchors.
 \item \textbf{The alignment law} (\S\ref{sec:law}): a surfacing lemma and a stochastic-block-model theorem---the
 structural gain is $0$ at zero alignment, positive iff the graph is chain-assortative ($p>q$), and monotone in
-$p-q$; the oracle ceiling and the adversarial failure are the two ends of one axis, measured by gold-connectivity.
-A corollary explains why UCB beats value-of-information (\S\ref{sec:acq}).
+$p-q$; the oracle ceiling and the adversarial failure are the two ends of one axis, measured by the empirical
+assortativity $\hat p-\hat q$. The same surfacing analysis gives a mechanism for why optimistic acquisition suits
+this problem, though the full superiority of UCB over multi-step lookahead we leave as an empirical finding
+(\S\ref{sec:acq}).
 \item \textbf{An honest empirical characterization} (\S\ref{sec:exp}) under a real hop-aware judge: a significant
-low-budget win on standard multi-hop; a partial rescue of adversarial MuSiQue via an LLM hop-assignment graph; and
+low-budget win on standard multi-hop that survives a head-to-head with a faithful BAGEL re-implementation; a
+partial rescue of adversarial MuSiQue via an LLM hop-assignment graph; and
 an analysis of why per-query adaptive routing does not deploy, so that within the deep multi-hop regime studied a
 global graph policy is better supported than per-query routing.
 \end{enumerate}
