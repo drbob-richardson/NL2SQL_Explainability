@@ -441,3 +441,22 @@ mechanism+law). Model: GP with semantic mean + correlation-form kernel; canonica
     oracle ceiling and MuSiQue failure are the two ends of one axis + why the effect is bounded (saturates).
   => the alignment-law SECTION now has a theorem, the strongest single lift for an AISTATS submission (theory-
      rewarding venue); no experiments/tokens needed. paperA_alignment_theorem.tex compiles (2pp).
+
+## LLM HOP-ASSIGNMENT GRAPH ON MuSiQue (Paper A firm-up #3, the swing)  [scripts/musique_hopassign_graph.py]
+Theorem prescription: MuSiQue fails because cheap graphs aren't chain-assortative; build a better graph by
+replacing the cosine sub-q->passage matching (that MuSiQue defeats) with the LLM's OWN hop-assignment (ask which
+sub-question each pool passage answers, or none). 483 questions x 100 passages judged ($1.65 incl pilot; assign).
+FULL-SET result (n=200/200/83 at 2/3/4-hop), rec-margin@B2 graph-cosine w/ 95% CI:
+   cosine-decomp:  2h -0.005 / 3h +0.008[-.02,+.03] / 4h +0.021[-.02,+.06]   (null everywhere)
+   LLM hop-assign: 2h -0.003 / 3h +0.035[+.01,+.06] / 4h +0.021[-.01,+.06]   (3-hop SIG)
+   ORACLE clique:  2h +0.068 / 3h +0.087[+.05,+.13] / 4h +0.148[+.08,+.22]   (ceiling)
+=> HONEST: a SIGNIFICANT but MODEST +0.035 recovery at 3-hop (deep-multi-hop regime), ~4x the cosine graph
+   (null) and ~40% of the oracle 3-hop headroom; NULL at 2-hop (strong prior, shallow) and 4-hop (n=83, noisy).
+   PILOT OVERSTATED (+0.107 at n=25 -> +0.035 at n=200): the discipline of scaling caught a small-n false signal.
+   WRINKLE: on the full set the LLM graph's GLOBAL p-q (0.216) is LOWER than cosine-decomp (0.272) yet it wins at
+   3-hop -> it helps via BETTER-PLACED edges (connecting the buried golds specifically), not higher global
+   assortativity; the simple p-q proxy is muddier than the theorem's bridge-anchor-specific alignment. Assignments
+   are cached -> alternative graph constructions (adjacent-hop-only, confidence-thresholded) are $0 to try.
+PAPER TAKEAWAY: MuSiQue is PARTIALLY rescuable -- inferring structure from the judge's own hop-reasoning recovers a
+significant fraction of the oracle gain at 3-hop where every cheap surface graph is null. A proof-of-concept for
+the alignment-law prescription + the adaptive-structure-learning direction (the bridge to Paper B), not a knockout.
