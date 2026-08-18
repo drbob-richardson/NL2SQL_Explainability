@@ -10,6 +10,8 @@
 \newcommand{\PROVEN}[1]{{\color{teal}\small$\blacktriangleright$\,\textbf{[PROVEN/CHECKED]} #1}}
 \newcommand{\SKETCH}[1]{{\color{orange}\small$\blacktriangleright$\,\textbf{[PROOF SKETCH]} #1}}
 \newcommand{\CONJ}[1]{{\color{violet}\small$\blacktriangleright$\,\textbf{[TO PROVE]} #1}}
+\newcommand{\EVID}[1]{{\color{blue!60!black}\small$\diamond$\,\textbf{[EMPIRICAL]} #1}}
+\definecolor{workingnote}{rgb}{0.35,0.30,0.10}
 \newenvironment{intuition}{\par\smallskip\noindent\hangindent=1.5em\textbf{\itshape Intuition.}\itshape\ \ignorespaces}{\par\smallskip}
 \newcommand{\R}{\mathbb{R}}\newcommand{\E}{\mathbb{E}}\newcommand{\N}{\mathcal{N}}
 \renewcommand{\Pr}{\mathbb{P}}\newcommand{\I}{\mathbb{I}}\newcommand{\HH}{\mathbb{H}}
@@ -83,6 +85,91 @@ regime) leaves open; (ii) the \emph{aliasing} framing itself, since every tree-i
 \emph{distinct} emissions and so never de-aliases $O_a=O_b$; and (iii) the information limit $\mathcal I_G$ that
 says when a cheap covariate leaves anything for structure to add. Functional recovery (\S\ref{sec:func}) is a
 clean corollary in the lineage of estimable functions (Rao) and partial identification (Manski).
+
+\section{Provenance: the empirical road that produced this theory}\label{sec:provenance}
+\noindent\fbox{\parbox{\linewidth}{\small\color{workingnote}\textbf{Working-doc section.} This chronicle (with
+real numbers from \texttt{active\_retrieval\_plan.md}) records \emph{why} the theory has the shape it does. Most of
+it would be a single ``motivation'' paragraph plus a footnote in a final paper. It is here so the working document
+holds the complete picture---including the negatives that are load-bearing for the framing.}}
+
+\subsection{Origin: structure as covariance (Paper A, the sibling CS/ML paper)}
+The program began as a Bayesian active-retrieval method. Per query, a first-stage pool of $N$ candidates each
+carries cheap features (cosine, BM25) and can be \emph{judged} (an expensive LLM call) to reveal relevance under a
+budget $B$. The idea was ``structure-as-covariance'': the corpus graph that \emph{hurts} ranking (diffusion buries
+the answer) \emph{helps} as a GP covariance---``connected passages have correlated relevance''---so a graph-kernel
+GP (GMRF kernel $(I+\lambda\mathcal L)^{-1}$) propagates each judgment to connected candidates. Against passive
+verify-top-$B$ and a cosine-kernel GP (BAGEL-lite):
+\EVID{Under an \emph{oracle} judge, graph-GP-UCB beats both on multi-hop \emph{bridge} questions (2Wiki chained:
+$+0.106\,[.095,.118]$ recall@$k$ over passive, $+0.077$ over cosine-GP at $B{=}2$), and is neutral on
+\emph{independent} comparison questions---a sharp connectivity boundary. The gain concentrates where a gold is
+\emph{buried} (cosine rank $\ge4$) \emph{and} connected (rank-5+ connected $+0.190$ vs $+0.020$ not-connected).
+Normalizing the kernel to correlation (unit-diagonal) form \emph{doubled} the effect ($+0.122\,[.088,.155]$ at
+$B{=}1$)---it equalizes hub variance so UCB explores the propagating anchors. UCB beats 1-/2-step VOI and
+info-gain (kernel and acquisition are entangled: the graph needs UCB's focused exploration). After normalization,
+the retrieval win converts to answers (F1 $+0.040\,[.018,.063]$).}
+That paper (graph as \emph{covariance}, propagating \emph{belief}) is alive and coherent; it survives being handed
+a perfect judge. \emph{This} paper is the other half.
+
+\subsection{The turn: a real judge is bridge-blind (differential misclassification)}
+Replacing the oracle with an off-the-shelf judge (gpt-4o-mini, ``does this passage answer the query?'') collapsed
+the win. The reason is the phenomenon this paper is about:
+\EVID{The judge is \emph{bridge-blind}: precision $0.64$ but recall $\mathbf{0.35}$, says-yes $0.12$ vs.\ gold
+$0.23$. It grades a necessary \emph{bridge} passage (one that supplies a linking entity but does not itself answer
+the query) exactly like an \emph{irrelevant} one. This is not random noise; it is error concentrated on a single
+latent role---\emph{differential} misclassification, i.e.\ a node-level \emph{alias} $O_{\textsf{bridge}}\approx
+O_{\textsf{irrelevant}}$. A graded ``hop-aware'' prompt that explicitly credits linking passages raised judge
+recall $0.35\!\to\!0.75\!\to\!0.82$, confirming the bias is real and structured---but even with the fixed judge the
+structure win did not return at $N{=}10$ (washout). It reappeared only in the \emph{deep-burial} regime $N{=}100$
+(bridge at rank 20--90, beyond the embedding kernel's reach): graph$-$cosine $+0.039$ at $B{=}1$ on \emph{both}
+datasets ($n{=}600$), chain-completion $+0.068$.}
+
+\subsection{Paper B v1: the correction model, and its instructive real-data failure}
+The first statistical formulation modelled the bias as a role-dependent confusion law with a Potts/GMRF prior
+tying latent roles to the graph, and asked whether the posterior could \emph{correct} the judge.
+\EVID{In a \emph{favorable simulation} (dense anchored clusters) it worked and structure was \emph{necessary}:
+with no graph ($\theta{=}0$) bridge recall degrades $0.48\!\to\!0.14$ (worse than the raw judge); at $\theta{=}1$
+it flips bridges up, AUC $0.965$; and \emph{even a misspecified emission still works}, so the graph, not the
+measurement model, carries the correction. This gave a sharp thesis: \emph{when a biased oracle's errors mimic
+true negatives, the measurements are structurally silent about the bias, so the correction must come from
+inter-item dependence}. \textbf{But on real Hotpot/2Wiki data the graph correction is marginal.} The calibrated
+retriever \emph{prior} does the recovery: AUC(all gold) $0.876$ (raw grade) $\to0.941$ (prior) $\to0.968$
+(prior$+$graph)---the graph adds only $+0.027$; a symmetric-Potts graph term actually \emph{hurts}
+($0.954\!\to\!0.81$). Diagnosis: real title graphs are \emph{sparse} ($\sim1.5$ degree), gold neighbourhoods are
+\emph{balanced} (0.75 gold vs.\ 0.72 distractor), and only \textbf{35\%} of judge-missed bridges have a confident
+grade-2 neighbour---a graph \emph{reachability ceiling}. The favorable sim assumed the dense clusters reality
+lacks.}
+
+\subsection{Why the failure produced this theory (not a retreat)}
+Two lessons converted the dead end into the present direction. \emph{First}, the practical correction that works
+(``trust the calibrated retriever over the raw grade'') needs neither the confusion matrix nor the graph---because
+the cosine prior is a \emph{strong covariate for relevance}, so conditional on it the structural information is
+near zero. That is precisely $\mathcal I_G\!\to\!0$ (Thm~\ref{thm:info}), a predicted corner, not an anomaly.
+\emph{Second}, the question was never ``recover the confusion matrix'' (impossible---bridge-blindness makes the
+emission self-obscuring, $O_{\textsf{bridge}}=O_{\textsf{irr}}$) but ``recover the \emph{decision}'' (relevance), a
+\emph{functional} $R=h(Z)$. Reframing from \emph{correcting the instrument} to \emph{when can structure
+distinguish states the instrument aliases} is structural de-aliasing, and it generalizes far beyond retrieval.
+\EVID{The MuSiQue autopsy fixed the boundary condition: the mechanism is \emph{sound} (an oracle gold-clique graph
+gives $+0.07$--$0.09$ even at 3 hops) but cheap graph construction \emph{fails} on adversarial corpora whose
+distractors are made surface-similar to golds---no cosine/entity/decomposition graph recovers the chain
+(gold-connectivity 0.35 vs.\ Hotpot 0.76). Structure-as-covariance helps \emph{iff the corpus's surface structure
+aligns with the reasoning chain}---a measurable graph--chain alignment law.}
+
+\subsection{Where A and B stand}
+\begin{center}\small
+\begin{tabular}{p{2.4cm}p{5.4cm}p{5.4cm}}
+\toprule
+ & \textbf{Paper A} (CS/ML: TMLR/AISTATS) & \textbf{Paper B} (this doc: JASA T\&M / BA) \\ \midrule
+graph is\dots & the \emph{covariance} of a latent relevance field (propagates belief) & the \emph{instrument} that
+identifies states an aliased measurement cannot (propagates de-aliasing) \\
+contribution & retrieval method $+$ normalization win $+$ UCB$>$VOI $+$ alignment law $+$ oracle ceiling & the
+near-aliasing rate $+$ aliasing framing $+$ functional recovery $+$ design law \\
+survives if\dots & you hand it a perfect judge & you hand it a different retriever \\
+status & alive, coherent today & the theory this document develops \\
+\bottomrule
+\end{tabular}
+\end{center}
+They share the multi-hop RAG application, not the contribution; each cites the other. The three-regime table of
+\S\ref{sec:regimes} is the quantitative residue of this whole road.
 
 \section{Model}
 Let $G=(V,\mathcal E)$ be a known graph (we develop the tree/chain case first). Each node carries a latent state
@@ -353,19 +440,6 @@ Bernstein--von Mises / limit-experiment analysis in the localized parameter. The
 cut-posterior statement. This is the Bayesian Analysis centre; it is genuinely nonstandard (weak identification),
 not routine posterior contraction.}
 
-\section{The three empirical regimes as instances of one theory}
-\begin{center}\small
-\begin{tabular}{lccl}
-\toprule
-regime & cheap covariate $X$ & $\mathcal I_G$ & outcome \\ \midrule
-favorable simulation (Paper B v1) & absent/weak & large & graph rescues relevance \\
-real retrieval (Paper B v1) & cosine (strong) & $\approx 0$ & graph adds $\approx\!+0.03$; prior does the work \\
-impossibility & sufficient for $R$ & $0$ & no method can help \\ \bottomrule
-\end{tabular}
-\end{center}
-The apparent contradiction between the favorable sim and the retrieval null dissolves: they are two points on the
-$\mathcal I_G$ axis of Theorem~\ref{thm:info}.
-
 \section{Related work and honest positioning}\label{sec:related}
 The organizing distinction is \emph{linear-time vs.\ branching-time}: our signature $Q_L$ is the joint law of the
 neighbourhood \emph{tree} (branching), whereas the single-path $(T^{L}O)_c$ is a \emph{string/trace} law (linear).
@@ -398,7 +472,7 @@ rate} (Thm~\ref{thm:rate}), the \textbf{aliasing framing} that no tree-identifia
 (Conj~\ref{conj:bayes}). We flag the latent-tree literature as large and phrase the aliasing-novelty as ``to our
 knowledge.''
 
-\section{The three empirical regimes as instances of one theory}
+\section{The three empirical regimes as instances of one theory}\label{sec:regimes}
 \begin{center}\small
 \begin{tabular}{lccl}
 \toprule
