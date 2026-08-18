@@ -459,8 +459,44 @@ transition. Unknown $(T,O)$ add an estimation remainder that is itself weakly id
 bridge to \S\ref{sec:localbayes}.
 \end{intuition}
 
+\subsection{Unknown parameters: the estimation remainder \emph{is} weak identification}\label{sec:unknown}
+Thm~\ref{thm:field} assumed $(T,O)$ known. When the de-aliasing parameter is instead estimated from the same
+field, the plug-in risk decomposes as
+\[
+   \E\,\mathcal L(\hat R^{\text{plug}},R)\;\asymp\;\underbrace{\Phi(\delta_E^2+d\delta_G^2)}_{\text{oracle floor (Thm~\ref{thm:field})}}\;+\;\underbrace{\varrho_n}_{\text{estimation remainder}} .
+\]
+The remainder is not a routine $O(n^{-1/2})$: the parameter $\eta$ that \emph{separates} the aliased pair (the
+transition-row contrast producing $\delta_G$) has a Fisher information that \emph{degenerates at the alias}---the
+score for $\eta$ vanishes at $\eta{=}0$, where the two states coincide---so $\eta$ is estimable only as well as
+the same separation that sets the classification floor.
+\begin{proposition}[The plug-in remainder is governed by $\kappa=\sqrt n\,\delta_G$]\label{prop:unknown}
+Estimating $\eta$ from the field and plugging into the Bayes-optimal (BP) classifier, the excess risk over the
+oracle-parameter estimator obeys: $\varrho_n\to0$ at the fast (effectively $n^{-1}$) rate when
+$\kappa=\sqrt n\,\delta_G\to\infty$ (\emph{plug-in is asymptotically free}); and $\varrho_n$ is of the \emph{same
+order as the structural gain} $\Phi(0)-\Phi(d\delta_G^2)$ when $\kappa=O(1)$ (\emph{weak identification}). The
+boundary $\sqrt n\,\delta_{G,n}\to\kappa$ at which plug-in stops being free is exactly the local
+weak-identification boundary of \S\ref{sec:localbayes}: the frequentist remainder and the nonstandard Bayesian
+posterior are two faces of the same $\kappa$.
+\end{proposition}
+\PROVEN{\emph{Verified} (\texttt{paperB\_unknown\_sim.py}, exact BP likelihood, checked against brute force):
+estimating the scalar de-aliasing $\eta$ (bridge heterophily; $\eta{=}0\Rightarrow$ full alias) by marginal
+likelihood and plugging into BP, the excess field risk collapses onto a decreasing function of $\kappa$:
+$+0.013$ ($\kappa{=}0.85$), $+0.008$ ($\kappa{=}1.5$), $+0.004$ ($\kappa{=}2.6$), $+0.0008$ ($\kappa{=}4.8$),
+$+0.0004$ ($\kappa{=}14$), while $|\hat\eta-\eta|$ falls monotonically $0.30\!\to\!0.05$. At weak identification
+the remainder eats a large fraction of the oracle's own $\sim\!0.03$--$0.06$ gain over chance; by $\kappa\gtrsim5$
+the plug-in is free. \emph{Remaining rigor:} the $O(1)$-vs-$o(1)$ dichotomy is clean; the exact constant and the
+$\varrho_n(\kappa)$ curve need the LAN expansion of \S\ref{sec:localbayes} (the score degeneracy at $\eta{=}0$
+makes this genuinely nonstandard, not a delta-method calculation).}
+\begin{intuition}
+This is the crux the review anticipated: near the alias you cannot separate ``learned the correction from data''
+from ``imposed it,'' because the very parameter that does the de-aliasing is the one you cannot estimate. The
+known-parameter minimax (Thm~\ref{thm:field}) and the Bayesian $\kappa$-limit are not two results---they are one
+phase diagram in $\kappa=\sqrt n\,\delta_G$, seen once through risk and once through the posterior.
+\end{intuition}
+
 \subsection{The local weak-identification regime (the Bayesian core to prove)}\label{sec:localbayes}
-Contraction/no-contraction is a coarse dichotomy; the interesting Bayesian object sits \emph{on} the phase
+Prop~\ref{prop:unknown} showed the frequentist remainder is a function of $\kappa=\sqrt n\,\delta_G$; here is its
+Bayesian face. Contraction/no-contraction is a coarse dichotomy; the interesting object sits \emph{on} the phase
 boundary. Index a sequence of models by $n$ (independent degree-$d$ stars) with structural separation shrinking at
 the critical rate
 \[
@@ -534,11 +570,13 @@ $\mathcal I_G$ axis of Theorem~\ref{thm:info}.
 \section{Roadmap: what must carry the paper}
 Ordered by how much novelty each piece bears (audit-adjusted).
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
-  \item \textbf{[CENTER] Field minimax (Thm~\ref{thm:field}).} The general theorem: minimax-optimal recovery of
-  $\{h(Z_v)\}$ on a tree with the measurement/structure/unidentifiable transition, Assouad lower $+$ BP upper
-  bounds; verified. \emph{Finish for T\&M:} (a) tighten the Assouad constant and state the exact rate function
-  $\Psi(n,d,\delta_E,\delta_G)$; (b) the \emph{unknown-parameter} version, whose estimation remainder couples to
-  item~5. This is the result that stops the work looking like a local test.
+  \item \textbf{[CENTER] Field minimax (Thm~\ref{thm:field}) $+$ unknown parameters (Prop~\ref{prop:unknown}).}
+  The general theorem: minimax-optimal recovery of $\{h(Z_v)\}$ on a tree with the
+  measurement/structure/unidentifiable transition, Assouad lower $+$ BP upper bounds; verified. The
+  \emph{unknown-parameter} plug-in remainder is shown (verified) to be governed by $\kappa=\sqrt n\,\delta_G$---the
+  same boundary as the Bayesian regime (item~5). \emph{Finish for T\&M:} tighten the Assouad constant and state
+  the exact rate function $\Psi(n,d,\delta_E,\delta_G)$, and the exact remainder curve $\varrho_n(\kappa)$ via the
+  LAN expansion. This is the result that stops the work looking like a local test.
   \item \textbf{[ENGINE] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star (boundary
   $\delta_E^2+d\delta_G^2$, shared-$s$ Chernoff exponent); the local engine of the field theorem. Remaining:
   deep-subtree Chernoff on general trees. Position vs.\ Weiss--Nadler (no rates), Chang/AMR (distinct emissions).
