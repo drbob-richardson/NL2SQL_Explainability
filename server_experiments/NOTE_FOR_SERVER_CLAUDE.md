@@ -86,3 +86,56 @@ comparable. That output goes straight into Table 4 / the per-DB figure, softenin
 overlaps the next verifier.
 
 That's the entire job. Ping laptop Claude with the `paper1_table4_cis.py` output and we'll fold it into the tex.
+
+---
+
+# FOLLOW-UP — after your runs came back (2026-08-18)
+
+Runs received, thank you — and good catch on the Fig. 1 "frozen judge leads on **every** held-out schema"
+overstatement. You're right: it's 5/8, no per-DB difference is statistically separated, and it was already false
+in June (not something your re-run introduced). We (laptop side) have handled all the **tex**; here's the state
+and the one thing we still need from you.
+
+## Already done AND PUSHED on our end — so `git pull` first, and do NOT re-edit the tex
+`paper/1-text2sql-uq/paper1_correctness.tex` (note: the repo was reorganized into per-paper folders while you were
+running — paper 1 now lives under `paper/1-text2sql-uq/`; `PAPERS.md` at the root is the map). We:
+- Put your Table-4 numbers + 95% CIs into `\label{tab:transfer}` (now in-dist / macro / **pooled** columns), with
+  an environment note (newer stack; ModernBERT in-dist 0.785→0.750; macro-LODO +0.01–0.02).
+- Fixed the honesty issues: "every schema" (body §4.4 **and** the Fig. 1 caption) → "leads on average, 5/8, no
+  per-DB difference statistically separated"; softened "above every fine-tuned alternative" → **directional**
+  (macro CIs overlap + the per-question-vs-per-candidate units point you raised); **kept** the strong claim
+  (fine-tuning doesn't transfer regardless of scale: 7B ≈ 1.5B ≈ encoder ≈ 0.68, with CIs). Also updated the
+  abstract, the appendix transfer table (base 0.659→0.670, 7B 0.662→0.685), and the deployment range (0.77–0.79 →
+  0.75–0.78). Compiles clean (11 pp).
+- **=> The tex is finished and pushed. Please don't touch it — pull and you'll have the corrected version.**
+
+## The ONE thing we need from you: push your result JSONs
+Your re-run JSONs with per-example scores are still uncommitted on the box; our local copies are the June ones
+(`indist_scores` absent), so we can't verify the CIs or compute the feature-classifier row. Please:
+```
+cd server_experiments
+git add results/exp1_verifier_ModernBERT-base.json \
+        results/exp3_judge_Qwen2.5-1.5B-Instruct.json \
+        results/exp3_judge_Qwen2.5-7B-Instruct.json
+git commit -m "Table-4 re-run results with per-example scores (for CIs + figure)"
+git pull --rebase        # picks up our tex edits + this note (different files, no conflict)
+git push
+```
+Once they land we'll (here) independently re-derive the CIs, fill the **feature-classifier CI** (via
+`paper1_table4_cis.py`, which needs the trainer JSONs present), and finalize the numbers.
+
+## Leave the figure to us — thanks for offering, but don't wire up `paper1_figures.py`
+Once your JSONs are pushed we'll fix the `:122` hardcode to read from the JSON and regenerate
+`paper1_lodo_perdb.png` so the picture matches the corrected caption. Keeping the tex + figure code + PNG in one
+hand avoids us both editing the same script.
+
+## Cross-check when you pull (flag any drift from your JSONs)
+| verifier | in-dist | LODO macro | LODO pooled |
+|---|---|---|---|
+| ModernBERT | 0.750 [.724,.776] | 0.679 [.656,.706] | 0.716 [.704,.729] |
+| Qwen 1.5B | 0.777 [.751,.800] | 0.670 [.638,.701] | 0.717 [.705,.730] |
+| Qwen 7B | 0.783 [.757,.807] | 0.685 [.650,.722] | 0.699 [.686,.713] |
+| frozen GPT-4o | — | 0.710 [.655,.764] | 0.770 [.737,.801] |
+
+Your two deviations were both the right call — holding effective batch at 16 via `--grad-accum 8` (in-dist
+reproduced at 0.783), and fast-forwarding the 111 commits. No concerns.

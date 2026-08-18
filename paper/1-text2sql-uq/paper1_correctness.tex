@@ -32,7 +32,7 @@ probability (expected calibration error $0.03$), and it supports useful abstenti
 example, answering $27\%$ of questions at $24\%$ selective risk) where self-consistency offers no
 valid low-risk subset. The pattern holds across two benchmarks (BIRD and Spider), two generators, and
 two judge providers. We also ask whether a verifier can be trained. Fine-tuned verifiers, both encoder and generative, reach about
-$0.77$--$0.79$ \auroc{} in-distribution but fall to about $0.66$ on unseen schemas, and scaling to
+$0.75$--$0.78$ \auroc{} in-distribution but fall to about $0.67$--$0.69$ on unseen schemas, and scaling to
 7B, adding schema diversity, distilling a strong judge's rationales, and cross-benchmark training all
 fail to close that gap. Cross-schema transfer appears to track model scale and reasoning rather than
 fine-tuning. In practice, correctness uncertainty for text-to-SQL lives in reasoning-based signals: a
@@ -254,38 +254,55 @@ execution-labeled pairs, and evaluate transfer to unseen databases by leave-one-
 hold out one database, train on the rest, and score the held-out one, repeating for each database.
 We compare an encoder classifier (ModernBERT) and a generative LLM judge (Qwen2.5, LoRA-tuned), with
 an un-fine-tuned (zero-shot) baseline. Transfer values are macro-averaged over the held-out databases.
-\begin{table}[h]\centering
-\begin{tabular}{lrr}
+\begin{table}[h]\centering\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrr}
 \toprule
-verifier & in-distribution \auroc{} & transfer (LODO, macro) \\
+verifier & in-distribution \auroc{} & transfer (LODO, macro) & transfer (LODO, pooled) \\
 \midrule
-feature classifier (embeddings, logprob, self-consistency) & 0.768 & 0.661 \\
-fine-tuned encoder (ModernBERT-base, full schema) & 0.785 & 0.670 \\
-generative judge, Qwen2.5-1.5B (LoRA) & 0.766 & 0.659 \\
-generative judge, Qwen2.5-7B (LoRA) & 0.798 & 0.662 \\
-frozen GPT-4o judge (zero-shot) & --- & 0.710 \\
+feature classifier (embeddings, logprob, self-consistency) & $0.768$ & $0.661$ & --- \\
+fine-tuned encoder (ModernBERT-base) & $0.750\,[.724,.776]$ & $0.679\,[.656,.706]$ & $0.716\,[.704,.729]$ \\
+generative judge, Qwen2.5-1.5B (LoRA) & $0.777\,[.751,.800]$ & $0.670\,[.638,.701]$ & $0.717\,[.705,.730]$ \\
+generative judge, Qwen2.5-7B (LoRA) & $0.783\,[.757,.807]$ & $0.685\,[.650,.722]$ & $0.699\,[.686,.713]$ \\
+frozen GPT-4o judge (zero-shot) & --- & $0.710\,[.655,.764]$ & $0.770\,[.737,.801]$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
+\caption{Trained-verifier transfer with $95\%$ bootstrap CIs. Fine-tuned verifiers plateau near
+$0.67$--$0.69$ macro on unseen schemas regardless of architecture or scale; only the frozen reasoning
+judge reaches $0.77$ pooled. The judge is scored per question ($n{=}55$--$110$ per held-out database)
+and the verifiers per candidate SQL ($n{=}440$--$880$), so its intervals are wider and cross-model
+comparisons are read as directional. Trained-verifier numbers are from a re-run
+(PyTorch~2.12/Transformers~5.12) that saved per-example scores for the intervals; macro-LODO came in
+$0.01$--$0.02$ above the original run across all verifiers, and in-distribution ModernBERT moved from
+$0.785$ to $0.750$, consistent with the newer stack.}\label{tab:transfer}
 \end{table}
 
 Four findings. First, \emph{fine-tuning works in-distribution}: it lifts the generative judge well
 above its zero-shot baseline, and the largest fine-tuned judge reaches the best in-domain number
-($0.798$). Second, \emph{it does not transfer}: every fine-tuned verifier, encoder or generative,
-lands near $0.66$ on unseen schemas, with the worst results on the most domain-specific databases. The frozen large judge is the
-exception; macro-averaged the same way it scores $0.710$ (and $0.770$ pooled over all questions),
-above every fine-tuned alternative, and the small base model's near-chance zero-shot transfer shows
-why a large model is needed. Third, \emph{nothing closes the gap}: scaling to 7B, adding schema
-diversity, distilling a strong judge's rationales, and cross-benchmark training all leave transfer at
-about $0.66$--$0.71$ (Appendix~\ref{app:transfer}); only the large frozen reasoning judge reaches
-$0.77$. The evidence is consistent with the fine-tuned models relying on schema-specific surface
-regularities rather than transferable reasoning: an input ablation of the frozen judge shows it
-scores $0.692$ from the question and SQL alone, that adding the schema changes nothing ($0.688$), and
-that only the evidence helps ($0.724$), so the frozen judge generalizes by reasoning about the query
-rather than by reading schema content. Per database (Figure~\ref{fig:lodo}), the frozen judge leads
-on every held-out schema.
+($0.783\,[.757,.807]$). Second, \emph{it does not transfer}: every fine-tuned verifier, encoder or
+generative, lands near $0.67$--$0.69$ macro on unseen schemas---well below its own in-distribution
+number---with the worst results on the most domain-specific databases, while the small base model's
+near-chance zero-shot transfer shows why a large model is needed. We are deliberate about the
+comparison to the frozen judge: its transfer is at or above every fine-tuned verifier's on both
+aggregates (macro $0.710\,[.655,.764]$; pooled $0.770\,[.737,.801]$), but the macro intervals overlap
+and the judge is scored per question while the verifiers are scored per candidate, so we read the
+judge's edge as \emph{directional}. What is \emph{not} within noise is the central claim---fine-tuning
+does not lift transfer regardless of architecture or scale: the $7$B judge ($0.685\,[.650,.722]$) is
+indistinguishable from the $1.5$B judge ($0.670\,[.638,.701]$) and the encoder ($0.679\,[.656,.706]$),
+so the size of the fine-tuned model is not the missing ingredient. Third, \emph{nothing closes the
+gap}: scaling to 7B, adding schema diversity, distilling a strong judge's rationales, and
+cross-benchmark training all leave transfer at about $0.67$--$0.71$ (Appendix~\ref{app:transfer}); only
+the large frozen reasoning judge reaches $0.77$ pooled. The evidence is consistent with the fine-tuned
+models relying on schema-specific surface regularities rather than transferable reasoning: an input
+ablation of the frozen judge shows it scores $0.692$ from the question and SQL alone, that adding the
+schema changes nothing ($0.688$), and that only the evidence helps ($0.724$), so the frozen judge
+generalizes by reasoning about the query rather than by reading schema content. Per database
+(Figure~\ref{fig:lodo}), the frozen judge leads on average---five of eight held-out schemas---but no
+per-database judge-versus-verifier difference is statistically separated (every interval overlaps), so
+the per-schema picture is a consistent trend, not a clean sweep.
 
 Fourth, \emph{the in-domain verifier is useful for deployment}. Trained on a database's own schemas,
-it predicts correctness at $0.77$--$0.79$ and is cheap at inference. Used as the abstention score, a
+it predicts correctness at $0.75$--$0.78$ and is cheap at inference. Used as the abstention score, a
 feature classifier with no LLM call at inference gives a risk--coverage frontier competitive with the
 frozen GPT-4o judge and far above self-consistency: at a $20\%$ risk target it answers $21\%$ of
 questions, against $9\%$ for the frozen judge and $1\%$ for self-consistency (area under the
@@ -294,9 +311,11 @@ schemas, a trained verifier is accurate in-domain and the cheaper route to a use
 
 \begin{figure}[t]\centering
 \includegraphics[width=0.48\textwidth]{../figures/paper1_lodo_perdb.png}
-\caption{Per-database transfer. The frozen GPT-4o judge leads on every held-out schema, above both
-fine-tuned verifiers. The pattern is consistent with reasoning transferring across schemas while
-fine-tuning captures schema-specific regularities.}
+\caption{Per-database transfer. The frozen GPT-4o judge leads on average (five of eight held-out
+schemas), though no per-database judge-versus-verifier difference is statistically separated---its
+per-schema intervals are wide because it is scored per question ($n{=}55$--$110$) rather than per
+candidate. The pattern is consistent with reasoning transferring across schemas while fine-tuning
+captures schema-specific regularities.}
 \label{fig:lodo}
 \end{figure}
 
@@ -423,16 +442,19 @@ one benchmark and tests on the other.
 \toprule
 attempt & transfer \auroc{} \\
 \midrule
-base fine-tune (8 schemas, LODO) & 0.659 \\
+base fine-tune (8 schemas, LODO) & 0.670 \\
 + schema diversity (28 schemas, LODO) & 0.682 \\
-scale generative judge to 7B (LODO) & 0.662 \\
+scale generative judge to 7B (LODO) & 0.685 \\
 reasoning distillation (verdict-only / +reasoning) & 0.653 / 0.564 \\
 cross-benchmark (BIRD$\rightarrow$Spider / Spider$\rightarrow$BIRD) & 0.713 / 0.672 \\
 \midrule
 frozen GPT-4o judge (macro / pooled) & 0.710 / 0.770 \\
 \bottomrule
 \end{tabular}
-\end{table}
+\caption{Every attempt to make the fine-tuned verifier transfer lands at $\approx0.65$--$0.71$; only the
+frozen judge reaches $0.77$. The base fine-tune and 7B rows are the re-run (with CIs in
+Table~\ref{tab:transfer}); the schema-diversity, distillation, and cross-benchmark rows are from the
+original run.}\end{table}
 
 \section{Verifier prompts}
 \label{app:prompts}
