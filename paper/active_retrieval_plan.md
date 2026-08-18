@@ -270,6 +270,26 @@ structure is NECESSARY, not merely helpful.'** CAVEATS (sim with favorable struc
 reliable anchors). NEXT: validate on REAL data (cached Hotpot/MuSiQue judge labels + graphs + gold) -- do graph-
 corrected posteriors beat the raw judge on held-out gold on actual corpora? + principled theta selection (CV on
 gold / prior over theta). B is back on track, on a better thesis than the original.
+
+## REAL-DATA CORRECTION VALIDATION (paperB_realdata_correction.py + _2.py, $0) -- the sim does NOT survive real data
+On real Hotpot/2Wiki pools (real hop-aware judge grades, real title graph, real gold) the graph correction is
+MARGINAL. Symmetric-Potts Pr(r|g,A): AUC 0.954 ranking but the GRAPH (theta>0) HURTS AUC (0.954->0.81); the gain
+is from the PRIOR (theta=0). Diagnosis: gold neighbourhoods are BALANCED (0.75 gold vs 0.72 distractor) but SPARSE
+(~1.5 degree); only 35% of judge-MISSED bridges have a confident grade-2 neighbour = a graph reachability ceiling.
+Directed anchor-diffusion fix: AUC(missed-gold vs distractor) prior 0.875 / diffusion 0.600 / prior+diff 0.882
+(+0.007); AUC(all gold) raw-grade 0.876 / prior 0.941 / prior+diff 0.968 (+0.027 over prior). => the CALIBRATED
+RETRIEVER PRIOR does the relevance-recovery (missed bridges have higher cosine than distractors); the graph adds
+only a small increment. HONEST: the biased judge CAN be corrected (AUC 0.876->0.968) but the correction is
+DOMINATED BY THE PRIOR, not the structural/graph component. **Paper B's distinctive 'structure is NECESSARY to
+correct the judge' claim (from the favorable sim) does NOT hold on real data -- the practical correction is
+'trust the calibrated retriever over the raw judge grade,' which needs neither the measurement model nor the
+graph.** The sim assumed dense anchored clusters; real title graphs are sparse + low-reachability.
+IMPLICATION for B: it SHRINKS from a structural-identification STATS theorem toward an EMPIRICAL finding
+(bridge-blindness is real + differential + a prior-based correction beats the raw judge) -- ACL-Findings-tier, not
+a JASA theorem. To salvage the stats version: find a NO-PRIOR setting (items without a good retriever embedding,
+where structure is the ONLY correction signal), OR a denser/better graph that raises anchor-reachability, OR
+reframe B entirely around the (real, robust) bridge-blindness characterization + the honest 'prior beats the
+biased judge' correction. This is a genuine strategic inflection for the two-paper plan.
 PIVOT: bank graph-UCB + the kernel x acquisition interaction; paper spine = chain-completion headline +
 retrieval-vs-reasoning decomposition + this mechanism + regime boundary. Amplifiers (lambda_q mixture, MuSiQue/
 N=500, real BAGEL) over more acquisition engineering. (Only lower-odds acquisition variant left: propagation-aware,
