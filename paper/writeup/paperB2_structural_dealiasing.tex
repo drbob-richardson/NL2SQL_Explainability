@@ -34,13 +34,19 @@ decaying at the shared-$s$ Chernoff exponent between the structural signatures; 
 minimax theorem}---estimating the functional field $\{h(Z_v)\}$ over a tree at minimax rate, with matching
 Assouad lower and belief-propagation upper bounds and a clean transition between measurement-dominated,
 structure-dominated, and unidentifiable regimes. We derive a \emph{measurement-design} law that prices structural
-observations against replication and additional instruments ($nC_E+dC_G+mC_2$), and we characterize which
-scientific \emph{functionals} $R=h(Z)$ remain identifiable when the full latent state is not. A local
-weak-identification analysis reveals a \emph{singular} regime---the likelihood is even in the separation, so the
-identifiable parameter is $\psi=\delta_G^2$ (estimable at the singular rate $n^{-1/4}$ in $\delta_G$) and the
-global role label is a prior-fixed nuisance---giving a nonstandard, prior-indexed posterior on the boundary
-$\sqrt n\,\delta_{G,n}^2\to\lambda$ that separates a prior-sensitive nuisance from a decision-consistent
-functional---the Bayesian face of the same phenomenon. Exact (as opposed to near-) aliasing is governed by the known equivalence of emission-consistent
+observations against replication and additional instruments (first-order $nC_E+dC_G+mC_2$). A local
+weak-identification analysis reveals a \emph{singular} regime---by an exchangeability symmetry the likelihood is
+\emph{even} in the separation, so the identifiable parameter is $\psi=\delta_G^2$ (estimable at the singular rate
+$n^{-1/4}$ in $\delta_G$) on the boundary $\sqrt n\,\delta_{G,n}^2\to\lambda$, with a nonstandard truncated-Gaussian
+posterior. Crucially, recovery is \emph{two-stage}: structure identifies the de-aliasing \emph{magnitude} and the
+\emph{unordered} state pair, while a single anchor (or the prior) supplies the \emph{orientation} that fixes the
+decision target $R=h(Z)$---so the functional is decision-consistent \emph{given} an anchor, and orientation costs
+$O(1)$ external bits regardless of $n$. Local structural richness ($d\,\delta_G^2$, classification) and population
+information ($\lambda$, learning the map) are distinct axes, yielding a two-dimensional phase diagram with two
+separate failure modes. Exact (as opposed to near-) aliasing is governed by the known equivalence of emission-consistent
+\emph{lumpability} and probabilistic bisimulation, which we use as scaffolding rather than a contribution; the
+branching-beats-paths phenomenon that makes the structural signature richer than any single path is likewise the
+classical linear-vs-branching-time gap. Exact (as opposed to near-) aliasing is governed by the known equivalence of emission-consistent
 \emph{lumpability} and probabilistic bisimulation, which we use as scaffolding rather than a contribution; the
 branching-beats-paths phenomenon that makes the structural signature richer than any single path is likewise the
 classical linear-vs-branching-time gap. The motivating pathology is an LLM relevance judge that grades a necessary
@@ -324,14 +330,21 @@ exactly
   \HH(R_v\mid Y_v,X_v)-\HH(R_v\mid Y_v,X_v,Y_{N(v)})=\mathcal I_G .
 \]
 In particular $\mathcal I_G=0\Rightarrow$ \emph{no} graph-based rule---however elaborate the MRF---improves optimal
-log-loss prediction of $R_v$; and by Fano/Pinsker the improvement in $0$--$1$ Bayes risk is bounded by an
-increasing function of $\mathcal I_G$.
+log-loss prediction of $R_v$. \emph{Quantitatively}, by the conditional Pinsker inequality the expected
+posterior movement is bounded,
+\[
+   \E\big\|\Pr(R_v\!\mid\!Y_v,X_v,Y_{N(v)})-\Pr(R_v\!\mid\!Y_v,X_v)\big\|_{\mathrm{TV}}\ \le\ \sqrt{\mathcal I_G/2},
+\]
+so for \emph{any} bounded decision loss the improvement in optimal Bayes risk from the neighbourhood is at most of
+order $\sqrt{\mathcal I_G/2}$; in particular $0\le\mathcal R^\ast(Y_v,X_v)-\mathcal R^\ast(Y_v,X_v,Y_{N(v)})\le
+\sqrt{\mathcal I_G/2}$ for $0$--$1$ loss.
 \end{theorem}
-\PROVEN{The identity is the definition of conditional mutual information. The $0$--$1$ bound follows from
-Fano/Pinsker. \textbf{Verified regime-switch:} with $R=\I\{Z\ge1\}$ and a Gaussian covariate $X_v\sim\N(\mu_{Z_v},
-\sigma)$ that separates relevant from irrelevant, the neighbour-gain (an $\mathcal I_G$ proxy in nats) is
-$0.09$ (no $X$), $0.11$ (weak, $\sigma{=}1$), $0.10$ ($\sigma{=}0.5$), $0.007$ (strong, $\sigma{=}0.2$),
-$0.000$ (near-perfect, $\sigma{=}0.1$): as the covariate becomes sufficient for $R$, $\mathcal I_G\to0$.}
+\PROVEN{The identity is conditional mutual information; the TV bound is conditional Pinsker
+($\|\cdot\|_{\mathrm{TV}}\le\sqrt{\mathrm{KL}/2}$) with $\E\,\mathrm{KL}=\mathcal I_G$, and any bounded loss is
+$\mathrm{TV}$-Lipschitz in the posterior. \textbf{Verified regime-switch:} with $R=\I\{Z\ge1\}$ and a Gaussian
+covariate $X_v\sim\N(\mu_{Z_v},\sigma)$, the neighbour-gain (an $\mathcal I_G$ proxy in nats) is $0.09$ (no $X$),
+$0.11$ ($\sigma{=}1$), $0.10$ ($\sigma{=}0.5$), $0.007$ ($\sigma{=}0.2$), $0.000$ ($\sigma{=}0.1$): as the
+covariate becomes sufficient for $R$, $\mathcal I_G\to0$.}
 \begin{intuition}
 This single quantity explains all three things we saw. In the clean simulation there was no cheap covariate, so
 $\mathcal I_G$ was large and structure rescued relevance. In real retrieval the cosine prior is a \emph{strong}
@@ -395,13 +408,15 @@ per-neighbour exponent $C_G\approx\tfrac14\delta_G^2$ is tiny when the states ar
 $\sim 1/\delta_G^2$ neighbours to separate them. That $1/\delta_G^2$ is the price of the alias.
 \end{intuition}
 
-\begin{corollary}[Iso-information: structure vs.\ replication vs.\ a second instrument]\label{cor:design}
+\begin{corollary}[Near-alias first-order design law: structure vs.\ replication vs.\ a second instrument]\label{cor:design}
 Because independent channels contribute \emph{additively} to the error exponent (product factorization,
 Thm~\ref{thm:rate}a), a design with $n$ replicated node measurements, $d$ informative neighbours, and $m$ readings
 from a second instrument $O^{(2)}$ (partially breaking the alias, per-reading information $C_2$) has effective
-local information
+local information equal to the shared-$s$ exponent $\max_s\{n C_E(s)+d C_G(s)+m C_2(s)\}$, whose
+\emph{near-alias first-order} value (all optimal tilts $\to s{=}\tfrac12$, Thm~\ref{thm:rate}c) is the linear
+design law
 \[
-   \mathcal C(n,d,m)\;=\;n\,C_E+d\,C_G+m\,C_2\quad(\text{leading order; shared-}s\text{ correction }o(1)\text{ near the alias}),
+   \mathcal C(n,d,m)\;=\;n\,C_E+d\,C_G+m\,C_2\quad(\text{first-order in }\delta;\ \text{shared-}s\text{ gap }o(1)\text{ near the alias}),
 \]
 and the \emph{iso-information surfaces} $\{n C_E+d C_G+m C_2=\text{const}\}$ give the exact substitution rates: one
 neighbour is worth $C_G/C_E$ repeated node measurements and $C_G/C_2$ second-instrument readings. In the
@@ -421,44 +436,63 @@ still factorizes over the $d$ immediate subtrees and each subtree affinity is $\
 bound holds a fortiori; the exact deep-subtree Chernoff constant is the remaining computation. The
 \emph{field} version---the general statistical theorem, not a local test---is Thm~\ref{thm:field}.
 
-\subsection{The field minimax theorem (the general result)}
-A single-node test is a local problem; a T\&M contribution needs the whole \emph{field} $R=\{h(Z_v)\}_{v\in V}$,
-estimated at minimax rate, with a transition between regimes. We phrase everything in terms of
-\emph{conditionally-independent structural views}: given $Z_v$, the subtrees hanging off $v$'s neighbours are
-independent, and each is one ``view'' with per-view Chernoff information $C_G$; the node emission is a further
-view with $C_E$. Trees give this exactly; sparse locally-tree-like graphs give it approximately.
-\begin{theorem}[Field minimax and the three regimes]\label{thm:field}
-Estimate $R=\{h(Z_v)\}_{v\in V}$ on a bounded-degree tree ($n$ nodes, degree $\le d{+}1$) under average per-node
-loss $\mathcal L(\hat R,R)=\frac1n\sum_v\I\{\hat R_v\neq R_v\}$, over the near-aliased class
-$\Theta(\delta_E,\delta_G)$ ($h$-splitting pair with node/structural separations $\delta_E,\delta_G$; $(T,O)$
-known). Then
-\[
-  \inf_{\hat R}\ \sup_{\theta\in\Theta(\delta_E,\delta_G)}\ \E_\theta\,\mathcal L(\hat R,R)\ \asymp\
-  \Phi\big(\delta_E^2+d\,\delta_G^2\big),\qquad \Phi(x)\asymp e^{-c x},
-\]
-the per-node two-point Bayes floor. \emph{Upper bound:} the exact posterior-mode field estimator (belief
-propagation) attains, at each node, its local star rate (Thm~\ref{thm:rate}). \emph{Lower bound (Assouad):}
-restrict to the sub-family that flips $h$ at an antichain of $\Theta(n)$ nodes with pairwise-disjoint radius-$L$
-neighbourhoods; the induced per-node tests are independent, each with two-point error $\ge\tfrac14\rho_E^2
-\rho_G^{2d}$ (Le~Cam), so the average risk is $\ge c\,\Phi$. Three regimes follow: \textbf{measurement-dominated}
-($\delta_E^2\gg d\delta_G^2$), \textbf{structure-dominated} ($\delta_E{=}0$, rate $d\delta_G^2$), and
-\textbf{unidentifiable} ($\delta_E^2+d\delta_G^2\to0\Rightarrow$ risk $\to\tfrac12$).
+\subsection{The field problem: oracle-model risk and forest minimax}\label{sec:field}
+A single-node test is local; a T\&M contribution needs the whole field $R=\{h(Z_v)\}_{v\in V}$. We must be careful
+about two things a referee will press: \emph{(i)} what varies in the ``$\sup$'', and \emph{(ii)} that on a
+\emph{connected} tree a node's evidence is not confined to a bounded neighbourhood. So we split the claim.
+
+\paragraph{Branch information and its saturation.} Define the depth-$\ell$ \emph{branch information}
+$C_G^{(\ell)}=C\big(\mathcal L(Y_{\mathrm{sub},\ell}\mid Z_v{=}a),\mathcal L(Y_{\mathrm{sub},\ell}\mid Z_v{=}b)\big)$,
+the Chernoff information of a depth-$\ell$ subtree of measurements given the centre state. $C_G^{(1)}$ is the
+radius-$1$ ``star'' view; deeper $\ell$ adds more.
+\PROVEN{\emph{Verified} (\texttt{paperB\_subtree\_sim.py}, exact enumeration): the increments \emph{saturate}
+geometrically---chain branch $C_G^{(\ell)}:0.116\to0.121\to0.122\to0.122$; binary branch
+$0.116\to0.125\to0.128\to\cdots$---so $C_G^{(\infty)}<\infty$ exists, exceeding $C_G^{(1)}$ only modestly
+($\lesssim 10\%$ here). Deeper information is real but small.}
+
+\begin{theorem}[Oracle-model field risk; $\vartheta=(T,O)$ fixed and known]\label{thm:field}
+Fix $\vartheta$. Under average Hamming loss the Bayes estimator of the field is the vector of \emph{marginal
+posterior modes} $\hat R_v=\arg\max_r\Pr(R_v{=}r\mid Y)$ (\emph{not} the joint MAP), computed exactly by belief
+propagation on a tree. Its per-node Bayes risk at $v$ is the two-point Bayes error between $Z_v{=}a,b$ from the
+\emph{full} field, $\asymp\Phi\big(\delta_E^2+\sum_{\text{branches at }v}C_G^{(\infty)}\big)$; on a bounded-degree
+tree, $\asymp\Phi(\delta_E^2+d\,C_G^{(\infty)})$ with $\Phi(x)\asymp e^{-cx}$.
 \end{theorem}
-\PROVEN{Upper bound is Thm~\ref{thm:rate} applied node-wise (BP is exact on a tree). Lower bound is Assouad over
-the disjoint-neighbourhood antichain (bounded degree $\Rightarrow$ a positive fraction of nodes are pairwise
-$>2L$ apart), each coordinate a two-point Le~Cam bound. \textbf{Verified} (\texttt{paperB\_field\_sim.py}, exact
-BP): (1) with $\delta_E{=}0$ the field error falls geometrically in branching, $0.241\!\to\!0.210\!\to\!0.175\!
-\to\!0.147$ as degree $2\!\to\!5$ (chance $0.31$), a near-constant $-\log(\text{err}/\text{chance})/d\approx0.14$
-$\Rightarrow$ error $\asymp\text{chance}\cdot e^{-cd}$; (2) three regimes: measurement-dominated
-($\delta_E{=}0.67,\delta_G{=}0.02$) err $0.19$, structure-dominated ($\delta_E{=}0,\delta_G{=}0.50$) err $0.17$,
-near-unidentifiable ($\delta_E{=}\delta_G{=}0$) err $0.33\approx$ chance $0.32$.}
+\PROVEN{Marginal-mode optimality for additive $0$--$1$ loss is standard; BP computes the marginals exactly on a
+tree; the per-node error is the two-point rate of Thm~\ref{thm:rate} with the branch views summed to
+$C_G^{(\infty)}$. \textbf{Verified} (\texttt{paperB\_field\_sim.py}): with $\delta_E{=}0$ the field error falls
+geometrically in branching, $0.241\!\to\!0.147$ as degree $2\!\to\!5$ (chance $0.31$),
+$-\log(\text{err}/\text{chance})/d\approx0.14$; three regimes: measurement-dominated $0.19$, structure-dominated
+$0.17$, unidentifiable $0.33\approx$ chance.}
+
+\begin{theorem}[Forest minimax; $\vartheta$ ranges over the near-aliasing class]\label{thm:forest}
+On the \emph{forest} $\Theta^\circ(\delta_E,\delta_G)$ of $n$ disjoint depth-$1$ star gadgets (each node's
+structural views truncated at radius $1$), the minimax risk for estimators \emph{knowing} $\vartheta$ is
+\emph{exactly} the star floor,
+\[
+   \inf_{\hat R}\ \sup_{\vartheta\in\Theta^\circ}\ \E_\vartheta\,\mathcal L(\hat R,R)\ \asymp\
+   \Phi(\delta_E^2+d\,\delta_G^2),
+\]
+with matching bounds: per-gadget Bayes (upper) and Assouad (lower)---now valid because the gadgets are
+\emph{genuinely independent} experiments. For estimators \emph{not} knowing $\vartheta$, add the estimation
+remainder $\varrho_n(\lambda)$ of Prop~\ref{prop:unknown}. Three regimes: \textbf{measurement-dominated}
+($\delta_E^2\gg d\delta_G^2$), \textbf{structure-dominated} ($\delta_E{=}0$), \textbf{unidentifiable}
+($\delta_E^2+d\delta_G^2\to0\Rightarrow$ risk $\to\tfrac12$).
+\end{theorem}
+\SKETCH{\textbf{The one genuine gap (the reviewer's point).} On a \emph{connected} tree the disjoint-radius-$L$
+Assouad construction is \emph{not} valid as a lower bound: the optimal estimator sees the whole tree, so
+observations \emph{outside} a node's radius-$L$ ball still inform its state, and the coordinate experiments are
+not independent. Two honest resolutions: \emph{(a)} the \textbf{forest/gadget class} above, where subtrees are
+truncated so the star rate is provably minimax; \emph{(b)} the \textbf{connected tree}, where the per-node rate is
+$C_G^{(\infty)}$ (Thm~\ref{thm:field}, upper bound) and a matching lower bound needs an \emph{overlap-aware}
+Assouad using the branch-information recursion $C_G^{(\ell+1)}=\mathcal T(C_G^{(\ell)};T,O)$---not yet done. We do
+not claim a connected-tree matching minimax; we claim the oracle-model rate (Thm~\ref{thm:field}) and the forest
+minimax (Thm~\ref{thm:forest}), and flag the connected-tree lower bound as the open item.}
 \begin{intuition}
-The field problem is $n$ coupled local decisions. Because the tree makes far-apart nodes' evidence essentially
-independent, the average error is governed by the \emph{per-node} de-aliasing rate---and Assouad says you cannot
-do better than solving each node locally. So the star Chernoff exponent is the \emph{engine}, and this theorem is
-the \emph{general statement}: minimax-optimal field recovery, with a clean measurement/structure/unidentifiable
-transition. Unknown $(T,O)$ add an estimation remainder that is itself weakly identified near the alias---the
-bridge to \S\ref{sec:localbayes}.
+The field is $n$ coupled local decisions. On the forest the couplings are cut and the star Chernoff exponent is
+\emph{exactly} the price; on a connected tree deeper views help a little ($C_G^{(1)}\!\to\!C_G^{(\infty)}$, a
+$\lesssim10\%$ effect here), so the star rate is a tight-ish upper bound but not yet a proven lower bound. Either
+way the \emph{engine} is the per-node Chernoff exponent, and unknown $(T,O)$ add the weakly-identified remainder
+of \S\ref{sec:localbayes}.
 \end{intuition}
 
 \subsection{Unknown parameters: the estimation remainder \emph{is} weak identification}\label{sec:unknown}
@@ -522,12 +556,22 @@ precision. (b) at $\eta_0{=}0$: $n^{1/4}\E[\hat\eta]\to$ const ($\approx0.40$) a
 \approx1.07$ fixed across $n{=}10^3$--$1.6{\times}10^4$ is invariant while $\sqrt n\,\delta_G$ \emph{grows}
 $5.8\!\to\!11.6$. (d) $\Pr(\mathrm{sign}\,\eta{=}{+}\mid\text{data}){=}0.50$ with no anchor, rising
 $0.61\to0.83\to0.97$ with $1,3,10$ anchors---the label is prior/anchor-fixed.}
-This is the crux the review anticipated (``when is a Bayesian correction learned vs.\ imposed?''), now with a
-precise mechanism: the de-aliasing \emph{magnitude} $|\eta|=\sqrt\psi$ contracts from the data at the regular
-$\sqrt n$ rate in $\psi$; the \emph{role label} (sign) does not, and is supplied by the prior or an anchor. So the
-nuisance is genuinely prior-sensitive while the functional $R=h(Z)$ is decision-consistent \emph{given} the
-anchor---parameter-vs-decision recovery, seen in the posterior. It also revises \S\ref{sec:unknown}: the plug-in
-remainder and the posterior both live on $\lambda=\sqrt n\,\delta_G^2$.
+\paragraph{Two stages: magnitude from structure, orientation from an anchor.} The review rightly warns that if
+$h(a)\neq h(b)$ the sign is \emph{not} an irrelevant nuisance---it flips $R\mapsto1-R$, so it \emph{is} the
+target. The resolution is that recovery factors into two stages that must not be conflated:
+\[
+   \underbrace{\text{structural data}}_{\text{§\ref{sec:field}--\ref{sec:unknown}}}\ \Rightarrow\
+   \big(|\eta|,\ \psi,\ \text{the \emph{unordered} distinction }\{a,b\}\big);\qquad
+   \underbrace{\text{one anchor / orientation bit}}_{\text{external}}\ \Rightarrow\ \mathrm{sign}(\eta)\ \Rightarrow\ h(Z).
+\]
+So we do \emph{not} claim the data alone identify $R$; we claim structure identifies the \emph{magnitude} of
+de-aliasing and the unordered pair, and that orientation is a separate, cheap piece of information. This is itself
+a message worth stating: \emph{structure identifies how much the states differ; very little external information
+suffices to orient them}---verified in Prop~\ref{prop:singular}(d), where a single anchor already moves
+$\Pr(\text{sign})$ from $0.50$ to $0.61$ and ten anchors to $0.97$, so orientation costs $O(1)$ anchors regardless
+of $n$. The magnitude is the prior-insensitive part (regular $\sqrt n$ in $\psi$); the orientation is the
+prior/anchor-determined part---parameter-vs-decision recovery, now with the exact locus of prior-dependence named.
+It also revises \S\ref{sec:unknown}: the plug-in remainder and the posterior both live on $\lambda=\sqrt n\,\delta_G^2$.
 \begin{conjecture}[The boundary posterior]\label{conj:bayes}
 Along $\lambda=\sqrt n\,\delta_{G,n}^2\to\lambda_0$: the posterior for $\psi$ converges to a Gaussian
 \emph{truncated at the boundary} $\psi\ge0$, with non-centrality set by $\lambda_0$---interpolating
@@ -536,10 +580,41 @@ $\mathrm{Bernoulli}$ (prior/anchor); and $d_{\mathrm{TV}}\{\Pi_1(R\mid Y),\Pi_2(
 explicit function of $\lambda_0$, zero at $\lambda_0{=}\infty$ and positive below---the ``learned-vs-imposed''
 diagnostic.
 \end{conjecture}
-\CONJ{What remains is only the exact \emph{form} of the truncated-Gaussian limit: the $O(\psi)$ local expansion of
-the tree-signature likelihood (the score in $\psi$ is the sibling-covariance contrast of Thm~\ref{thm:branch}) and
-the boundary Bernstein--von Mises theorem in $\psi\ge0$. The singular structure (a)--(d) is established; this is a
-known-genre (constrained/singular) BvM calculation, no longer a leap. This is the Bayesian Analysis centrepiece.}
+\PROVEN{\textbf{Shape verified} (\texttt{paperB\_boundary\_sim.py}): the posterior of the localized parameter
+$u=\sqrt n\,\psi$ is $n$-\emph{stable} (its width is invariant across $n{=}10^3$--$1.6{\times}10^4$, confirming
+$\psi$ is $\sqrt n$-regular) and carries the truncation signature---at $\lambda_0{=}0$ the posterior mean sits at
+$+0.61$ above the boundary (a half-normal piled at $u{=}0$), and the boundary inflation shrinks toward $0$ as
+$\lambda_0$ grows (truncation becomes irrelevant $\Rightarrow$ Bernstein--von Mises). So the limit \emph{is} a
+Gaussian truncated at $u\ge0$ indexed by $\lambda_0$.}
+\CONJ{What remains is only the exact analytic \emph{constant}: the scale $I_\psi(0)^{-1/2}$ of the truncated
+Gaussian, from the $O(\psi)$ expansion of the tree-signature likelihood (the score in $\psi$ is the
+sibling-covariance contrast of Thm~\ref{thm:branch}) and the constrained Bernstein--von Mises theorem in
+$\psi\ge0$. Singular structure and limiting shape are now established/verified; this is a known-genre boundary-BvM
+calculation, no longer a leap. It is the Bayesian Analysis centrepiece.}
+
+\subsection{The $(n,d)$ phase diagram: two distinct ways de-aliasing fails}\label{sec:phase}
+The results now separate cleanly along \emph{two} axes, and this is the synthesis the paper is really about.
+\emph{Local structural richness} $d\,\delta_G^2$ (equivalently $d\,C_G$) governs \textbf{classification}---whether
+the neighbourhood can distinguish the node \emph{if the map $(T,O)$ were known} (the oracle floor
+$\Phi$, Thm~\ref{thm:field}). \emph{Population information} $\lambda=\sqrt n\,\delta_G^2$ governs
+\textbf{learning the correction}---whether $n$ units suffice to estimate how structure maps to the latent states
+(the singular parameter $\psi$, Prop~\ref{prop:singular}, and the remainder $\varrho_n(\lambda)$,
+Prop~\ref{prop:unknown}). These are different information axes: local degree $d$ versus population size $n$.
+\begin{center}\small
+\begin{tabular}{r|p{5.4cm}|p{5.4cm}}
+ & $\lambda=\sqrt n\,\delta_G^2$ \emph{small} (can't learn the map) & $\lambda$ \emph{large} (map known/learned) \\ \hline
+$d\,\delta_G^2$ \emph{small} & can neither classify nor learn: risk $\to$ chance & map known, but too little local structure to classify: risk $\to$ chance \\ \hline
+$d\,\delta_G^2$ \emph{large} & structure \emph{could} classify if known, but the map is only weakly learned: risk $=$ floor $+\ \varrho_n(\lambda)$ (large) & full de-aliasing: risk $\to0$ \\
+\end{tabular}
+\end{center}
+So structural de-aliasing has \emph{two} independent failure modes---(1) not enough local structure to
+distinguish the node ($d\,\delta_G^2$ small), and (2) enough structure in principle but not enough population
+information to learn how it maps to the states ($\lambda$ small)---and only the diagonal corner
+($d\,\delta_G^2$ and $\lambda$ both large) is full de-aliasing. The two axes are verified separately: the $d$-axis
+in \texttt{paperB\_field\_sim.py} (error $\asymp\text{chance}\cdot e^{-c\,d\delta_G^2}$) and the $\lambda$-axis in
+\texttt{paperB\_unknown\_sim.py}/\texttt{lan\_sim.py} (remainder and posterior governed by $\lambda$). This is the
+result that most distinguishes the paper from single-parameter weak-identification: aliasing creates a
+\emph{two-dimensional} phase diagram.
 
 \section{Related work and honest positioning}\label{sec:related}
 The organizing distinction is \emph{linear-time vs.\ branching-time}: our signature $Q_L$ is the joint law of the
@@ -567,12 +642,13 @@ novel as the \emph{screen} for when structure can help \\
 \end{tabular}
 \end{center}
 \noindent\textbf{Bottom line.} The qualitative backbone is largely a repackaging of bisimulation$=$lumpability and
-latent-tree identifiability, and we say so. The paper's weight rests on the \textbf{field minimax theorem}
-(Thm~\ref{thm:field})---the general statement, with matching bounds and a regime transition---built on the
-\textbf{near-aliasing rate} (Thm~\ref{thm:rate}), the \textbf{aliasing framing} no tree-identifiability result
-covers, the \textbf{design law} (Cor~\ref{cor:design}), and the \textbf{local weak-identification asymptotics}
-(Conj~\ref{conj:bayes}). We flag the latent-tree literature as large and phrase the aliasing-novelty as ``to our
-knowledge.''
+latent-tree identifiability, and we say so. The paper's weight rests on the \textbf{field results}
+(oracle-model rate Thm~\ref{thm:field} $+$ forest minimax Thm~\ref{thm:forest}, with the connected-tree lower
+bound the one flagged open item), the \textbf{near-aliasing rate} (Thm~\ref{thm:rate}), the \textbf{aliasing
+framing} no tree-identifiability result covers, the \textbf{$(n,d)$ phase diagram} (\S\ref{sec:phase}), the
+\textbf{design law} (Cor~\ref{cor:design}), and the \textbf{singular local asymptotics}
+(Prop~\ref{prop:singular}, Conj~\ref{conj:bayes}). We flag the latent-tree literature as large and phrase the
+aliasing-novelty as ``to our knowledge.''
 
 \section{The three empirical regimes as instances of one theory}\label{sec:regimes}
 \begin{center}\small
@@ -590,14 +666,14 @@ $\mathcal I_G$ axis of Theorem~\ref{thm:info}.
 \section{Roadmap: what must carry the paper}
 Ordered by how much novelty each piece bears (audit-adjusted).
 \begin{enumerate}[leftmargin=*,itemsep=1pt]
-  \item \textbf{[CENTER] Field minimax (Thm~\ref{thm:field}) $+$ unknown parameters (Prop~\ref{prop:unknown}).}
-  The general theorem: minimax-optimal recovery of $\{h(Z_v)\}$ on a tree with the
-  measurement/structure/unidentifiable transition, Assouad lower $+$ BP upper bounds; verified. The
-  \emph{unknown-parameter} plug-in remainder is shown (verified) to be governed by
-  $\lambda=\sqrt n\,\delta_G^2$---the same singular boundary as the Bayesian regime (item~5). \emph{Finish for
-  T\&M:} tighten the Assouad constant and state the exact rate function $\Psi(n,d,\delta_E,\delta_G)$, and the
-  exact remainder curve $\varrho_n(\lambda)$ via the boundary expansion. This is the result that stops the work
-  looking like a local test.
+  \item \textbf{[CENTER] Field results (Thms~\ref{thm:field},~\ref{thm:forest}) $+$ unknown parameters
+  (Prop~\ref{prop:unknown}).} Oracle-model rate (marginal-mode BP, per-node $\Phi(\delta_E^2+d C_G^{(\infty)})$)
+  and \emph{forest} minimax (star rate exactly minimax, clean Assouad); the unknown-parameter remainder is
+  governed by $\lambda=\sqrt n\,\delta_G^2$. \emph{The one open item:} the \textbf{connected-tree} matching lower
+  bound---the disjoint-neighbourhood Assouad is invalid there (deeper views couple the coordinates), so it needs
+  an overlap-aware argument via the branch recursion $C_G^{(\ell+1)}=\mathcal T(C_G^{(\ell)})$. Also: exact
+  $\Psi(n,d,\delta_E,\delta_G)$ and $\varrho_n(\lambda)$. This is the result that stops the work looking like a
+  local test---but only once the connected-tree lower bound is settled or the claim is scoped to the forest class.
   \item \textbf{[ENGINE] Near-aliasing rate (Thm~\ref{thm:rate}).} Proved + verified for the star (boundary
   $\delta_E^2+d\delta_G^2$, shared-$s$ Chernoff exponent); the local engine of the field theorem. Remaining:
   deep-subtree Chernoff on general trees. Position vs.\ Weiss--Nadler (no rates), Chang/AMR (distinct emissions).
@@ -615,9 +691,12 @@ Ordered by how much novelty each piece bears (audit-adjusted).
   \item \textbf{[SCAFFOLD] Lumpability boundary (Thm~\ref{thm:lump})}---cite bisimulation$=$lumpability, do not
   claim; use only to state the identifiability boundary.
 \end{enumerate}
-\noindent Per the review, we \emph{stop adding conceptual ingredients} here and concentrate on turning
-Thm~\ref{thm:field} into the general (unknown-parameter, and beyond-exact-tree via conditionally-independent
-views) minimax result.
+\noindent Per the review, we \emph{stop adding conceptual ingredients}. The remaining work is exactly three
+proofs, all now sharply posed rather than open-ended: \emph{(1)} the connected-tree matching lower bound (or a
+clean scoping to the forest class); \emph{(2)} the exact boundary-BvM constant $I_\psi(0)^{-1/2}$ for the
+truncated-Gaussian posterior (shape already verified); \emph{(3)} write-up of the $(n,d)$ phase diagram
+(\S\ref{sec:phase}) with both axes' constants. The conceptual synthesis is in place; the question is whether these
+three survive full proof.
 
 \paragraph{Ceiling assessment (audit-adjusted).} If the finished paper were mostly Thms~\ref{thm:dealias},
 \ref{thm:lump} and a star calculation, a T\&M referee who knows concurrency theory would rightly say the
