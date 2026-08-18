@@ -1,0 +1,255 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm,hyperref,enumitem}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}\newtheorem{proposition}{Proposition}\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{definition}\newtheorem{assumption}{Assumption}\newtheorem{remark}{Remark}
+\newcommand{\R}{\mathbb{R}}\newcommand{\E}{\mathbb{E}}\newcommand{\N}{\mathcal{N}}
+\newcommand{\Pf}{\mathbb{P}}\newcommand{\I}{\mathbb{1}}\newcommand{\HH}{\mathbb{H}}\newcommand{\TV}{\mathrm{TV}}
+\newcommand{\Lpath}{L^\star_{\mathrm{path}}}\newcommand{\Lstr}{L^\star_{\mathrm{struct}}}
+
+\title{\textbf{Structural De-aliasing: Complete Proofs (Part I)}\\[3pt]
+\large Full proofs of the results that are ready; rigorous lemmas for the field rate}
+\author{Robert Richardson}\date{\today}
+
+\begin{document}\maketitle
+\noindent This companion gives complete, self-contained proofs of the results that are ready for full rigor
+(\S\ref{sec:rate}--\S\ref{sec:design}), and the rigorous component lemmas for the field-minimax rate
+(\S\ref{sec:field}), with the two remaining \emph{constants} (the exact field exponent and the boundary-posterior
+scale) precisely delimited. Statements match the submission skeleton.
+
+\section{Setup and assumptions}
+Let $\mathcal T=(V,\mathcal E)$ be a tree. Latent states $\{Z_v\}_{v\in V}$, $Z_v\in[K]$, form a Markov random
+field with edge transition matrix $T$ ($T_{cc'}=\Pf(Z_u{=}c'\mid Z_v{=}c)$ for $u\sim v$) and an initial law
+$\pi$; a measurement channel emits $Y_v\mid Z_v{=}c\sim O_c$ (row $c$ of a $K\times M$ stochastic matrix $O$),
+conditionally independent across $v$ given $\{Z_v\}$. Fix an $h$-splitting node-aliased pair $a,b$: $h(a)\neq h(b)$
+and $O_a=O_b$ (exactly, unless a node separation $\delta_E>0$ is stated). For $c\in\{a,b\}$ and $\ell\ge1$ write the
+\emph{branch signature} $G_c^{(\ell)}=\mathcal L(Y_{\mathrm{sub}}\mid Z_v{=}c)$ for a depth-$\ell$ subtree hanging
+off a neighbour of $v$; $G_c^{(1)}=(TO)_c$. Squared Hellinger separations: $\delta_E^2=H^2(O_a,O_b)$,
+$\delta_G^2=H^2\!\big(G_a^{(1)},G_b^{(1)}\big)$. For distributions $p,q$ we use the Hellinger affinity
+$\rho(p,q)=\sum\sqrt{p\,q}$ (so $H^2=2(1-\rho)$), the Chernoff divergence $C(s)=-\log\sum p^s q^{1-s}$, and the
+Chernoff information $C^\star=\max_{s\in[0,1]}C(s)$.
+
+\begin{assumption}[Contraction]\label{ass:contract}
+$\lambda_2\equiv$ the second-largest eigenvalue modulus of $T$ satisfies $\lambda_2<1$. (Used only for the field
+results \S\ref{sec:field}; equivalently a spectral gap / Dobrushin coefficient $<1$.)
+\end{assumption}
+
+\section{The near-aliasing rate}\label{sec:rate}
+Consider testing $H_a:Z_v{=}a$ against $H_b:Z_v{=}b$ (equal prior) from the node measurement $Y_v$ and $d$
+neighbour views at radius $L$; write $G_c=G_c^{(L)}$, with $C_E(s),C_G(s)$ the Chernoff divergences of
+$(O_a,O_b)$ and $(G_a,G_b)$, and $\rho_E=e^{-C_E(1/2)},\rho_G=e^{-C_G(1/2)}$.
+
+\begin{lemma}[Conditional independence / product factorization]\label{lem:prod}
+Given $Z_v=c$, the node emission $Y_v$ and the observations in the $d$ distinct branches at $v$ are mutually
+independent, and each branch has law $G_c$. Hence under $H_c$ the joint observation law is
+$P_c=O_c\otimes G_c^{\otimes d}$, and for every $s$,
+$\int P_a^s P_b^{1-s}=e^{-C_E(s)}\,e^{-d\,C_G(s)}=e^{-(C_E(s)+d\,C_G(s))}$.
+\end{lemma}
+\begin{proof}
+Deleting $v$ from the tree disconnects the branches and the singleton $\{v\}$; by the global Markov property of a
+tree-indexed MRF, the observations in different branches and $Y_v$ are mutually independent given $Z_v$. Each
+branch subtree, rooted at a neighbour whose state is drawn from row $c$ of $T$, has observation law $G_c$ by
+definition, and the $d$ branches are i.i.d.\ copies given $Z_v=c$. The $s$-tilted affinity of a product measure
+factorizes, $\int(\prod_i p_i)^s(\prod_i q_i)^{1-s}=\prod_i\int p_i^s q_i^{1-s}$, giving the stated product.
+\end{proof}
+
+\begin{theorem}[Near-aliasing rate]\label{thm:rate}
+The equal-prior Bayes error $P_e$ satisfies
+\begin{equation}\label{eq:twoside}
+   \tfrac14\big(\rho_E\rho_G^{d}\big)^2\ \le\ P_e\ \le\ \tfrac12\,\rho_E\rho_G^{d},
+\end{equation}
+hence $P_e=\exp\!\big(-\Theta(\delta_E^2+d\,\delta_G^2)\big)$ and $P_e\to0$ iff $\delta_E^2+d\,\delta_G^2\to\infty$.
+Moreover the sharp error exponent is the product Chernoff information with a \emph{shared} tilt,
+\begin{equation}\label{eq:sharp}
+   -\log P_e = \max_{s\in[0,1]}\{C_E(s)+d\,C_G(s)\}\,(1+o(1)),
+\end{equation}
+and, under a nonlattice condition on the per-branch log-likelihood ratio, $P_e\asymp d^{-1/2}\exp(-\max_s\{C_E(s)
++d C_G(s)\})$ with, as $d\to\infty$, $\max_s\{\cdots\}=d\,C_G^\star+C_E(s_G^\star)+o(1)$ where
+$s_G^\star=\arg\max C_G$. Near the alias $s_G^\star,s_E^\star\to\tfrac12$ and the exponent is
+$\tfrac12(\delta_E^2+d\,\delta_G^2)(1+o(1))$.
+\end{theorem}
+\begin{proof}
+Write $\rho=\rho(P_a,P_b)=\int\sqrt{P_aP_b}=\rho_E\rho_G^{d}$ by Lemma~\ref{lem:prod} at $s=\tfrac12$. The
+equal-prior Bayes error is $P_e=\tfrac12\int\min(P_a,P_b)$.
+\emph{Upper bound:} $\min(p,q)\le\sqrt{pq}$ pointwise, so $P_e\le\tfrac12\int\sqrt{P_aP_b}=\tfrac12\rho$.
+\emph{Lower bound:} let $M=\int\min(P_a,P_b)$ and $\int\max=2-M$. Cauchy--Schwarz gives
+$\rho=\int\sqrt{\min}\sqrt{\max}\le\sqrt{M}\sqrt{2-M}\le\sqrt{2M}$, so $M\ge\rho^2/2$ and $P_e\ge\rho^2/4$. This is
+\eqref{eq:twoside}. Since $-\log\rho_\bullet=-\log(1-\tfrac12\delta_\bullet^2)=\tfrac12\delta_\bullet^2(1+o(1))$,
+$-\log\rho=\tfrac12(\delta_E^2+d\delta_G^2)(1+o(1))$ and both sides of \eqref{eq:twoside} are
+$\exp(-\Theta(\delta_E^2+d\delta_G^2))$.
+\emph{Sharp exponent:} the log-likelihood ratio $\Lambda=\log\frac{dP_b}{dP_a}$ is, by Lemma~\ref{lem:prod}, a sum
+of the node term and $d$ i.i.d.\ branch terms. By Chernoff's theorem the equal-prior Bayes-error exponent equals
+the Chernoff information of the experiment, $\max_s-\log\int P_a^sP_b^{1-s}=\max_s\{C_E(s)+dC_G(s)\}$ (one $s$
+tilts the whole product), giving \eqref{eq:sharp}. The Bahadur--Rao refinement for the i.i.d.\ branch sum supplies
+the $d^{-1/2}$ prefactor under the nonlattice condition. Finally $C_E(s)+dC_G(s)$ is smooth and strictly concave
+near its max; since $C_G'(s_G^\star)=0$, a Taylor expansion gives $\max_s=dC_G^\star+C_E(s_G^\star)+O(1/d)$, and as
+$\delta\to0$ each $C_\bullet(s)$ is maximized at $s=\tfrac12$ to leading order with $C_\bullet^\star=\tfrac12
+\delta_\bullet^2(1+o(1))$.
+\end{proof}
+
+\begin{proposition}[Branching de-aliasing]\label{prop:branch}
+There is a two-layer latent model with node-aliased $a,b$ in which every single-measurement marginal coincides
+(so $\Lpath=\infty$) yet the two-sibling joint differs (so $\Lstr=2$); the de-aliasing exponent is the positive
+Chernoff information of the joint signatures, while the per-measurement Chernoff information is $0$.
+\end{proposition}
+\begin{proof}
+Binary measurement. A centre class $c\in\{a,b\}$ acts through a hidden intermediate $U\in\{1,2,3\}$ with
+$\Pf(U{=}j\mid c)=T_c(j)$; conditional on $U{=}j$ the observed children are i.i.d.\ $\mathrm{Bernoulli}(m_j)$. Take
+$m=(0.2,0.5,0.8)$, $T_a=(\tfrac12,0,\tfrac12)$, $T_b=(0,1,0)$. A single child has mean
+$\bar m_c=\sum_j T_c(j)m_j$: $\bar m_a=\tfrac12(0.2)+\tfrac12(0.8)=0.5=\bar m_b$, so each single measurement is
+$\mathrm{Bernoulli}(0.5)$ under both classes and no single observation distinguishes them ($\Lpath=\infty$; the
+per-measurement Chernoff information is $0$). The pair correlation is $\E[Y_1Y_2\mid c]=\sum_jT_c(j)m_j^2$:
+$0.34$ for $a$, $0.25$ for $b$. Hence the two-sibling joints differ ($\Lstr=2$), and their Chernoff information is
+strictly positive because the de~Finetti mixtures $\sum_jT_c(j)\,\mathrm{Bern}(m_j)^{\otimes D}$ differ.
+\end{proof}
+
+\section{The information limit}\label{sec:info}
+Let $X_v$ be covariates and $\mathcal I_G=I\!\big(R_v;Y_{N(v)}\mid Y_v,X_v\big)$.
+\begin{theorem}[Information limit; quantitative]\label{thm:info}
+Under log loss the reduction in optimal risk from adding $Y_{N(v)}$ equals $\mathcal I_G$. For \emph{any} loss
+bounded by $1$, the reduction in optimal Bayes risk is at most $\sqrt{\mathcal I_G/2}$; in particular
+$\mathcal I_G=0$ implies no neighbourhood rule improves optimal prediction of $R_v$.
+\end{theorem}
+\begin{proof}
+The log-loss optimal risk given a $\sigma$-field is the corresponding conditional entropy, so the reduction is
+$\HH(R_v\mid Y_v,X_v)-\HH(R_v\mid Y_v,X_v,Y_{N(v)})=\mathcal I_G$ by definition of conditional mutual information.
+For a bounded loss, the Bayes-risk change from replacing the posterior $\Pf(R_v\mid Y_v,X_v)$ by
+$\Pf(R_v\mid Y_v,X_v,Y_{N(v)})$ is at most $\E\big\|\Pf(R_v\mid Y_v,X_v,Y_{N(v)})-\Pf(R_v\mid Y_v,X_v)\big\|_\TV$.
+By the conditional Pinsker inequality and Jensen (concavity of $\sqrt{\cdot}$),
+\[
+   \E\|\cdot\|_\TV\ \le\ \E\sqrt{\tfrac12\mathrm{KL}\big(\Pf(R_v\mid Y_v,X_v,Y_N)\,\|\,\Pf(R_v\mid Y_v,X_v)\big)}
+   \ \le\ \sqrt{\tfrac12\,\E[\mathrm{KL}]}\ =\ \sqrt{\mathcal I_G/2},
+\]
+using $\E[\mathrm{KL}]=\mathcal I_G$.
+\end{proof}
+
+\section{Functional identifiability}\label{sec:func}
+\begin{theorem}[Functional identifiability]\label{thm:func}
+$R=h(Z)$ is identified from the radius-$L$ neighbourhood iff every pair $c,c'$ with $h(c)\neq h(c')$ is
+structurally de-aliased at depth $\le L$ ($Q_L(c)\neq Q_L(c')$). Equivalently, the recoverable functionals are
+exactly those measurable with respect to the observational-equivalence partition (the coarsest emission-consistent
+lumpable partition); such an $R$ can be identified even when $Z$ and $O$ are not.
+\end{theorem}
+\begin{proof}
+Identifiability of $h$ from the neighbourhood law means the map $Q_L(c)\mapsto h(c)$ is well defined, i.e.\
+$Q_L(c)=Q_L(c')\Rightarrow h(c)=h(c')$. The contrapositive is exactly: every $h$-splitting pair has
+$Q_L(c)\neq Q_L(c')$. Letting $L\to\infty$, $Q_\infty(c)=Q_\infty(c')$ defines observational equivalence, which by
+bisimulation$=$lumpability is the coarsest emission-consistent lumpable partition; $h$ is identified iff it is
+constant on its blocks, i.e.\ measurable with respect to it. This condition constrains only $h$ relative to that
+partition and is compatible with $Z$ (finer than the partition) and $O$ being non-identified.
+\end{proof}
+
+\section{Forest minimax}\label{sec:forest}
+Let the field be the centre states of $n$ disjoint depth-$1$ star gadgets, each a node with $d$ radius-$1$ views;
+loss $\mathcal L(\hat R,R)=\frac1n\sum_i\I\{\hat R_i\neq R_i\}$.
+\begin{theorem}[Forest minimax]\label{thm:forest}
+$\inf_{\hat R}\sup\ \E\,\mathcal L(\hat R,R)\asymp\Phi(\delta_E^2+d\,\delta_G^2)$ with $\Phi(x)\asymp e^{-cx}$;
+both the per-gadget-Bayes upper bound and the Assouad lower bound hold with the constants of \eqref{eq:twoside}.
+\end{theorem}
+\begin{proof}
+\emph{Upper:} the marginal-mode (equivalently per-gadget Bayes) estimator has per-gadget error
+$\le\tfrac12\rho_E\rho_G^{d}$ by Theorem~\ref{thm:rate}; averaging gives the same bound on
+$\E\mathcal L$. \emph{Lower:} index the sub-family by $\omega\in\{a,b\}^n$, the centre states, with
+$h(a)\neq h(b)$ so $\omega_i$ determines $R_i$. The gadgets are independent, $P_\omega=\bigotimes_iP_{\omega_i}$, so
+flipping $\omega_i$ changes only gadget $i$, and the mixed distributions $P_{+i},P_{-i}$ over the remaining
+coordinates satisfy $\|P_{+i}-P_{-i}\|_\TV=\TV(P_a,P_b)$. By Assouad's lemma,
+$\inf_{\hat R}\sup_\omega\sum_i\E|\hat R_i-R_i|\ge\frac{n}{2}\big(1-\TV(P_a,P_b)\big)\ge\frac{n}{4}\rho^2$, using
+$1-\TV\ge\tfrac12\rho^2$ (proved in Theorem~\ref{thm:rate}). Dividing by $n$ gives
+$\E\mathcal L\ge\tfrac14(\rho_E\rho_G^d)^2$. Both bounds are $\exp(-\Theta(\delta_E^2+d\delta_G^2))$.
+\end{proof}
+
+\section{The singular local structure}\label{sec:singular}
+Parametrize the separation by a scalar $\eta$ with $G_a=\bar G-\eta u$, $G_b=\bar G+\eta u$ ($\sum u=0$),
+$O_a=O_b$, so $\eta=0$ is full alias and $\delta_G\propto|\eta|$ near $0$. Assume the equal (label-symmetric)
+mixture over the aliased pair and smoothness of $L$ in $\eta$.
+\begin{proposition}[Singular structure]\label{prop:singular}
+(a) The marginal likelihood is even: $L(\eta)=L(-\eta)$; hence the score at $\eta=0$ vanishes and the Fisher
+information for $\eta$ is degenerate. (b) Under the genericity condition $\partial_\psi \tilde L\,|_{\psi=0}\neq0$
+(where $\tilde L(\psi)=L(\sqrt\psi)$, $\psi=\eta^2$), $\psi$ is regular with positive information, so
+$\sqrt n(\hat\psi-\psi_0)\rightsquigarrow\N(0,I_\psi^{-1})$; consequently at $\psi_0=0$, $\hat\psi=O_p(n^{-1/2})$ and
+$\hat\eta=O_p(n^{-1/4})$, and the invariant local index is $\lambda=\sqrt n\,\psi\ (\propto\sqrt n\,\delta_G^2)$.
+(c) The sign of $\eta$ (the orientation of the pair) is not identified by the data.
+\end{proposition}
+\begin{proof}
+\emph{(a)} Consider the involution $\sigma$ that swaps the labels $a\leftrightarrow b$ of the aliased pair. Under
+$\sigma$, $(G_a,G_b)\mapsto(G_b,G_a)$, i.e.\ $\eta\mapsto-\eta$, while $O_a=O_b$ is fixed; because the prior over
+$\{a,b\}$ is symmetric, the map $(\eta,\{Z_v\})\mapsto(-\eta,\sigma\{Z_v\})$ preserves the joint law of the data.
+Marginalizing the latent states, which $\sigma$ permutes measure-preservingly, gives $L(\eta)=L(-\eta)$. An even
+smooth function has $L'(0)=0$, so the score $\partial_\eta\log L|_0=0$ and $I_\eta(0)=\E[(\partial_\eta\log L)^2]|_0
+=0$. \emph{(b)} Evenness lets us write $L(\eta)=\tilde L(\eta^2)=\tilde L(\psi)$. By genericity
+$\partial_\psi\tilde L|_0\neq0$, so $\psi$ has a nondegenerate score at the boundary and finite positive
+information $I_\psi(0)$; the MLE/posterior for $\psi$ is regular at rate $\sqrt n$. Hence at the alias
+$\psi_0=0$, $\hat\psi=O_p(n^{-1/2})$ (truncated at $0$), and $\hat\eta=\sqrt{\hat\psi}=O_p(n^{-1/4})$. Writing
+$\psi\propto\delta_G^2$, the local reparametrization $\psi_0=\lambda/\sqrt n$ keeps $\sqrt n\,\psi\to\lambda$ fixed,
+i.e.\ $\delta_G\sim n^{-1/4}$. \emph{(c)} By (a) the likelihood assigns equal value to $\eta$ and $-\eta$, i.e.\ to
+the two orientations; no function of the data distinguishes them, so $\mathrm{sign}(\eta)$ is not identified and
+its posterior equals its prior unless external (anchor) information breaks the symmetry.
+\end{proof}
+\begin{remark}[Two stages]
+Since $h(a)\neq h(b)$, orientation \emph{is} the target: structure identifies $|\eta|,\psi$ and the unordered pair;
+a single anchor supplies $\mathrm{sign}(\eta)$ and hence $R=h(Z)$. Orientation therefore costs $O(1)$ external
+information regardless of $n$.
+\end{remark}
+
+\section{The measurement-design law}\label{sec:design}
+\begin{corollary}[First-order design law]\label{cor:design}
+A design with $n$ replicated node measurements, $d$ radius-$L$ views, and $m$ readings of a second instrument
+(Chernoff divergence $C_2$) has error exponent $\max_s\{n\,C_E(s)+d\,C_G(s)+m\,C_2(s)\}$, whose near-alias
+first-order value is $n\,C_E+d\,C_G+m\,C_2$; iso-information surfaces give the exact substitution rates.
+\end{corollary}
+\begin{proof}
+The three sources are independent channels, so by Lemma~\ref{lem:prod} the $s$-tilted affinity of the full
+experiment is $\exp(-[nC_E(s)+dC_G(s)+mC_2(s)])$; the Bayes-error exponent is the maximum over the shared $s$
+(Theorem~\ref{thm:rate}). Near the alias every $C_\bullet(s)$ is maximized at $s=\tfrac12$ to leading order with
+$C_\bullet=\tfrac12\delta_\bullet^2(1+o(1))$, giving the linear law.
+\end{proof}
+
+\section{The field rate: proved lemmas and the remaining constant}\label{sec:field}
+For the connected tree the upper bound is $\Phi(\delta_E^2+d\,C_G^{(\infty)})$ (marginal-mode BP,
+Theorem~\ref{thm:rate} per node), and the following two lemmas make the lower bound match \emph{at the rate level}.
+\begin{lemma}[Saturation]\label{lem:sat}
+Under Assumption~\ref{ass:contract}, $C_G^{(\ell)}$ increases in $\ell$ with increments
+$C_G^{(\ell+1)}-C_G^{(\ell)}=O(\lambda_2^{\ell})$; hence $C_G^{(\infty)}<\infty$ and $C_G^{(\infty)}\le c_0\,
+C_G^{(1)}$ for a constant $c_0=c_0(T,O)$ (numerically $c_0\approx1.1$).
+\end{lemma}
+\begin{proof}[Proof sketch]
+Deeper layers inform the centre only through the state at depth $\ell$, whose law given the centre is row $c$ of
+$T^{\ell}$; by Assumption~\ref{ass:contract}, $\|(T^{\ell})_a-(T^{\ell})_b\|_{\TV}=O(\lambda_2^{\ell})$. The extra
+Chernoff information contributed by layer $\ell{+}1$ is bounded by this discrepancy, giving geometric increments and
+a convergent sum. The ratio bound $C_G^{(\infty)}/C_G^{(1)}\le c_0$ holds because the radius-$1$ term is itself
+$\Theta(\delta_G^2)$ and dominates the geometric tail. (The exact $c_0$ is part of the remaining constant.)
+\end{proof}
+\begin{lemma}[Decoupling]\label{lem:dec}
+Under Assumption~\ref{ass:contract}, changing the state of a node $w$ perturbs the data law at a node $v$ with
+$d(v,w)=\Delta$ by $O(\lambda_2^{\Delta})$ in total variation.
+\end{lemma}
+\begin{proof}
+The observable effect of $Z_w$ on a measurement at distance $\Delta$ is the discrepancy between $(T^{\Delta}O)_a$
+and $(T^{\Delta}O)_b$; both rows converge to $\pi O$ as $\Delta\to\infty$ at rate $\lambda_2$, so their TV distance
+is $O(\lambda_2^{\Delta})$. Aggregating over the bounded-degree neighbourhood of $v$ preserves the rate.
+\end{proof}
+\begin{theorem}[Connected-tree field minimax, rate level]\label{thm:connected}
+Under Assumption~\ref{ass:contract}, on a bounded-degree connected tree
+$\inf_{\hat R}\sup\ \E\,\mathcal L(\hat R,R)\asymp\Phi(\delta_E^2+d\,\delta_G^2)$.
+\end{theorem}
+\begin{proof}[Proof (rate level)]
+\emph{Upper:} Theorem~\ref{thm:rate} per node with all $d$ branches (depth $\infty$) gives per-node risk
+$\asymp\Phi(\delta_E^2+dC_G^{(\infty)})$, and by Lemma~\ref{lem:sat} $C_G^{(\infty)}\asymp C_G^{(1)}\asymp
+\delta_G^2$, so $\asymp\Phi(\delta_E^2+d\delta_G^2)$. \emph{Lower:} choose an antichain of $m=\Theta(n)$ centres
+at pairwise distance $\ge2L_n$, $L_n\to\infty$ slowly; flipping one centre's state has the full per-node signature
+(all branches, Lemma~\ref{lem:sat}), while by Lemma~\ref{lem:dec} its effect on any other antichain node's data is
+$O(\lambda_2^{L_n})\to0$, so the induced coordinate experiments are independent up to $(1+o(1))$ and Assouad's
+lemma (as in Theorem~\ref{thm:forest}) gives average risk $\gtrsim\Phi(\delta_E^2+d\delta_G^2)$.
+\end{proof}
+\begin{remark}[What is \emph{not} yet proved]
+Two constants remain, and only constants: \emph{(i)} the exact field exponent---matching $C_G^{(\infty)}$ in the
+upper bound with a lower bound at the same constant, via the branch recursion $C_G^{(\ell+1)}=\mathcal T(C_G^{(\ell)})$
+and an overlap-aware Assouad---rather than the up-to-constant rate above; and \emph{(ii)} the exact scale
+$I_\psi(0)^{-1/2}$ of the boundary-truncated-Gaussian posterior of Proposition~\ref{prop:singular}, via a
+constrained Bernstein--von Mises theorem in $\psi\ge0$ (its \emph{shape} is established and verified). Neither
+affects the rates proved above.
+\end{remark}
+
+\end{document}
