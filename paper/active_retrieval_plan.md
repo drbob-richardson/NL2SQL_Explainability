@@ -421,3 +421,23 @@ NET for the paper: the alignment law is now demonstrated on a real MIXED distrib
 real judge -- a genuine firm-up of Sec 'When does structure help'. The lambda_q 'learns when to use structure'
 contribution stays PROPOSED/oracle-only; the deployable message is 'graph is a safe default, no gate needed'.
 Total extra spend: $1.26.
+
+## ALIGNMENT-LAW THEOREM (Paper A firm-up #2, $0)  [paper/writeup/paperA_alignment_theorem.tex, scripts/paperA_alignment_sim.py]
+Turned the measured 'structure helps iff graph-chain alignment' into a PROVED result (elevates A from mechanism to
+mechanism+law). Model: GP with semantic mean + correlation-form kernel; canonical buried-bridge instance (gold =
+{findable anchor, buried bridge}); SBM graph (within-chain edge prob p, off-chain q; alignment = p-q).
+  LEMMA (exact surfacing): judging the UCB-first anchor a, the correlation-form posterior mean is
+    mu_i = m_i + K_ia/(1+sigma^2)*(y_a - m_a), so the bridge b surfaces into top-k IFF the KERNEL DIFFERENTIAL
+    K_ba - max_d K_da > tau = (1+sigma^2)(max_d m_d - m_b)/(y_a - m_a) [burial threshold].
+  THEOREM (alignment law): under the SBM, (i) E[differential] is strictly increasing in p-q, leading term
+    beta(p-q), zero at p=q (one-hop kernel exact; Katz monotone same-sign); (ii) the embedding kernel has
+    differential <=0 for a buried bridge (never surfaces it), so the graph gain Delta(p,q) is 0 at p=q, POSITIVE
+    IFF p>q, monotone increasing in p-q; (iii) q->0,p->1 = oracle-clique ceiling, p~q = MuSiQue boundary.
+  VERIFIED (paperA_alignment_sim.py, N=30, Katz kernel, B=1): kernel differential -0.001->0.113 and graph
+    advantage over embedding +0.007->+0.115 as p-q:0->0.95, monotone, ~0 at p=q; embedding flat at chance 0.500.
+  Two remarks bind the paper together: (a) UCB>VOI -- the anchor is judged first BECAUSE UCB weights the prior
+    mean; its value is the DOWNSTREAM surfacing (non-myopic), not its own label -> grounds the acquisition result;
+    (b) gold-connectivity is the measurable estimate of p-q, explaining why one scalar predicts the gain + why the
+    oracle ceiling and MuSiQue failure are the two ends of one axis + why the effect is bounded (saturates).
+  => the alignment-law SECTION now has a theorem, the strongest single lift for an AISTATS submission (theory-
+     rewarding venue); no experiments/tokens needed. paperA_alignment_theorem.tex compiles (2pp).
