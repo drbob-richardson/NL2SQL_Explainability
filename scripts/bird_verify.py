@@ -153,7 +153,7 @@ def main():
         client = OpenAI()
     elif PROV == "anthropic":
         from anthropic import Anthropic
-        client = Anthropic()
+        client = Anthropic(timeout=30.0, max_retries=2)   # avoid indefinite hangs on a stalled request
     else:
         from google import genai
         from google.genai import types

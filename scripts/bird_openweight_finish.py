@@ -10,7 +10,7 @@ Then judge + analyze:
   ./.venv/bin/python scripts/paper1_openweight_verify.py
 """
 from __future__ import annotations
-import argparse, json, os, sys
+import argparse, json, os, sys, threading
 from collections import Counter
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from bnp_nl2sql.execeval import open_db, exec_match
@@ -30,15 +30,23 @@ def main():
             conns[db] = open_db(os.path.join(DBDIR, f"{db}.sqlite"))
         return conns[db]
 
+    def safe_match(pred, gold, c, t=5.0):
+        """exec_match with a per-query wall-clock timeout: a runaway generated query (e.g. a huge cross-join)
+        is interrupted and counts as a non-match, rather than hanging the whole run."""
+        timer = threading.Timer(t, c.interrupt); timer.start()
+        try:
+            return bool(exec_match(pred, gold, c))
+        except Exception:
+            return False
+        finally:
+            timer.cancel()
+
     out, modal_ok = {}, []
-    for key, r in raw.items():
+    for n, (key, r) in enumerate(raw.items(), 1):
         q = slice_[key]; c = conn(r["db_id"]); gold = q["gold"]
-        ok = []
-        for s in r["samples"]:
-            try:
-                ok.append(bool(exec_match(s, gold, c)))
-            except Exception:
-                ok.append(False)
+        ok = [safe_match(s, gold, c) for s in r["samples"]]
+        if n % 100 == 0:
+            print(f"  executed {n}/{len(raw)}", flush=True)
         out[key] = {"db_id": r["db_id"], "question_id": r["question_id"], "question": q["question"],
                     "evidence": q.get("evidence", ""), "gold": gold, "samples": r["samples"],
                     "ok": ok, "logp": r["logp"]}
