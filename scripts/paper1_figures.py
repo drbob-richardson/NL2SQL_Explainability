@@ -112,27 +112,40 @@ def main():
     plt.savefig(os.path.join(FIG, "paper1_reliability.png"), dpi=150); plt.close()
 
     # ---- Fig 3: per-DB transfer, with 95% CIs (frozen vs the two fine-tuned verifiers) ----
-    def auroc_ci(s, yv, nb=2000):
+    def auroc_ci(s, yv, nb=2000, groups=None):
         s = np.asarray(s, float); yv = np.asarray(yv, float); base = auroc(s, yv)
-        n = len(s); rng = np.random.default_rng(0); bs = []
-        for _ in range(nb):
-            idx = rng.integers(0, n, n)
-            if len(np.unique(yv[idx])) == 2:
-                bs.append(auroc(s[idx], yv[idx]))
+        rng = np.random.default_rng(0); bs = []
+        if groups is None:                                    # frozen judge: per-question already
+            n = len(s)
+            for _ in range(nb):
+                idx = rng.integers(0, n, n)
+                if len(np.unique(yv[idx])) == 2:
+                    bs.append(auroc(s[idx], yv[idx]))
+        else:                                                 # verifiers: cluster-resample by question
+            gm = {}
+            for i, g in enumerate(groups):
+                gm.setdefault(g, []).append(i)
+            gk = list(gm); gi = [np.array(gm[g]) for g in gk]
+            for _ in range(nb):
+                idx = np.concatenate([gi[j] for j in rng.integers(0, len(gk), len(gk))])
+                if len(np.unique(yv[idx])) == 2:
+                    bs.append(auroc(s[idx], yv[idx]))
         lo, hi = (np.percentile(bs, [2.5, 97.5]) if bs else (base, base))
         return base, lo, hi
     RES = os.path.join(ROOT, "server_experiments", "results")
     encj = json.load(open(os.path.join(RES, "exp1_verifier_ModernBERT-base.json")))
     genj = json.load(open(os.path.join(RES, "exp3_judge_Qwen2.5-1.5B-Instruct.json")))
     udb = sorted(encj["lodo_per_db_scores"])
+    vrows = [json.loads(l) for l in open(os.path.join(ROOT, "server_experiments", "data", "verifier_data.jsonl"))]
+    qgrp = {db: [r["question_id"] for r in vrows if r["db_id"] == db] for db in udb}  # aligns w/ lodo_per_db order
     def frozen_sy(d):
         return ([v4o[i] for i in range(len(dbs)) if dbs[i] == d],
                 [y[i] for i in range(len(dbs)) if dbs[i] == d])
     series = [("frozen gpt-4o judge (zero-shot)", lambda d: auroc_ci(*frozen_sy(d))),
               ("fine-tuned encoder (LODO)",
-               lambda d: auroc_ci(encj["lodo_per_db_scores"][d], encj["lodo_per_db_labels"][d])),
+               lambda d: auroc_ci(encj["lodo_per_db_scores"][d], encj["lodo_per_db_labels"][d], groups=qgrp[d])),
               ("fine-tuned Qwen-1.5B (LODO)",
-               lambda d: auroc_ci(genj["lodo_per_db_scores"][d], genj["lodo_per_db_labels"][d]))]
+               lambda d: auroc_ci(genj["lodo_per_db_scores"][d], genj["lodo_per_db_labels"][d], groups=qgrp[d]))]
     vals = {name: [fn(d) for d in udb] for name, fn in series}
     x = np.arange(len(udb)); w = 0.27
     plt.figure(figsize=(8.6, 3.9))

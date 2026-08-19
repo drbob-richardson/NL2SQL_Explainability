@@ -110,6 +110,11 @@ def main():
         Xte = np.hstack([Pte, (exte - em) / es])
         oof[te] = 1 / (1 + np.exp(-(Xte @ w + b)))
 
+    _sp = os.path.join(os.path.dirname(__file__), "..", "data",
+                       f"verifier_probe_scores_{'lodo' if args.lodo else 'indist'}.json")
+    json.dump({"oof": oof.tolist(), "y": y.tolist(), "qids": qids.tolist(), "dbs": dbs.tolist()}, open(_sp, "w"))
+    print(f"  [saved per-example scores -> {os.path.basename(_sp)}]")
+
     print("\n  PER-SAMPLE AUROC (all 6400 query-label pairs, grouped CV):")
     print(f"    self-consistency alone : {auroc(extra[:,1], y):.3f}")
     print(f"    logprob alone          : {auroc(extra[:,0], y):.3f}")
