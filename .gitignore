@@ -1,5 +1,6 @@
 # Python env
 .venv/
+.venv-vllm/
 __pycache__/
 *.pyc
 .pytest_cache/
