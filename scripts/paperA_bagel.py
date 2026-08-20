@@ -132,7 +132,10 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--subset", type=int, default=300)
     ap.add_argument("--n", type=int, default=4000); ap.add_argument("--pool", type=int, default=100)
     ap.add_argument("--budgets", type=str, default="1,2,3,5,10")
-    ap.add_argument("--warm", type=str, default="half", choices=["half", "min"]); args = ap.parse_args()
+    ap.add_argument("--warm", type=str, default="half", choices=["half", "min"])
+    ap.add_argument("--out", type=str, default=os.path.join(ROOT, "paper", "4-graphrag-A", "bagel_results.json"),
+                    help="results JSON path (set a distinct file for deeper-pool runs so N=100 is not clobbered)")
+    args = ap.parse_args()
     global WARM; WARM = args.warm
     jc = json.load(open(os.path.join(ROOT, "data", "graphrag_judge_hopaware_gpt-4o-mini.json")))
     data = []
@@ -143,7 +146,7 @@ def main():
     for p in data:
         p["prior"] = prior
         p["yj"] = np.array([jc.get(jk(p["q"], p["titles"][i]), 0) for i in range(p["n"])], float) / 2.0
-    print(f"chained N=100 real judge: {len(data)} queries. Faithful BAGEL vs ours, matched budget.\n")
+    print(f"chained pool={args.pool} real judge: {len(data)} queries. Faithful BAGEL vs ours, matched budget.\n")
     print(f"  {'B':<4}{'method':<12}{'recall@k':<11}{'nDCG@10':<11}{'completion':<12}{'graph-BAGEL recall [95% CI]'}")
     dump = {}
     for B in [int(x) for x in args.budgets.split(",")]:
@@ -168,8 +171,8 @@ def main():
                    "gminusbagel": [gb, gbc[0], gbc[1]], "gminusbagelprior": [gp2, gp2c[0], gp2c[1]],
                    "gminusbagel_comp": [cb, cbc[0], cbc[1]]}
     if WARM == "half":
-        json.dump(dump, open(os.path.join(ROOT, "paper", "4-graphrag-A", "bagel_results.json"), "w"), indent=1)
-        print("  wrote bagel_results.json")
+        json.dump(dump, open(args.out, "w"), indent=1)
+        print(f"  wrote {args.out}")
 
 
 if __name__ == "__main__":
