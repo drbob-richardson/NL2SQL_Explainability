@@ -5,6 +5,13 @@ test whether the budget-invariant covariance gap (graph-GP vs BAGEL+prior, ~+0.1
 5x deeper pool. This retires the last "small-pool artifact" fairness objection and probes the deep-burial
 regime where the graph covariance should matter most. Not GPU — it's an OpenAI judge (gpt-4o-mini) job.
 
+## STATUS 2026-08-20: staged + verified — only the API key is left
+Repo pulled to `0a6003d`; the 4 data files are shipped and byte-size-verified; the judge cache is intact at
+90,663 labels; and the **server dry-run reprinted 242,549 calls / ~$10.61**, so the whole pipeline aligns.
+Use the isolated venv `.venv_bagel/bin/python` for every command (the shared system `python3` has a broken
+`openai`/`aiohttp` — do NOT use bare `python`/`python3`). The one remaining prerequisite is `OPENAI_API_KEY`
+in the shell before the `--run` step; the dry-run and everything else are already confirmed.
+
 ## Prerequisites (confirm before running)
 - Repo synced, including **new** `scripts/paperA_bagel_judge.py` and the edited `scripts/paperA_bagel.py`
   (now has `--out`).
@@ -13,7 +20,8 @@ regime where the graph covariance should matter most. Not GPU — it's an OpenAI
   - `data/hotpot/dev_distractor.parquet`, `data/twowiki/dev.parquet`
   - `data/graphrag_judge_hopaware_gpt-4o-mini.json` — the existing **90,663-label** judge cache. MUST be
     present; the new labels append to it (atomic write, so a crash won't corrupt it).
-- `OPENAI_API_KEY` set; env has `openai`, `numpy`, `pyarrow`, `tiktoken`.
+- Run everything with `.venv_bagel/bin/python` (already created + populated: numpy, pyarrow, tiktoken, openai).
+  `OPENAI_API_KEY` must be set in the shell before step 2 (the `--run`); the dry-run needs no key.
 - Keep `--n 4000 --subset 300 --pool 500` **identical** across both scripts so the pools align. `--subset 300`
   is the established n=600 configuration (matches the N=100 curve — apples-to-apples).
 
@@ -21,14 +29,14 @@ regime where the graph covariance should matter most. Not GPU — it's an OpenAI
 
 **1. Dry-run (free) — confirm the count and cost before spending.**
 ```
-python scripts/paperA_bagel_judge.py --pool 500 --subset 300
+.venv_bagel/bin/python scripts/paperA_bagel_judge.py --pool 500 --subset 300
 ```
 Expect **242,549** uncached judge calls (~68.8M input tok), **~$10.61** (measured on the laptop dry-run
 2026-08-20). It reprints the exact figure on the server; sanity-check it matches before spending.
 
 **2. Judge the deeper pool (~$10-11, ~1-2 h).**
 ```
-python scripts/paperA_bagel_judge.py --pool 500 --subset 300 --run --workers 16
+.venv_bagel/bin/python scripts/paperA_bagel_judge.py --pool 500 --subset 300 --run --workers 16
 ```
 - Bump `--workers` to 24-32 if you see no 429 rate-limit errors (the SDK already retries transient ones).
 - **Resumable:** it only judges uncached passages, so if it dies just rerun the same command — it continues
@@ -36,7 +44,7 @@ python scripts/paperA_bagel_judge.py --pool 500 --subset 300 --run --workers 16
 
 **3. Run the comparison at N=500 ($0, CPU) — writes a SEPARATE results file (N=100 is preserved).**
 ```
-python scripts/paperA_bagel.py --pool 500 --subset 300 \
+.venv_bagel/bin/python scripts/paperA_bagel.py --pool 500 --subset 300 \
     --budgets 1,2,3,5,10,20,40,50 \
     --out paper/4-graphrag-A/bagel_results_n500.json \
     | tee paper/4-graphrag-A/bagel_n500.log
