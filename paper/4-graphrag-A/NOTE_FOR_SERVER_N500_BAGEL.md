@@ -36,7 +36,7 @@ Expect **242,549** uncached judge calls (~68.8M input tok), **~$10.61** (measure
 
 **2. Judge the deeper pool (~$10-11, ~1-2 h).**
 ```
-.venv_bagel/bin/python scripts/paperA_bagel_judge.py --pool 500 --subset 300 --run --workers 16
+.venv_bagel/bin/python scripts/paperA_bagel_judge.py --pool 500 --subset 300 --run --workers 16 --max-calls 300000
 ```
 - Bump `--workers` to 24-32 if you see no 429 rate-limit errors (the SDK already retries transient ones).
 - **Resumable:** it only judges uncached passages, so if it dies just rerun the same command — it continues
