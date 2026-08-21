@@ -8,7 +8,7 @@ to its venue, status, and files. (Last updated 2026-08-20.)
 | 1 | **Text2SQL UQ** — selective prediction / SQL-correctness verifiers | **TMLR** | Revision resubmitted 2026-08-20 (PDF + supplementary + 3 responses); awaiting AE/reviewer re-eval | rolling | `paper/1-text2sql-uq/` |
 | 2 | **Bayes Schema Subgraph** — hierarchical autologistic schema-subset selection | **JASA A&CS** | Submitted (reframed after Bayesian Analysis reject; AoAS backup) | — | `paper/2-subgraph/` |
 | 3 | **How can Bayes help retrieval** — broad thesis-driven synthesis | **JRSS (invited Discussion/Read Paper)** | Drafting; cites #2, #4 rather than reproducing | **20 Nov 2026** | `paper/3-retrieval-jrss/` |
-| 4 | **GraphRAG "Paper A"** — structure-as-covariance active retrieval | **AISTATS** | Draft firmed (BAGEL head-to-head, alignment law); review items addressed | ~early Oct 2026 (est.; not yet posted) | `paper/4-graphrag-A/` |
+| 4 | **GraphRAG "Paper A"** — structure-as-covariance active retrieval | **AISTATS** | Draft firmed (BAGEL head-to-head, alignment law); review items addressed | ~Oct 2–8 2026 (tracker est.; AISTATS 2027 CFP/portal not yet official; abstract ~1wk before paper) | `paper/4-graphrag-A/` |
 | 5 | **"Paper B"** — structural de-aliasing under differential misclassification | **JASA T&M** | Theory near-complete (rate + field minimax + singular local regime) | rolling (journal) | `paper/5-dealiasing-B/` |
 
 ## Where each paper's files are
