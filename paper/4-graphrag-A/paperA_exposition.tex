@@ -181,8 +181,9 @@ propagation we want to exploit.
 
 \begin{intuition}
 Why does a bad ranker make a good covariance? If you \emph{ranked} passages by graph diffusion (e.g.\ personalized
-PageRank), mass would spread to high-degree hubs and \emph{bury} the bridge---the graph is a poor ranking signal,
-and we verify this. But as a \emph{covariance} the graph is not asked to rank anything; it is asked to say ``if this
+PageRank), mass would spread to high-degree hubs and \emph{can bury} the bridge---so the graph need not be a good
+ranking signal even where it is an excellent covariance. But as a \emph{covariance} the graph is not asked to rank
+anything; it is asked to say ``if this
 passage turned out relevant, which others become more plausible?'' For that, connectivity is exactly right, and it
 reaches passages that are embedding-distant. The same object fails as a mean and succeeds as a dependence.
 \end{intuition}
@@ -313,14 +314,20 @@ $y_a>m_a$. Prior variances are unit (correlation-form kernel), $K_{ii}=1$.
 Under Assumption~\ref{ass:bridge}, the first UCB pick \eqref{eq:ucb} is the anchor $a$. After judging it, the
 posterior mean of every passage is
 \begin{equation}
-\mu_i=m_i+\frac{K_{ia}}{1+\sigma^2}\,(y_a-m_a),
+\mu_i=m_i+c\,K_{ia},\qquad c:=\frac{y_a-m_a}{1+\sigma^2}>0.
 \label{eq:mu-rankone}
 \end{equation}
-and the bridge $b$ enters the top-$k$ (overtakes every distractor) if and only if the \emph{kernel differential}
-exceeds a burial threshold,
+The bridge $b$ enters the top-$k$ (overtakes every distractor) if and only if
+\begin{equation}
+K_{ba}\ >\ \max_{d\in D}\Big[K_{da}+\tfrac{m_d-m_b}{c}\Big],
+\qquad\text{i.e.}\qquad K_{ba}-K_{da}>\tfrac{m_d-m_b}{c}\ \ \forall d.
+\label{eq:surface}
+\end{equation}
+A convenient \emph{sufficient} condition, which decouples the two maxima, is that the \emph{kernel differential}
+clears a single burial threshold,
 \begin{equation}
 K_{ba}-\max_{d\in D}K_{da}\ >\ \tau:=\frac{(1+\sigma^2)\,(\max_{d}m_d-m_b)}{y_a-m_a}.
-\label{eq:surface}
+\label{eq:surface-suff}
 \end{equation}
 \end{lemma}
 
@@ -328,9 +335,12 @@ K_{ba}-\max_{d\in D}K_{da}\ >\ \tau:=\frac{(1+\sigma^2)\,(\max_{d}m_d-m_b)}{y_a-
 Before any judgment $\mu_i=m_i$ and $\mathrm{sd}_i=\sqrt{K_{ii}}=1$, so the UCB score \eqref{eq:ucb} is $m_i+\beta$
 and its maximizer is $\arg\max_i m_i = a$. Judging $a$ is conditioning on the single observation $y_a$; the general
 posterior mean \eqref{eq:postmean} with $J=\{a\}$ and $K_{aa}=1$ collapses to the rank-one update
-\eqref{eq:mu-rankone}. Write $c:=(y_a-m_a)/(1+\sigma^2)>0$. The bridge overtakes a distractor $d$ iff
-$\mu_b>\mu_d$, i.e.\ $m_b+cK_{ba}>m_d+cK_{da}$, i.e.\ $c\,(K_{ba}-K_{da})>m_d-m_b$. It must beat the \emph{worst}
-distractor (the largest $m_d$), so taking the max over $d$ and dividing by $c$ gives \eqref{eq:surface}.
+\eqref{eq:mu-rankone}. The bridge overtakes distractor $d$ iff $\mu_b>\mu_d$, i.e.\ $m_b+cK_{ba}>m_d+cK_{da}$, i.e.\
+$K_{ba}-K_{da}>(m_d-m_b)/c$; requiring this for \emph{every} $d$ is the exact condition \eqref{eq:surface}. Note it
+is a maximum \emph{of the sum} $K_{da}+(m_d-m_b)/c$ and does \emph{not} in general separate into $\max_d K_{da}$ and
+$\max_d m_d$---the distractor with the largest prior need not be the one with the largest covariance. Bounding each
+term by its own maximum gives the clean sufficient condition \eqref{eq:surface-suff}, since then
+$K_{ba}-K_{da}\ge K_{ba}-\max_{d'}K_{d'a}>\tau\ge(m_d-m_b)/c$ for every $d$.
 \end{proof}
 
 The lemma isolates the mechanism in one inequality. A judgment surfaces the bridge only through a kernel that
@@ -351,8 +361,9 @@ $p-q$ measures how much the graph's edges respect the chain. Call it the \emph{a
 \begin{theorem}[Alignment law]\label{thm:align}
 Let the pool graph be the stochastic block model above, with $|D|$ distractors.
 \begin{enumerate}[topsep=2pt,itemsep=2pt,leftmargin=*]
-\item[\textup{(i)}] \textbf{One-hop kernel, exact.} For the one-hop correlation kernel $\corr(I+\beta A)$ with
-threshold $0<\tau<\beta$, the bridge surfaces if and only if $A_{ba}=1$ and $A_{da}=0$ for all $d$. Hence
+\item[\textup{(i)}] \textbf{One-hop covariance surrogate, exact.} For $\corr(I+\beta A)$---a linearization used
+only for this exact combinatorial calculation, not as a fitted GP covariance (it need not be PSD for arbitrary
+$\beta$)---with $0<\tau<\beta$, the bridge surfaces if and only if $A_{ba}=1$ and $A_{da}=0$ for all $d$. Hence
 \begin{equation}
 \Pr(\text{surface})=p\,(1-q)^{|D|},
 \end{equation}
@@ -375,14 +386,15 @@ in an otherwise empty graph) and vanishes as $p\to q$ (edges independent of the 
 \end{theorem}
 
 \begin{proof}
-\emph{(i)} The one-hop kernel is $I+\beta A$; its correlation form has unit diagonal and off-diagonal
-$\corr(I+\beta A)_{ij}=\beta A_{ij}$ (the diagonal of $I+\beta A$ is $1$, so normalization does nothing off the
-diagonal). By the surfacing condition \eqref{eq:surface}, the bridge surfaces iff
-$\beta(A_{ba}-\max_d A_{da})>\tau$. Since entries of $A$ are in $\{0,1\}$, the differential
-$A_{ba}-\max_d A_{da}$ takes values in $\{-1,0,1\}$; because $0<\tau/\beta<1$, the inequality holds iff the
-differential equals $1$, i.e.\ $A_{ba}=1$ \emph{and} $\max_d A_{da}=0$. The edge $\{b,a\}$ is within the chain block
-(probability $p$); each edge $\{d,a\}$ is off-block (probability $q$), and there are $|D|$ of them, independent.
-Therefore
+\emph{(i)} The one-hop surrogate is $I+\beta A$; its correlation form has unit diagonal and off-diagonal
+$\corr(I+\beta A)_{ij}=\beta A_{ij}$. Apply the \emph{exact} surfacing condition \eqref{eq:surface}: the bridge
+surfaces iff $\beta(A_{ba}-A_{da})>(m_d-m_b)/c$ for every $d$. If some distractor is anchor-connected ($A_{da}=1$)
+it gets the same lift as the bridge ($\beta A_{da}=\beta=\beta A_{ba}$) while $m_d>m_b$, so the bridge cannot pass
+it; surfacing therefore forces $A_{da}=0$ for all $d$. Conversely, if $A_{ba}=1$ and all $A_{da}=0$, then
+$\beta(1-0)=\beta>\tau\ge(m_d-m_b)/c$ for every $d$ (using $0<\tau<\beta$), so the bridge clears them. Hence the
+bridge surfaces iff $A_{ba}=1$ and $A_{da}=0\ \forall d$; the corrected lemma leaves the one-hop count intact. The
+edge $\{b,a\}$ is within the chain block (probability $p$); each edge $\{d,a\}$ is off-block (probability $q$), and
+there are $|D|$ of them, independent. Therefore
 \[
 \Pr(\text{surface})=\Pr(A_{ba}=1)\prod_{d\in D}\Pr(A_{da}=0)=p\,(1-q)^{|D|}.
 \]
@@ -464,6 +476,26 @@ code is unreleased we reimplement it faithfully and, to be scrupulously fair, we
 once}: we can give BAGEL our calibrated prior mean (isolating the effect of the mean) and we keep its own
 marginal-likelihood-tuned kernel (isolating the effect of the covariance). We match total judgment budgets and sweep
 $B$ from $1$ to BAGEL's exact native configuration ($B=50$: $25$ warm-start $+$ $25$ active, half the $N=100$ pool).
+For $B<50$ we split the budget as $\lceil B/2\rceil$ warm-start (top-cosine) $+\lfloor B/2\rfloor$ active judgments,
+the query pseudo-observation being free; the head-to-head is unchanged under a maximally-active split.
+Table~\ref{tab:bagel-spec} lists the reconstruction against the published specification, component by component.
+
+\begin{table}[h]\centering\small
+\caption{The BAGEL reconstruction against its published specification (their code is unreleased).}\label{tab:bagel-spec}
+\begin{tabular}{lll}
+\toprule
+Component & Published BAGEL & Our reconstruction \\ \midrule
+GP mean & zero-mean & zero-mean (matched); ``$+$prior'' adds our calibrated mean \\
+kernel & embedding RBF & same \\
+lengthscale & per-query marginal likelihood & same \\
+query seed & max-relevance pseudo-obs. & same \\
+warm-start & top-$M$ dense & top-$\lceil B/2\rceil$ cosine ($M{=}25$ at native $B{=}50$) \\
+acquisition & UCB ($\beta{=}2$) & same \\
+LLM scoring & standardized relevance & matched hop-aware judge \\
+final rank & GP posterior mean & same \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 The result (Figure~\ref{fig:bagel}) decomposes cleanly, and the decomposition is the whole fairness argument.
 \begin{itemize}[topsep=2pt,itemsep=2pt,leftmargin=*]
@@ -472,8 +504,9 @@ budgets. Giving BAGEL our calibrated prior mean recovers this part, and it is th
 budget---the total gap falls from $+0.25$ at $B=1$ toward $+0.12$ as more judgments compensate for the missing prior.
 \item \textbf{A budget-invariant covariance effect.} Even with our prior \emph{and} BAGEL's tuned kernel, the graph
 covariance wins by a near-constant $\approx+0.11$ recall from $B=1$ all the way to BAGEL's native $B=50$
-($+0.109,\dots,+0.114$). BAGEL's embedding covariance structurally cannot surface a bridge that is far from the
-anchor---exactly Lemma~\ref{lem:surface}---so more judgments do not rescue it; it plateaus about $0.12$ below us.
+($+0.109,\dots,+0.114$). BAGEL's embedding covariance cannot \emph{propagate} anchor evidence to a distant
+bridge---exactly Lemma~\ref{lem:surface}---so empirically more judgments do not close the gap; it plateaus about
+$0.12$ below us.
 \end{itemize}
 
 \paragraph{Not a small-pool artifact either.} One remaining worry is that $N=100$ is a small pool. We reran the
@@ -541,8 +574,8 @@ On the mixed stream the learned gate only \emph{ties} an always-on-graph policy 
 the per-query \emph{oracle} gate has a real $+0.027$ of headroom that is simply not reachable from gold-free
 features. The conclusion is a clean dichotomy: the structural gain is a \emph{distributional} property---a reliable
 average over the deep-multi-hop regime, which is exactly what the alignment law describes---and \emph{not} a
-per-query-predictable signal. The correct policy is therefore the simple one: use the graph throughout the
-multi-hop regime it targets, and do not attempt per-query adaptivity, which is neither feasible nor needed.
+per-query-predictable signal. Within the deep multi-hop regime studied, the evidence therefore favors a simple
+global graph policy over per-query routing---the latter is neither feasible nor needed here.
 
 \begin{stats}
 This is a variance-components argument. Decompose the graph advantage into a between-regime mean (chained vs.\

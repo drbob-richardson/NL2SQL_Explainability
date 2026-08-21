@@ -23,9 +23,10 @@
 
 \begin{abstract}
 In multi-hop retrieval-augmented generation, relevance judgments are expensive LLM calls, so retrieval under a
-judgment budget is a problem of Bayesian experimental design. We show that the corpus graph---which does
-\emph{not} help as a ranking signal, because diffusion buries the answer---becomes load-bearing as the
-\emph{covariance} of a latent relevance field with a semantic (retriever) mean: a judgment of one candidate
+judgment budget is a problem of Bayesian experimental design. We show that the corpus graph---which \emph{need
+not} help as a ranking signal, since using it to re-score can bury the answer under diffusion---becomes
+load-bearing as the \emph{covariance} of a latent relevance field with a semantic (retriever) mean: a judgment of
+one candidate
 propagates belief to graph-connected candidates, surfacing a buried ``bridge'' passage that no single embedding
 neighbour reveals. We make three contributions. (i)~A model---a Gaussian process with a semantic mean and a
 graph covariance---together with the initially surprising finding that the graph kernel must be used in
@@ -58,7 +59,7 @@ and what a dependency structure could recover, if a judgment on a findable passa
 
 \paragraph{Thesis: semantics sets the mean, structure sets the dependence.} We model latent relevance as a
 Gaussian process \citep{williams2006gpml} whose \emph{mean} is a calibrated retriever score and whose
-\emph{covariance} is a corpus graph. The graph is a poor ranking signal---using it to re-score \emph{buries} the
+\emph{covariance} is a corpus graph. The graph is a poor ranking signal---using it to re-score \emph{can bury} the
 bridge under diffusion---but an excellent covariance: ``connected passages have correlated relevance,'' so
 conditioning on a judged anchor lifts the posterior mean of a connected bridge. The same object that hurts as a
 mean helps as a dependence. This resolves a tension in graph-based retrieval and, we argue, is the reason a
@@ -149,9 +150,11 @@ Gold $=\{a,b\}$ with $m_a=\max_i m_i$ (findable anchor) and $m_b<\min_{d}m_d$ (b
 $D$); judging is informative, $y_a>m_a$.
 \end{assumption}
 \begin{lemma}[Surfacing]\label{lem:surface}
-With unit prior variances the first UCB pick is $a$; conditioning gives $\mu_i=m_i+\frac{K_{ia}}{1+\sigma^2}
-(y_a-m_a)$, and the bridge enters the top-$k$ iff the \emph{kernel differential} exceeds the burial threshold,
-$K_{ba}-\max_{d\in D}K_{da} > \tau:=\frac{(1+\sigma^2)(\max_d m_d-m_b)}{y_a-m_a}$.
+With unit prior variances the first UCB pick is $a$; conditioning gives $\mu_i=m_i+c\,K_{ia}$ with
+$c:=(y_a-m_a)/(1+\sigma^2)>0$. The bridge enters the top-$k$ (overtakes every distractor) \emph{iff}
+$K_{ba}>\max_{d\in D}[K_{da}+(m_d-m_b)/c]$, equivalently $K_{ba}-K_{da}>(m_d-m_b)/c$ for all $d$. A convenient
+\emph{sufficient} condition decouples the two maxima: $K_{ba}-\max_{d\in D}K_{da}>\tau$ with
+$\tau:=\frac{(1+\sigma^2)(\max_d m_d-m_b)}{y_a-m_a}$.
 \end{lemma}
 The mechanism is isolated: a judgment surfaces the bridge only through a kernel that couples it to the findable
 anchor \emph{more} than it couples distractors. The embedding kernel has this differential $\le 0$ for a buried
@@ -159,7 +162,8 @@ bridge, so it never surfaces it; the graph kernel can.
 
 \begin{theorem}[Alignment law]\label{thm:align}
 Let the graph be a stochastic block model with within-chain edge probability $p$, off-chain $q$ (alignment
-$p-q$). \emph{(i) One-hop, exact.} For the one-hop kernel $\corr(I+\beta A)$ with $0<\tau<\beta$, the bridge
+$p-q$). \emph{(i) One-hop, exact.} For the one-hop covariance \emph{surrogate} $\corr(I+\beta A)$ (a linearization
+used only for this exact combinatorial calculation, not required to be PSD) with $0<\tau<\beta$, the bridge
 surfaces iff $A_{ba}=1$ and $A_{da}=0\ \forall d$, so $\Pr(\text{surface})=p(1-q)^{|D|}$; the \emph{alignment
 excess} over a density-matched unaligned graph (chain edge also at rate $q$) is
 $\Delta_{\mathrm{align}}(p,q)=(p-q)\,(1-q)^{|D|}$,
@@ -228,21 +232,24 @@ $0.323\to0.445$; the tuned optimum is $\alpha^\star=1$. Holding the mean fixed a
 graph is the better covariance and the embedding covariance adds nothing on top---a direct answer to ``why not keep
 the embedding covariance.''
 
-\paragraph{Head-to-head with the actual BAGEL algorithm.} We reimplement BAGEL \citep{bagel2026} faithfully (code
+\paragraph{Head-to-head with a faithful BAGEL reconstruction.} BAGEL's code is unreleased, so we reconstruct it
+from its published specification \citep{bagel2026} (Appendix~\ref{app:bagel} tabulates the correspondence); (code
 unreleased): a query-specific \emph{zero-mean} GP over passage embeddings with an RBF kernel whose lengthscale is
 fit \emph{per query} by marginal likelihood, LLM relevance scores as standardized labels, the query embedding
 seeded as a maximum-relevance pseudo-observation, a top-$M$ dense warm-start, UCB acquisition ($\beta{=}2$), and
 ranking by posterior mean; we match its total judgment budget to ours and sweep $B$ from $1$ to $50$---up to
-BAGEL's \emph{exact native configuration} ($B{=}50=25$ warm $+\,25$ active, half the $N{=}100$ pool). The graph
-method beats faithful BAGEL at every budget (Figure~\ref{fig:bagel}A), and---the load-bearing fairness check---the
+BAGEL's \emph{exact native configuration} ($B{=}50=25$ warm $+\,25$ active, half the $N{=}100$ pool). For $B<50$
+the budget splits as $\lceil B/2\rceil$ warm-start (top-cosine) $+\lfloor B/2\rfloor$ active judgments, with the
+query pseudo-observation free; the conclusion is unchanged under a maximally-active split (warm$=1$: covariance gap
+$+0.13$ at $B{=}3,5$). The graph method beats the reconstruction at every budget (Figure~\ref{fig:bagel}A), and---the load-bearing fairness check---the
 gap decomposes into a budget-\emph{sensitive} mean effect and a budget-\emph{invariant} covariance effect
 (Figure~\ref{fig:bagel}B). \emph{(i) Semantics-in-the-mean:} BAGEL's zero-mean GP has no cross-query prior and is
 starved at tiny budget; giving BAGEL's own kernel our calibrated prior mean recovers this part, and it is the
 \emph{only} part that shrinks ($\Delta$ falls from $+0.25$ at $B{=}1$ toward $+0.12$). \emph{(ii)
 Structure-in-the-covariance:} even with our prior \emph{and} BAGEL's marginal-likelihood-tuned kernel, the graph
 covariance wins by a \emph{constant} $\approx+0.11$ from $B{=}1$ to BAGEL's native $B{=}50$
-($+0.109,\dots,+0.114$); BAGEL's embedding covariance structurally cannot surface a bridge far from the anchor, so
-more judgments do not rescue it (it plateaus $\sim0.12$ below ours).
+($+0.109,\dots,+0.114$); BAGEL's embedding covariance cannot \emph{propagate} anchor evidence to a distant bridge,
+so---empirically---increasing the budget does not close the gap (it plateaus $\sim0.12$ below ours).
 
 \emph{(iii) Not a small-pool artifact.} Re-running at a $5\times$ deeper pool ($N{=}500$, so budgets $B{=}1$--$50$
 probe only $0.2$--$10\%$ of the candidates---the realistic regime) leaves the covariance gap flat and
@@ -290,8 +297,8 @@ confidence-gating the propagation \emph{hurts} ($-0.030$; the grade-$1$ ``relate
 On the mixed distribution the learned gate only \emph{ties} always-graph ($+0.003$, n.s.) while the per-query
 oracle has a real $+0.027$ headroom that is not gold-free-reachable. The structural gain is a \emph{distributional}
 property---a robust average in the deep multi-hop regime (the alignment law)---not a per-query-predictable signal.
-The correct policy is to use the graph in the multi-hop regime it targets; per-query adaptivity is neither feasible
-nor needed.
+Within the deep multi-hop regime studied, the evidence favors a global graph policy over per-query routing, which
+is neither feasible nor needed here.
 
 \section{DISCUSSION AND LIMITATIONS}\label{sec:disc}
 Effects are modest and low-budget; the BAGEL comparison is a faithful re-implementation (their code is unreleased),
@@ -344,10 +351,14 @@ budget.
 \appendix
 \onecolumn
 \section{PROOF OF THEOREM~\ref{thm:align}}\label{app:proof}
-\emph{(i)} The one-hop kernel has $K_{ij}=\beta A_{ij}$ for $i\neq j$, so by Lemma~\ref{lem:surface} surfacing
-requires $\beta(A_{ba}-\max_d A_{da})>\tau$; since $A\in\{0,1\}$ and $0<\tau<\beta$, this holds iff $A_{ba}=1$ and
-$\max_d A_{da}=0$. Independence of the edges gives $\Pr(\text{surface})=\Pr(A_{ba}=1)\prod_d\Pr(A_{da}=0)=
-p(1-q)^{|D|}$. The density-matched unaligned graph replaces $p$ by $q$, giving $q(1-q)^{|D|}$; subtracting yields
+\emph{(i)} The one-hop surrogate has $K_{ij}=\beta A_{ij}$ for $i\neq j$. By the \emph{exact} surfacing condition
+(Lemma~\ref{lem:surface}), the bridge surfaces iff $\beta(A_{ba}-A_{da})>(m_d-m_b)/c$ for every $d$. If some
+distractor is anchor-connected ($A_{da}=1$) it receives the same lift as the bridge ($K_{da}=\beta=K_{ba}$) while
+$m_d>m_b$, so the bridge cannot overtake it; surfacing therefore requires $A_{da}=0\ \forall d$. If instead
+$A_{ba}=1$ and all $A_{da}=0$, then $\beta(1-0)=\beta>\tau\ge(m_d-m_b)/c$ for every $d$ (using $0<\tau<\beta$), so
+the bridge clears them all. Hence the bridge surfaces iff $A_{ba}=1$ and $A_{da}=0\ \forall d$ (the corrected
+lemma leaves the one-hop count intact). Independence of the edges gives
+$\Pr(\text{surface})=\Pr(A_{ba}=1)\prod_d\Pr(A_{da}=0)=p(1-q)^{|D|}$. The density-matched unaligned graph replaces $p$ by $q$, giving $q(1-q)^{|D|}$; subtracting yields
 $\Delta_{\mathrm{align}}=(p-q)(1-q)^{|D|}$, which is $0$ at $p=q$, positive iff $p>q$, and linear in $p-q$ at fixed
 $q$. \emph{(ii)} $(I+\lambda L)^{-1}=I-\lambda L+O(\lambda^2)$ with $L=D-A$, so the off-diagonal is
 $K_{ij}=\lambda A_{ij}+O(\lambda^2)$; correlation normalization divides by $\sqrt{K_{ii}K_{jj}}=1+O(\lambda)$ and
@@ -369,6 +380,29 @@ $1$ & HotpotQA & $+0.073\,[.048,.098]$ & $+0.041\,[.026,.055]$ & $+0.153\,[.103,
 $1$ & 2Wiki    & $+0.043\,[.020,.068]$ & $+0.020\,[.005,.035]$ & $+0.090\,[.047,.137]$ \\
 $2$ & HotpotQA & $+0.090\,[.063,.118]$ & $+0.040\,[.025,.056]$ & $+0.180\,[.130,.233]$ \\
 $2$ & 2Wiki    & $+0.051\,[.028,.077]$ & $+0.025\,[.008,.041]$ & $+0.120\,[.077,.167]$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\section{BAGEL RECONSTRUCTION}\label{app:bagel}
+BAGEL's code is unreleased; we follow its published specification \citep{bagel2026}. Table~\ref{tab:bagel-spec}
+tabulates the correspondence component by component. The covariance advantage is isolated by also giving the
+reconstruction our calibrated prior mean (the ``$+$prior'' curve), so the gap in Figure~\ref{fig:bagel}B cannot be
+an artifact of BAGEL's missing cross-query prior.
+\begin{table}[h]\caption{The BAGEL reconstruction against its published specification.}\label{tab:bagel-spec}
+\begin{center}\small
+\begin{tabular}{lll}
+\toprule
+Component & Published BAGEL & Our reconstruction \\ \midrule
+GP mean & zero-mean & zero-mean (matched); ``$+$prior'' variant adds our calibrated mean \\
+kernel & embedding RBF & same \\
+lengthscale & per-query marginal likelihood & same \\
+query seed & max-relevance pseudo-obs. & same \\
+warm-start & top-$M$ dense & top-$\lceil B/2\rceil$ cosine ($M{=}25$ at native $B{=}50$) \\
+acquisition & UCB ($\beta{=}2$) & same \\
+LLM scoring & standardized relevance & matched hop-aware judge \\
+final rank & GP posterior mean & same \\
 \bottomrule
 \end{tabular}
 \end{center}
