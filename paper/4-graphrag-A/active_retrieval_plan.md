@@ -602,3 +602,22 @@ Ran BAGEL's exact native config to close the fairness door completely. At B=50 (
   d(ours-+prior)=+0.114[.091,.138]. Even at its exact native budget BAGEL loses by +0.12 and the covariance gap is
   still +0.114 -- unchanged from B=1. Extended the figure/JSON to B=1..50; paper now says 'from B=1 to BAGEL's
   native B=50', plateau '~0.12 below ours even at its own native budget'. Fairness concern fully retired.
+
+## DEEPER-POOL FAIRNESS (N=500): covariance gap GROWS -> retires the last small-pool objection  [paperA_bagel_judge.py, paperA_bagel.py --pool 500]
+Reviewer-proofing: is the covariance win an artifact of the small N=100 pool? Re-ran the faithful-BAGEL head-to-head
+at a 5x deeper pool. NEW scripts/paperA_bagel_judge.py judges the top-500 pools with the SAME load_pools / jk key /
+hop-aware gpt-4o-mini prompt as the existing N=100 cache (so labels are consistent, and unjudged deep passages don't
+silently default to relevance 0 -- paperA_bagel.py:145 does jc.get(...,0)). Ran on stat-gpu01 (.venv_bagel, detached):
+242,549 new judge calls, $10.61, ~2h50m @ 16 workers; cache 90,663 -> 333,212. paperA_bagel.py gained --out so the
+N=500 results write a SEPARATE bagel_results_n500.json (N=100's preserved).
+RESULT -- the fairness concern flips into a STRENGTH. Covariance gap graph-(BAGEL+prior) (same calibrated mean):
+  B:        1      2      3      5      10     20     40     50
+  N=100  +.109  +.135  +.094  +.098  +.116  +.111  +.114  +.114   (~+0.11 flat = the published number)
+  N=500  +.154  +.189  +.155  +.167  +.148  +.154  +.142  +.151   (~+0.15 flat, EVERY point above its N=100 value, all CIs exclude 0)
+So the covariance advantage is NOT a small-pool artifact: at a deeper, more realistic pool (budget = 0.2-10% of the
+candidates) it is LARGER. Mechanism confirmed -- graph-GP recall pool-robust (0.67-0.72) while faithful BAGEL degrades
+(0.39-0.56): a deeper pool buries the bridge further, exactly where embedding covariance fails and graph covariance
+pays off. Ordering graph-GP > cosine-GP > BAGEL+prior > BAGEL at every budget; BAGEL plateaus ~0.55, ~0.12-0.15 below
+ours even at B=50 (10% of a 500-pool). The honest downside (deep bridges unfindable by anyone -> gap compresses) did
+NOT materialize. Folded into draft: abstract clause + new '(iii) Not a small-pool artifact' para in sec:exp +
+fig_bagel panel B now overlays N=100 vs N=500 covariance gap. Artifacts: bagel_results_n500.json, bagel_n500.log.

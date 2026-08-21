@@ -35,7 +35,7 @@ hop-aware judge across HotpotQA, 2WikiMultiHopQA, and MuSiQue: a significant low
 (recall $+0.058$, nDCG@10 $+0.030$, chain-completion $+0.122$ at one judgment) that holds head-to-head against a
 faithful re-implementation of BAGEL at matched budget---where the covariance advantage is \emph{budget-invariant}
 (a constant $\approx+0.11$ recall@$k$ from $B{=}1$ to BAGEL's native $B{=}50$, controlling for the prior), hence not
-a low-budget artifact, while BAGEL's embedding kernel plateaus $\sim0.12$ below ours even at its own native
+a low-budget artifact---and $\approx+0.15$ at a $5\times$ deeper $N{=}500$ pool, so not a small-pool one either---while BAGEL's embedding kernel plateaus $\sim0.12$ below ours even at its own native
 budget---a partial rescue of
 adversarial MuSiQue by
 inferring the graph from the judge's own hop-reasoning ($+0.035$ at three hops, where every cheap surface graph is
@@ -247,6 +247,15 @@ advantage is \emph{not} a low-budget artifact, and BAGEL's kernel-tuning does no
 faithful BAGEL \emph{plateaus} at recall $\approx 0.58$ from $B{=}10$ on, $\sim0.12$ below ours even at its own
 native budget: its embedding covariance structurally cannot surface a bridge that is semantically far from the
 anchor, so more judgments do not rescue it.
+
+\emph{(iii) Not a small-pool artifact.} Re-running the head-to-head at a $5\times$ deeper pool ($N{=}500$, so
+budgets $B{=}1$--$50$ probe only $0.2$--$10\%$ of the candidates---the regime a deployed system actually
+faces) leaves the covariance gap flat across budget and \emph{larger}: $\approx+0.15$ recall@$k$
+($+0.142,\dots,+0.189$ over $B{=}1$--$50$, every interval excluding zero and above its $N{=}100$ value;
+Figure~\ref{fig:bagel}B). The mechanism is the one that makes structure load-bearing here: a deeper pool
+buries the bridge further, exactly where the embedding covariance fails and the graph covariance pays off, so
+graph-GP recall stays pool-robust ($0.67$--$0.72$) while faithful BAGEL degrades ($0.39$--$0.56$). The
+covariance advantage is thus neither a low-budget nor a small-pool artifact.
 The conclusion is unchanged under a maximally-active warm/active split (warm$=1$: $\Delta$ vs BAGEL $+0.24$, vs
 $+$prior $+0.13$ at $B{=}3,5$).
 \begin{figure}[t]\centering
@@ -254,7 +263,7 @@ $+$prior $+0.13$ at $B{=}3,5$).
 \caption{Faithful BAGEL vs.\ ours at matched judgment budget (chained, $n{=}600$; $B$ up to BAGEL's native $50$).
 \textbf{(A)} BAGEL plateaus $\sim0.12$ recall@$k$ below ours even at its native budget. \textbf{(B)} The total gap (ours$-$BAGEL) shrinks as
 BAGEL's zero-mean starvation eases, but the covariance gap (ours$-$(BAGEL$+$our prior), same mean) is
-budget-invariant at $\approx+0.11$ (bands are 95\% CIs)---the graph advantage is not a low-budget artifact.}
+budget-invariant: $\approx+0.11$ at $N{=}100$, and at a $5\times$ deeper $N{=}500$ pool flat and \emph{larger} at $\approx+0.15$ (bands are 95\% CIs). The graph advantage is neither a low-budget nor a small-pool artifact.}
 \label{fig:bagel}
 \end{figure}
 
