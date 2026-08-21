@@ -1,15 +1,15 @@
 # Papers index
 
 Five papers live in this repo, now organized into per-paper folders under `paper/`. This index maps each
-to its venue, status, and files. (Last updated 2026-08-18.)
+to its venue, status, and files. (Last updated 2026-08-20.)
 
 | # | Short name | Venue | Status | Deadline | Folder |
 |---|---|---|---|---|---|
-| 1 | **Text2SQL UQ** — selective prediction / SQL-correctness verifiers | **TMLR** | In revision (3 reviews: 2 addressable + 1 positive) | rolling | `paper/1-text2sql-uq/` |
+| 1 | **Text2SQL UQ** — selective prediction / SQL-correctness verifiers | **TMLR** | Revision resubmitted 2026-08-20 (PDF + supplementary + 3 responses); awaiting AE/reviewer re-eval | rolling | `paper/1-text2sql-uq/` |
 | 2 | **Bayes Schema Subgraph** — hierarchical autologistic schema-subset selection | **JASA A&CS** | Submitted (reframed after Bayesian Analysis reject; AoAS backup) | — | `paper/2-subgraph/` |
 | 3 | **How can Bayes help retrieval** — broad thesis-driven synthesis | **JRSS (invited Discussion/Read Paper)** | Drafting; cites #2, #4 rather than reproducing | **20 Nov 2026** | `paper/3-retrieval-jrss/` |
-| 4 | **GraphRAG "Paper A"** — structure-as-covariance active retrieval | **AISTATS** | Draft firmed (BAGEL head-to-head, alignment law); review items addressed | — | `paper/4-graphrag-A/` |
-| 5 | **"Paper B"** — structural de-aliasing under differential misclassification | **JASA T&M** | Theory near-complete (rate + field minimax + singular local regime) | — | `paper/5-dealiasing-B/` |
+| 4 | **GraphRAG "Paper A"** — structure-as-covariance active retrieval | **AISTATS** | Draft firmed (BAGEL head-to-head, alignment law); review items addressed | ~early Oct 2026 (est.; not yet posted) | `paper/4-graphrag-A/` |
+| 5 | **"Paper B"** — structural de-aliasing under differential misclassification | **JASA T&M** | Theory near-complete (rate + field minimax + singular local regime) | rolling (journal) | `paper/5-dealiasing-B/` |
 
 ## Where each paper's files are
 
@@ -17,7 +17,7 @@ to its venue, status, and files. (Last updated 2026-08-18.)
 - **Paper:** `paper1_correctness.tex` (+ `references.bib`) — *authoritative submission copy is the Overleaf clone `paper-overleaf/`*; `paper.tex` is a legacy alt draft (shares `references.bib`)
 - **Plan:** `paper1_correctness_uq.md` · revision log `paper-overleaf/REVISION_LOG.md`
 - **Scripts:** `scripts/bird_*.py`, `scripts/paper1_*.py`, `scripts/verifier_probe.py`; `server_experiments/exp*.py`
-- **Open (GPU):** Table-4 CIs (reviewer #8) — `server_experiments/RUN_TABLE4_CIS.md`; handoff `server_experiments/NOTE_FOR_SERVER_CLAUDE.md`
+- **Submitted (2026-08-20):** revised PDF + anonymized supplementary repro zip + 3 per-reviewer responses — see `paper/1-text2sql-uq/SUBMISSION_LOG.md`. (The open GPU item, Table-4 trained-verifier CIs, is done and folded in.)
 - **Thesis:** what predicts SQL correctness is *verification* (reasoning judges), not black-box statistical UQ; independent-provider judges ensemble to AUROC 0.82; trained verifiers overfit schemas and don't transfer.
 
 ### 2. Bayes Schema Subgraph  →  JASA A&CS — `paper/2-subgraph/`
@@ -32,7 +32,9 @@ to its venue, status, and files. (Last updated 2026-08-18.)
 - **Note:** reframe from "retrieval audit" to a thesis-driven Read Paper; **cite, don't reproduce** #2 (BEAVER) and #4. May wait until #4/#5 firm up.
 
 ### 4. GraphRAG "Paper A"  →  AISTATS — `paper/4-graphrag-A/`
-- **Paper:** `paperA_submission.tex` (+ `fig_alignment.pdf`, `fig_bagel.pdf`, data `assort_points.json`, `bagel_results.json`); theorem note `paperA_alignment_theorem.tex`; older draft `paperA_active_graph_retrieval.tex`
+- **Paper (AISTATS submission):** `paperA_aistats.tex` — aistats2026 2-col, anonymized, reproducibility checklist, `plainnat` cites from `paperA.bib` (styles `aistats2026.sty`+`fancyhdr.sty` vendored). Compiles to 8pp.
+- **Long companion for statisticians:** `paperA_exposition.tex` (16pp) — plain-language AI setting + full derivations (GP/kriging, GMRF/CAR kernel, correlation-form hub-variance, surfacing lemma, SBM alignment-law proof), with "connection to statistics" boxes + glossary. Same `paperA.bib`/figures.
+- **Assets:** `fig_alignment.pdf`, `fig_bagel.pdf`, data `assort_points.json`, `bagel_results.json`, `bagel_results_n500.json`; theorem note `paperA_alignment_theorem.tex`; pre-AISTATS working draft `paperA_submission.tex`; older draft `paperA_active_graph_retrieval.tex`
 - **Plan / running log:** `active_retrieval_plan.md`; related `ecir_plan.md`
 - **Scripts:** `scripts/graphrag_*.py`, `scripts/paperA_*.py`, `scripts/musique_*.py` — the `paperA_fig_*.py`/`paperA_bagel.py`/`paperA_assortativity.py` write figs+data into this folder
 - **Parked (GPU):** N=500 larger-pool BAGEL runs (fairness bulletproofing) — not urgent
