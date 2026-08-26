@@ -26,7 +26,7 @@ In multi-hop retrieval-augmented generation, relevance judgments are expensive L
 judgment budget is a problem of Bayesian experimental design. Our thesis is a decomposition: \emph{semantics
 belongs in the mean and graph structure in the covariance}. We model latent passage relevance as a Gaussian
 process whose mean is a calibrated retriever score and whose covariance is a corpus graph. The graph is a poor
-\emph{standalone} ranker---ranking by structure alone buries the answer (recall $0.21$ vs.\ $0.65$)---but
+\emph{standalone} ranker (ranking by structure alone buries the answer, recall $0.21$ vs.\ $0.65$), but
 load-bearing as a \emph{dependence}: it denoises the semantic prior for free and, conditioned on a judgment,
 propagates belief to a graph-connected ``bridge'' passage that no embedding neighbour reveals. We contribute three
 things. First, the model, with the finding that the graph kernel must be used in \emph{correlation} (unit-diagonal)
@@ -38,7 +38,7 @@ two ends of one axis, measured retrospectively (on labeled data) by the empirica
 Third, a matched-budget head-to-head against a faithful reconstruction of BAGEL, the nearest
 Bayesian-active-retrieval competitor: holding the prior fixed, the graph covariance beats the embedding covariance
 by a \emph{budget-invariant} $\approx+0.11$ recall from one judgment to BAGEL's native $B{=}50$, growing to
-$\approx+0.15$ in a $5\times$ deeper pool---neither a low-budget nor a small-pool artifact; and against a strong
+$\approx+0.15$ in a $5\times$ deeper pool, neither a low-budget nor a small-pool artifact. And against a strong
 \emph{free} graph-smoothing baseline the active method wins from the second judgment. Effects are modest but
 principled: the paper is about a mechanism, and we map honestly where structure helps, is neutral, and only
 partially recovers.
@@ -57,7 +57,7 @@ and what a dependency structure could recover, if a judgment on a findable passa
 Gaussian process \citep{williams2006gpml} whose \emph{mean} is a calibrated retriever score and whose
 \emph{covariance} is a corpus graph. On its own the graph is a poor ranking signal: rank by structure alone (PageRank or degree) and diffusion buries
 the bridge (\S\ref{sec:exp}). As a covariance it is a different story. Because connected passages have correlated
-relevance, conditioning on a judged anchor lifts the posterior mean of a connected bridge; even smoothing the prior
+relevance, conditioning on a judged anchor lifts the posterior mean of a connected bridge. Even smoothing the prior
 over the graph, with no judgment at all, denoises the ranking. The same graph that fails as a ranker does the real
 work as a dependence, which resolves a standing tension in graph-based retrieval. It is also why a Bayesian
 treatment pays off here: the graph belongs in the \emph{decision} layer \citep{chaloner1995bed,lindley1956voi},
@@ -66,47 +66,47 @@ not the ranking layer.
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=*,itemsep=1pt,topsep=2pt]
 \item \textbf{Model + the normalization finding} (\S\ref{sec:model}): a GP with a semantic mean and a graph
-covariance, and the finding that the graph kernel must be in correlation (unit-diagonal) form---which
+covariance, and the finding that the graph kernel must be in correlation (unit-diagonal) form, which
 $1.8\times$s its effect (chain-completion margin $+0.068\to+0.122$) by equalizing hub variance so optimistic
 exploration reaches the propagating anchors.
-\item \textbf{The alignment law} (\S\ref{sec:law}): a surfacing lemma and a stochastic-block-model theorem---the
+\item \textbf{The alignment law} (\S\ref{sec:law}): a surfacing lemma and a stochastic-block-model theorem. The
 \emph{alignment excess} (gain over a density-matched unaligned graph) is $0$ at zero alignment, positive iff the
-graph is chain-assortative ($p>q$), and monotone in $p-q$; the oracle ceiling and the adversarial failure are the
+graph is chain-assortative ($p>q$), and monotone in $p-q$. The oracle ceiling and the adversarial failure are the
 opposite ends of this axis, measured retrospectively (on labeled data) by the empirical assortativity $\hat p-\hat q$. The same surfacing analysis gives a mechanism for why optimistic acquisition suits
 this problem, though the full superiority of UCB over multi-step lookahead we leave as an empirical finding
 (\S\ref{sec:acq}).
-\item \textbf{An honest empirical characterization} (\S\ref{sec:exp}) under a real hop-aware judge: a low-budget
-graph-covariance win---over the embedding kernel at every budget, and over a strong \emph{free} graph-smoothing
-baseline from the second judgment---that survives a matched-budget head-to-head with a faithful BAGEL
-reconstruction; a partial rescue of adversarial MuSiQue via an LLM hop-assignment graph; and an analysis of why per-query adaptive
-routing does not deploy, so that within the deep multi-hop regime studied a global graph policy is better
+\item \textbf{An honest empirical characterization} (\S\ref{sec:exp}) under a real hop-aware judge. A low-budget
+graph-covariance win (over the embedding kernel at every budget, and over a strong \emph{free} graph-smoothing
+baseline from the second judgment) survives a matched-budget head-to-head with a faithful BAGEL reconstruction. We
+also give a partial rescue of adversarial MuSiQue via an LLM hop-assignment graph, and an analysis of why per-query
+adaptive routing does not deploy, so that within the deep multi-hop regime studied a global graph policy is better
 supported than per-query routing.
 \end{enumerate}
-We do not claim large gains; the effects are modest. What we claim is an account of when structure helps and why,
+We do not claim large gains. The effects are modest. What we claim is an account of when structure helps and why,
 and a method that is simple and did not significantly hurt in any regime we tested.
 
 \section{RELATED WORK}\label{sec:rel}
 \paragraph{Active / Bayesian retrieval.} Our nearest neighbour is BAGEL \citep{bagel2026}, a query-specific
-GP-UCB \citep{srinivas2010gpucb} over passage embeddings; our data refute the embedding kernel here and replace it
+GP-UCB \citep{srinivas2010gpucb} over passage embeddings. Our data refute the embedding kernel here and replace it
 with a graph covariance, and we add a soft (noisy-likelihood) update that prevents a GP from confidently
-propagating a wrong LLM label---BAGEL's two named limitations. We compare against a faithful reconstruction
+propagating a wrong LLM label. Both address limitations BAGEL itself names. We compare against a faithful reconstruction
 head-to-head (\S\ref{sec:exp}, Figure~\ref{fig:bagel}). Active RAG more broadly \citep{jiang2023flare} decides
-\emph{when} to retrieve; we study \emph{which} candidates to judge under a fixed budget.
+\emph{when} to retrieve. We study \emph{which} candidates to judge under a fixed budget.
 \paragraph{Graph retrieval.} GraphRAG \citep{edge2024graphrag} and graph-memory methods
 \citep{gutierrez2024hipporag} use graph structure to organize or re-rank retrieval, precisely because surface
-similarity is insufficient---consonant with our alignment law. We instead use the graph as a \emph{covariance},
+similarity is insufficient, consonant with our alignment law. We instead use the graph as a \emph{covariance},
 not a ranking signal, and characterize when it helps.
-\paragraph{Statistical primitives.} GMRF/CAR priors \citep{rue2005gmrf,besag1974car} supply the kernel; Bayesian
-optimization and experimental design \citep{srinivas2010gpucb,chaloner1995bed} the acquisition; the stochastic
+\paragraph{Statistical primitives.} GMRF/CAR priors \citep{rue2005gmrf,besag1974car} supply the kernel, Bayesian
+optimization and experimental design \citep{srinivas2010gpucb,chaloner1995bed} the acquisition, and the stochastic
 block model \citep{holland1983sbm} and network assortativity \citep{newman2003assortativity} the analysis. Our
-novelty is the mean/dependence decomposition, the exploration mechanism, and the alignment regime---not any single
+novelty is the mean/dependence decomposition, the exploration mechanism, and the alignment regime, not any single
 primitive.
 
 \section{MODEL: STRUCTURE AS COVARIANCE}\label{sec:model}
-Per query, a first-stage retriever returns $N$ candidates with normalized embeddings $v_i$ and retriever scores;
-a calibrated logistic map gives a prior mean $m_i\in[0,1]$ (cross-fit cosine$\to$gold). We place a GP on latent
+Per query, a first-stage retriever returns $N$ candidates with normalized embeddings $v_i$ and retriever scores.
+A calibrated logistic map gives a prior mean $m_i\in[0,1]$ (cross-fit cosine$\to$gold). We place a GP on latent
 relevance $f\sim\GP(m,K)$ and, when candidate $j$ is judged, observe $y_j\in\{0,\tfrac12,1\}$ (a graded hop-aware
-label) under Gaussian noise $\sigma^2$. Ranking is by posterior mean; recall@$k$, chain-completion, and nDCG@10
+label) under Gaussian noise $\sigma^2$. Ranking is by posterior mean. Recall@$k$, chain-completion, and nDCG@10
 are measured against gold.
 
 \paragraph{Two kernels.} The embedding kernel $K^E_{ij}=\exp(-(1-v_i^\top v_j)/\ell)$ encodes ``similar
@@ -116,39 +116,39 @@ $\mathcal L=D-A$), encoding ``connected passages, correlated relevance.''
 
 \paragraph{The load-bearing detail: correlation form.} We find the graph kernel must be normalized to unit
 diagonal, $\widetilde K^G=\mathrm{diag}(K^G)^{-1/2}K^G\,\mathrm{diag}(K^G)^{-1/2}$, before use. Unnormalized,
-high-degree hubs have \emph{lower} prior variance, so an upper-confidence-bound rule under-explores them---but the
+high-degree hubs have \emph{lower} prior variance, so an upper-confidence-bound rule under-explores them. But the
 hubs are exactly the anchors whose judgment propagates to bridges. Equalizing variance lets exploration reach the
-hubs; the propagation then fires. Empirically this $1.8\times$es the graph$-$cosine chain-completion margin
+hubs, and the propagation then fires. Empirically this $1.8\times$es the graph$-$cosine chain-completion margin
 ($+0.068\to+0.122$ at one judgment) and, unlike the raw kernel (which converges to null by three judgments), keeps
 the win significant at every budget. The finding is a small but real methodological point and is, to our
 knowledge, not standard in GP-active-retrieval practice.
 
 \paragraph{The soft update.} Conditioning on judged set $J$, $\mu = m + K_{:J}(K_{JJ}+\sigma^2 I)^{-1}(y_J-m_J)$.
-We rank by $\mu$ (soft) rather than hard-pinning judged labels; with an imperfect judge, hard pinning of a wrong
+We rank by $\mu$ (soft) rather than hard-pinning judged labels. With an imperfect judge, hard pinning of a wrong
 label is catastrophic (a mislabeled gold is sunk), while the soft update degrades gracefully.
 
 \section{ACQUISITION: EXPLORATION, NOT INFORMATION}\label{sec:acq}
 We select judgments by UCB, $\arg\max_i \mu_i+\beta\,\mathrm{sd}_i$. We compare it against four principled
 alternatives: one-step value of information for chain completion ($1-\prod_j(1-p_j)$), two-step lookahead,
 information gain (maximum variance reduction), and pure exploration (maximum variance). UCB wins across the board
-on the graph kernel (chain-completion $-0.08$ to $-0.11$ at one judgment; two-step lookahead does not help either). We separate the
+on the graph kernel (chain-completion $-0.08$ to $-0.11$ at one judgment, and two-step lookahead does not help either). We separate the
 mechanism from the empirical finding. \emph{Mechanism:} the value of judging a high-prior anchor is not its own
-label but the \emph{downstream} surfacing of a connected bridge (Lemma~\ref{lem:surface})---a delayed value that a
+label but the \emph{downstream} surfacing of a connected bridge (Lemma~\ref{lem:surface}), a delayed value that a
 myopic one-step completion objective structurally undervalues, which explains why one-step VOI loses. \emph{Open:}
-this does \emph{not} obviously explain why our two-step lookahead and information gain also lose---a faithful
-short-horizon policy should see the delayed value---so \emph{why optimism remains superior to short-horizon
+this does \emph{not} obviously explain why our two-step lookahead and information gain also lose. A faithful
+short-horizon policy should see the delayed value, so \emph{why optimism remains superior to short-horizon
 lookahead here is an empirical finding we do not fully explain.} What UCB does that the others miss is focus
-exploration, via its mean term, on the high-prior anchors along which belief propagates; kernel and acquisition
+exploration, via its mean term, on the high-prior anchors along which belief propagates. Kernel and acquisition
 are entangled, and the graph \emph{needs} UCB.
 
 \section{THE ALIGNMENT LAW}\label{sec:law}
 When does the graph help? We give an exact surfacing condition and lift it to a statistical law.
 \begin{assumption}[Buried bridge]\label{ass:bridge}
 Gold $=\{a,b\}$ with $m_a=\max_i m_i$ (findable anchor) and $m_b<\min_{d}m_d$ (bridge buried below distractors
-$D$); judging is informative, $y_a>m_a$.
+$D$). Judging is informative, $y_a>m_a$.
 \end{assumption}
 \begin{lemma}[Surfacing]\label{lem:surface}
-With unit prior variances the first UCB pick is $a$; conditioning gives $\mu_i=m_i+c\,K_{ia}$ with
+With unit prior variances the first UCB pick is $a$. Conditioning gives $\mu_i=m_i+c\,K_{ia}$ with
 $c:=(y_a-m_a)/(1+\sigma^2)>0$. The bridge enters the top-$k$ (overtakes every distractor) \emph{iff}
 $K_{ba}>\max_{d\in D}[K_{da}+(m_d-m_b)/c]$, equivalently $K_{ba}-K_{da}>(m_d-m_b)/c$ for all $d$. A convenient
 \emph{sufficient} condition decouples the two maxima: $K_{ba}-\max_{d\in D}K_{da}>\tau$ with
@@ -156,26 +156,26 @@ $\tau:=\frac{(1+\sigma^2)(\max_d m_d-m_b)}{y_a-m_a}$.
 \end{lemma}
 The mechanism is isolated: a judgment surfaces the bridge only through a kernel that couples it to the findable
 anchor \emph{more} than it couples distractors. Being buried in the \emph{mean} ($m_b<m_d$) does not by itself
-bound this covariance differential; but the bridges that matter here are also \emph{embedding-isolated}
-($K^E_{ba}\le K^E_{da}$ for some higher-prior distractor $d$---being embedding-far from the anchor is what makes a
-bridge hard, \S\ref{sec:exp}), and for such a bridge the embedding differential is nonpositive, so $K^E$ cannot
+bound this covariance differential. But the bridges that matter here are also \emph{embedding-isolated}
+($K^E_{ba}\le K^E_{da}$ for some higher-prior distractor $d$, since being embedding-far from the anchor is what
+makes a bridge hard, \S\ref{sec:exp}), and for such a bridge the embedding differential is nonpositive, so $K^E$ cannot
 surface it. The graph kernel can.
 
 \begin{theorem}[Alignment law]\label{thm:align}
 Let the graph be a stochastic block model with within-chain edge probability $p$, off-chain $q$ (alignment
 $p-q$). \emph{(i) One-hop, exact.} For the one-hop covariance \emph{surrogate} $\corr(I+\beta A)$ (a linearization
 used only for this exact combinatorial calculation, not required to be PSD) with $0<\tau<\beta$, the bridge
-surfaces iff $A_{ba}=1$ and $A_{da}=0\ \forall d$, so $\Pr(\text{surface})=p(1-q)^{|D|}$; the \emph{alignment
+surfaces iff $A_{ba}=1$ and $A_{da}=0\ \forall d$, so $\Pr(\text{surface})=p(1-q)^{|D|}$. The \emph{alignment
 excess} over a density-matched unaligned graph (chain edge also at rate $q$) is
 $\Delta_{\mathrm{align}}(p,q)=(p-q)\,(1-q)^{|D|}$,
 which is $0$ at $p=q$, positive iff $p>q$, and (fixed $q$) exactly linear in $p-q$. \emph{(ii) Actual GMRF, first
 order.} The method's kernel $\corr\big((I+\lambda L)^{-1}\big)$ has $\E[K_{ba}-K_{da}]=\lambda(p-q)+O(\lambda^2)$.
-\emph{(iii) Limits.} $q\to0,p\to1$ (gold clique) maximizes the excess; $p\approx q$ gives
+\emph{(iii) Limits.} $q\to0,p\to1$ (gold clique) maximizes the excess, and $p\approx q$ gives
 $\Delta_{\mathrm{align}}\approx0$.
 \end{theorem}
 Proof in Appendix~\ref{app:proof}. Note the \emph{excess}, not the raw surfacing probability, is what vanishes at
 $p=q$: an unaligned graph surfaces the bridge with probability $q(1-q)^{|D|}>0$ by chance, so the empirical gain at
-$p=q$ is small but nonzero (Figure~\ref{fig:align}A); the alignment law governs the excess. We verify all parts in
+$p=q$ is small but nonzero (Figure~\ref{fig:align}A). The alignment law governs the excess. We verify all parts in
 simulation: the one-hop rate matches $p(1-q)^{|D|}$, the excess matches $(p-q)(1-q)^{|D|}$, and the GMRF
 differential is $\propto p-q$. The real data (Figure~\ref{fig:align}B) trace the same law against empirical
 assortativity, from aligned (chained) through neutral (comparison) to the adversarial MuSiQue boundary.
@@ -183,36 +183,37 @@ assortativity, from aligned (chained) through neutral (comparison) to the advers
 \includegraphics[width=\linewidth]{fig_alignment.pdf}
 \caption{The alignment law. \textbf{(A)} The alignment excess $(p-q)(1-q)^{|D|}$ vanishes at $p=q$ and is linear
 in $p-q$ (theory line and one-hop simulation), while the \emph{raw} surfacing probability $p(1-q)^{|D|}$ stays
-positive---an unaligned graph surfaces the bridge by chance, so the law governs the excess. \textbf{(B)} Empirical
+positive, since an unaligned graph surfaces the bridge by chance, so the law governs the excess. \textbf{(B)} Empirical
 dose-response: real graph$-$cosine recall gain vs.\ empirical graph--chain assortativity $\hat p-\hat q$ across
-datasets and graph constructions---comparison ($\approx0$, $\approx0$ gain), chained (high, positive),
+datasets and graph constructions: comparison ($\approx0$, $\approx0$ gain), chained (high, positive),
 adversarial-MuSiQue cheap graphs (null) up to the oracle clique (max). Bars are $95\%$ CIs.}
 \label{fig:align}
 \end{figure}
 \begin{remark}[Measurable alignment]
 The alignment $p-q$ is measured \emph{retrospectively}, on labeled evaluation data, by the empirical graph--chain
 assortativity $\widehat A=\hat p-\hat q$ (gold--gold minus gold--distractor edge rate). It is an \emph{explanatory
-diagnostic}, not a deployment-time statistic---computing it needs the gold labels, and per-query alignment is not
-gold-free-recoverable (\S\ref{sec:exp}). Theorem~\ref{thm:align} explains why $\widehat A$ predicts the gain, why
+diagnostic}, not a deployment-time statistic, since computing it needs the gold labels and per-query alignment is
+not gold-free-recoverable (\S\ref{sec:exp}). Theorem~\ref{thm:align} explains why $\widehat A$ predicts the gain, why
 the oracle ceiling and the adversarial failure are one axis, and why the effect saturates.
 \end{remark}
 
 \section{EXPERIMENTS}\label{sec:exp}
-\paragraph{Setup.} Pools of $N=100$ retrieved from a full-dev corpus (so the bridge is genuinely buried and the
-prior is weak); a graded $0$--$2$ hop-aware LLM judge (gpt-4o-mini) that explicitly credits linking passages; the
-soft GP with $\sigma^2$ tuned to judge reliability. Baselines: no-judge prior, passive verify-top-$B$, a free
-graph-smoothed prior (label propagation), embedding-kernel GP, a faithful BAGEL reconstruction \citep{bagel2026},
-and ceilings (oracle judge, oracle graph). Metrics: recall@$k$, chain-completion ($k=|\text{gold}|$), nDCG@10; paired bootstrap 95\% CIs;
-query-grouped splits. Datasets: HotpotQA \citep{yang2018hotpotqa}, 2WikiMultiHopQA \citep{ho2020twowiki}, MuSiQue
+\paragraph{Setup.} Each query gives a pool of $N=100$ passages retrieved from a full-dev corpus, so the bridge is
+genuinely buried and the prior is weak. The judge is a graded $0$--$2$ hop-aware LLM (gpt-4o-mini) that explicitly
+credits linking passages, and the GP uses a soft update with $\sigma^2$ tuned to judge reliability. Baselines:
+no-judge prior, passive verify-top-$B$, a free graph-smoothed prior (label propagation), embedding-kernel GP, a
+faithful BAGEL reconstruction \citep{bagel2026}, and ceilings (oracle judge, oracle graph). Metrics are recall@$k$,
+chain-completion ($k=|\text{gold}|$), and nDCG@10, with paired bootstrap 95\% CIs over query-grouped splits.
+Datasets: HotpotQA \citep{yang2018hotpotqa}, 2WikiMultiHopQA \citep{ho2020twowiki}, MuSiQue
 \citep{trivedi2022musique}. A naive judge (``does this answer the question?'') is bridge-blind (gold recall
-$0.35$); the hop-aware prompt raises gold recall to $0.84$, isolating the prompt fix from model strength.
+$0.35$). The hop-aware prompt raises gold recall to $0.84$, isolating the prompt fix from model strength.
 
 \paragraph{A low-budget win over the embedding kernel.} On chained HotpotQA/2Wiki ($n{=}600$), with the
 correlation-form kernel the graph beats the embedding kernel across all three metrics and all budgets
 (Table~\ref{tab:main}): at one judgment, recall $+0.058\,[.040,.076]$, nDCG@10 $+0.030\,[.020,.041]$,
-chain-completion $+0.122\,[.088,.155]$; significant through $B{=}3$. The graph kernel---not ``any GP''---drives it:
+chain-completion $+0.122\,[.088,.155]$, significant through $B{=}3$. The graph kernel, not ``any GP,'' drives it:
 graph-GP $>$ cosine-GP $>$ passive. The win is individually significant in \emph{each} corpus, larger on the more
-assortative one (HotpotQA $>$ 2Wiki; Appendix~\ref{app:perds}).
+assortative one (HotpotQA $>$ 2Wiki, Appendix~\ref{app:perds}).
 \begin{table}[t]\caption{Low-budget graph-kernel win (correlation-form kernel), significant at all budgets. The
 raw kernel is weaker and converges to null by $B=3$.}\label{tab:main}
 \begin{center}\small
@@ -227,9 +228,9 @@ $B=3$ & $+0.063\,[.044,.082]$ & $+0.033\,[.022,.045]$ & $+0.127\,[.093,.162]$ \\
 \end{center}
 \end{table}
 
-\paragraph{Structure ranks nothing on its own; as a covariance it ranks well, and beats a strong free baseline.}
+\paragraph{Structure ranks nothing on its own, but as a covariance it ranks well and beats a strong free baseline.}
 Ranking by graph structure alone (PageRank/degree, ignoring semantics) \emph{buries} the answer (recall $0.209$
-vs.\ $0.646$ for the semantic prior; Table~\ref{tab:ablate})---a diffusion to hubs, as expected. But used as a
+vs.\ $0.646$ for the semantic prior, Table~\ref{tab:ablate}), a diffusion to hubs as expected. But used as a
 \emph{covariance} the graph does real work even for \emph{free}: label-propagation / GMRF smoothing of the
 calibrated prior, $(I+\lambda\mathcal L)^{-1}m$, with \emph{no} judgments, is a strong baseline (recall $0.707$,
 completion $0.488$) because the graph is chain-assortative. The active method must beat that, and it does
@@ -237,7 +238,7 @@ completion $0.488$) because the graph is chain-assortative. The active method mu
 $[.002,.087]$ at $B{=}10$, while at a \emph{single} judgment the two are a wash ($-0.043$ completion). So the
 active covariance earns its keep beyond a strong free graph baseline once more than one judgment is spent, and the
 graph's role is squarely in the covariance, not as a standalone ranker.
-\begin{table}[t]\caption{Structure alone buries; structure as a covariance ranks well and beats a free graph
+\begin{table}[t]\caption{Structure alone buries. As a covariance it ranks well and beats a free graph
 baseline from $B{=}2$. Chained, $n{=}600$.}\label{tab:ablate}
 \begin{center}\small
 \begin{tabular}{lcc}
@@ -257,8 +258,8 @@ graph-GP, ours ($B{=}3$) & $0.720$ & $0.513$ \\
 the fixed convex family $K_\alpha=(1-\alpha)\widetilde K^E+\alpha\widetilde K^G$ (both correlation-form,
 \emph{same} calibrated mean), sweeping a single global $\alpha$ on the chained set. Recall rises
 \emph{monotonically} in the graph weight, $0.634\,(\alpha{=}0)\to0.692\,(\alpha{=}1)$ at $B{=}1$, and completion
-$0.323\to0.445$; the tuned optimum is $\alpha^\star=1$. Holding the mean fixed and varying only the covariance, the
-graph is the better covariance and the embedding covariance adds nothing on top---a direct answer to ``why not keep
+$0.323\to0.445$, and the tuned optimum is $\alpha^\star=1$. Holding the mean fixed and varying only the covariance, the
+graph is the better covariance and the embedding covariance adds nothing on top, a direct answer to ``why not keep
 the embedding covariance.''
 
 \paragraph{Head-to-head with a faithful BAGEL reconstruction.} BAGEL's code is unreleased, so we reconstruct it
@@ -267,29 +268,29 @@ query-specific \emph{zero-mean} GP over passage embeddings with an RBF kernel wh
 query} by marginal likelihood, LLM relevance scores as standardized labels, the query embedding seeded as a
 maximum-relevance pseudo-observation, a top-$M$ dense warm-start, UCB acquisition ($\beta{=}2$), and ranking by
 posterior mean. We reproduce BAGEL's inference and acquisition while scoring \emph{all} methods with the same
-hop-aware judge, isolating the retrieval algorithm from judge quality. We match its total judgment budget to ours and sweep $B$ from $1$ to $50$---up to
+hop-aware judge, isolating the retrieval algorithm from judge quality. We match its total judgment budget to ours and sweep $B$ from $1$ to $50$, up to
 BAGEL's \emph{exact native configuration} ($B{=}50=25$ warm $+\,25$ active, half the $N{=}100$ pool). For $B<50$
 the budget splits as $\lceil B/2\rceil$ warm-start (top-cosine) $+\lfloor B/2\rfloor$ active judgments, with the
-query pseudo-observation free; the conclusion is unchanged under a maximally-active split (warm$=1$: covariance gap
+query pseudo-observation free, and the conclusion is unchanged under a maximally-active split (warm$=1$: covariance gap
 $+0.13$ at $B{=}3,5$). The graph method beats the reconstruction at every budget (Figure~\ref{fig:bagel}A), and, in the fairness check
 that matters, the gap decomposes into a budget-\emph{sensitive} mean effect and a budget-\emph{invariant} covariance effect
 (Figure~\ref{fig:bagel}B). \emph{(i) Semantics-in-the-mean:} BAGEL's zero-mean GP has no cross-query prior and is
-starved at tiny budget; giving BAGEL's own kernel our calibrated prior mean recovers this part, and it is the
+starved at tiny budget. Giving BAGEL's own kernel our calibrated prior mean recovers this part, and it is the
 \emph{only} part that shrinks ($\Delta$ falls from $+0.25$ at $B{=}1$ toward $+0.12$). \emph{(ii)
 Structure-in-the-covariance:} even with our prior \emph{and} BAGEL's marginal-likelihood-tuned kernel, the graph
 covariance wins by a \emph{constant} $\approx+0.11$ from $B{=}1$ to BAGEL's native $B{=}50$
-($+0.109,\dots,+0.114$); BAGEL's embedding covariance cannot \emph{propagate} anchor evidence to a distant bridge,
-so---empirically---increasing the budget does not close the gap (it plateaus $\sim0.12$ below ours).
+($+0.109,\dots,+0.114$). BAGEL's embedding covariance cannot \emph{propagate} anchor evidence to a distant bridge,
+so empirically increasing the budget does not close the gap (it plateaus $\sim0.12$ below ours).
 
 \emph{(iii) Not a small-pool artifact.} Re-running at a $5\times$ deeper pool ($N{=}500$, so budgets $B{=}1$--$50$
-probe only $0.2$--$10\%$ of the candidates---the realistic regime) leaves the covariance gap flat and
+probe only $0.2$--$10\%$ of the candidates, the realistic regime) leaves the covariance gap flat and
 \emph{larger}: $\approx+0.15$ ($+0.142,\dots,+0.189$ over $B{=}1$--$50$, every interval excluding zero and above
-its $N{=}100$ value; Figure~\ref{fig:bagel}B). A deeper pool buries the bridge further, exactly where the embedding
+its $N{=}100$ value, Figure~\ref{fig:bagel}B). A deeper pool buries the bridge further, exactly where the embedding
 covariance fails, so graph-GP recall stays pool-robust ($0.67$--$0.72$) while BAGEL degrades ($0.39$--$0.56$). The
 covariance advantage is thus neither a low-budget nor a small-pool artifact.
 \begin{figure}[t]\centering
 \includegraphics[width=\linewidth]{fig_bagel.pdf}
-\caption{Faithful BAGEL vs.\ ours at matched judgment budget (chained, $n{=}600$; $B$ up to BAGEL's native $50$).
+\caption{Faithful BAGEL vs.\ ours at matched judgment budget (chained, $n{=}600$, $B$ up to BAGEL's native $50$).
 \textbf{(A)} BAGEL plateaus $\sim0.12$ recall below ours even at its native budget. \textbf{(B)} The total gap
 (ours$-$BAGEL) shrinks as BAGEL's starvation eases, but the covariance gap (same calibrated mean) is
 budget-invariant: $\approx+0.11$ at $N{=}100$ and, at a $5\times$ deeper $N{=}500$ pool, flat and larger at
@@ -299,47 +300,47 @@ $\approx+0.15$ ($95\%$ CI bands). Neither a low-budget nor a small-pool artifact
 
 \paragraph{The alignment law, from both sides.} We judged the \emph{comparison} (independent-evidence) questions
 as a control ($300$ chained $+$ $300$ comparison). The graph helps chained ($+0.058\,[.040,.076]$ at $B{=}1$) and
-does \emph{not} help comparison (neutral to slightly negative)---the boundary the theorem predicts, with the
-mechanism visible: comparison questions have a strong prior (passive recall $\sim0.8$; both entities directly
+does \emph{not} help comparison (neutral to slightly negative), the boundary the theorem predicts, with the
+mechanism visible: comparison questions have a strong prior (passive recall $\sim0.8$, both entities directly
 findable, no bridge to propagate along). The oracle-graph ceiling is $+0.07$--$0.09$, and the empirical
 assortativity tracks the per-regime gain (Figure~\ref{fig:align}B).
 
 \paragraph{Adversarial corpora: MuSiQue, and a partial rescue.} MuSiQue's distractors are made surface-similar to
 golds, so cheap graphs (title, entity-overlap, cosine-decomposition) have $p\approx q$ and are null (graph$-$cosine
-$+0.008\,[\text{-}.02,.03]$ at three hops), while an oracle gold-clique graph recovers $+0.087\,[.05,.13]$---the
-theorem's two ends. Following its prescription (raise $p-q$), we build the graph from the judge's \emph{own}
+$+0.008\,[\text{-}.02,.03]$ at three hops), while an oracle gold-clique graph recovers $+0.087\,[.05,.13]$, the
+theorem's two extremes. Following its prescription (raise $p-q$), we build the graph from the judge's \emph{own}
 reasoning: decompose the question into sub-questions and ask the judge which sub-question each pool passage
 answers, then connect passages on different hops. This recovers a significant $+0.035\,[.01,.06]$ at three
-hops---$\sim4\times$ the cosine graph and $\sim40\%$ of the oracle headroom, robust across constructions---where
+hops ($\sim4\times$ the cosine graph and $\sim40\%$ of the oracle headroom, robust across constructions), where
 every surface graph is null. \emph{Budget accounting.} These hop-assignments are \emph{extra} LLM calls, outside
-the judgment budget $B$; we therefore report this as a \emph{structure-construction} experiment---evidence that a
-chain-assortative graph, once built, recovers the covariance gain the oracle predicts---not as a budget-fair
+the judgment budget $B$. We therefore report this as a \emph{structure-construction} experiment, evidence that a
+chain-assortative graph, once built, recovers the covariance gain the oracle predicts, not as a budget-fair
 competitor. The budget-fair version elicits the hop/role assignment in the \emph{same} call as the relevance grade
-(one call returns \emph{(grade, role)}), turning graph construction into a by-product of the existing budget; that
-adaptive loop is the natural sequel.
+(one call returns \emph{(grade, role)}), turning graph construction into a by-product of the existing budget, and
+that adaptive loop is the natural sequel.
 
 \paragraph{Why not adapt per query? An honest negative.} A natural extension is a gold-free gate that decides per
 query whether to use the graph. It does not deploy, and the reason is instructive. The per-query graph advantage is
 a \emph{small mean effect swamped by variance} (signal-to-noise $\approx0.1$--$0.2$) and is nearly unpredictable
 from gold-free features \emph{even under the oracle}: ridge $R^2\approx0.03$--$0.05$. Two mechanistic fixes failed:
 the graph does \emph{not} amplify judge errors (advantage correlates $-0.17$ with anchor reliability), and
-confidence-gating the propagation \emph{hurts} ($-0.030$; the grade-$1$ ``related'' labels carry useful signal).
+confidence-gating the propagation \emph{hurts} ($-0.030$, since the grade-$1$ ``related'' labels carry useful signal).
 On the mixed distribution the learned gate only \emph{ties} always-graph ($+0.003$, n.s.) while the per-query
 oracle has a real $+0.027$ headroom that is not gold-free-reachable. The graph's advantage is a \emph{distributional}
-property---a robust average in the deep multi-hop regime (the alignment law)---not a per-query-predictable signal.
+property, a robust average in the deep multi-hop regime (the alignment law), not a per-query-predictable signal.
 Within the deep multi-hop regime studied, the evidence favors a global graph policy over per-query routing, which
 is neither feasible nor needed here.
 
 \section{DISCUSSION AND LIMITATIONS}\label{sec:disc}
-Effects are modest and low-budget; the BAGEL comparison is a faithful reconstruction (their code is unreleased),
+Effects are modest and low-budget. The BAGEL comparison is a faithful reconstruction (their code is unreleased),
 though we control for its prior and lengthscale-fitting so the covariance advantage is not an implementation
-artifact; two of three benchmarks are standard multi-hop. The contribution is the account: a mean/dependence
-decomposition---structure fails as a standalone ranker but pulls its weight as a covariance, beating even a free
-graph-smoothing baseline past one judgment---a proved alignment law that unifies the oracle ceiling and the
+artifact, and two of three benchmarks are standard multi-hop. The contribution is the account: a mean/dependence
+decomposition (structure fails as a standalone ranker but pulls its weight as a covariance, beating even a free
+graph-smoothing baseline past one judgment), a proved alignment law that unifies the oracle ceiling and the
 adversarial boundary, an exploration mechanism, and an honest map of where the method helps (deep multi-hop with a chain-assortative graph), is neutral
 (independent evidence), and is only partially recoverable (adversarial corpora, via inferred structure). The
 deepest open direction is \emph{adaptive structure learning}: inferring the reasoning-chain graph from the first
-judgments---of which the MuSiQue hop-assignment result is a first instance---which would raise $p-q$ within the
+judgments (the MuSiQue hop-assignment result is a first instance), which would raise $p-q$ within the
 budget.
 
 \bibliographystyle{plainnat}
@@ -351,25 +352,25 @@ budget.
   \item For all models and algorithms presented, check if you include:
   \begin{enumerate}
     \item A clear description of the mathematical setting, assumptions, algorithm, and/or model. \textbf{Yes} (\S\ref{sec:model}--\ref{sec:law}).
-    \item An analysis of the properties and complexity (time, space, sample size) of any algorithm. \textbf{Yes}; each judgment is an $O(N^2)$ GP conditioning over a pool of $N\le500$ candidates, negligible next to the LLM judgment cost the budget accounts for.
-    \item (Optional) Anonymized source code, with specification of all dependencies. \textbf{Yes} (supplementary material; NumPy/SciPy only for the retrieval method).
+    \item An analysis of the properties and complexity (time, space, sample size) of any algorithm. \textbf{Yes}, each judgment is an $O(N^2)$ GP conditioning over a pool of $N\le500$ candidates, negligible next to the LLM judgment cost the budget accounts for.
+    \item (Optional) Anonymized source code, with specification of all dependencies. \textbf{Yes} (supplementary material, NumPy/SciPy only for the retrieval method).
   \end{enumerate}
   \item For any theoretical claim, check if you include:
   \begin{enumerate}
-    \item Statements of the full set of assumptions. \textbf{Yes} (Assumption~\ref{ass:bridge}; SBM in Theorem~\ref{thm:align}).
-    \item Complete proofs of all theoretical results. \textbf{Yes} (Appendix~\ref{app:proof}; the surfacing lemma is proved inline).
+    \item Statements of the full set of assumptions. \textbf{Yes} (Assumption~\ref{ass:bridge}, SBM in Theorem~\ref{thm:align}).
+    \item Complete proofs of all theoretical results. \textbf{Yes} (Appendix~\ref{app:proof}, the surfacing lemma is proved inline).
     \item Clear explanations of any assumptions. \textbf{Yes} (\S\ref{sec:law}, Remark on measurable alignment).
   \end{enumerate}
   \item For all figures and tables that present empirical results, check if you include:
   \begin{enumerate}
     \item The code, data, and instructions needed to reproduce the main results. \textbf{Yes} (supplementary: scripts and all cached LLM judgments).
-    \item All the training details (data splits, hyperparameters, how chosen). \textbf{Yes} (\S\ref{sec:exp}; query-grouped splits, $\sigma^2$ from judge reliability, single global $\alpha$/$\lambda$).
-    \item A clear definition of the specific measure and error bars. \textbf{Yes}; recall@$k$/nDCG@10/completion with paired bootstrap $95\%$ CIs over query-grouped resamples.
-    \item A description of the computing infrastructure used. \textbf{Yes}; retrieval runs on CPU, LLM judgments via the OpenAI API (gpt-4o-mini); total spend $<\$25$.
+    \item All the training details (data splits, hyperparameters, how chosen). \textbf{Yes} (\S\ref{sec:exp}: query-grouped splits, $\sigma^2$ from judge reliability, single global $\alpha$/$\lambda$).
+    \item A clear definition of the specific measure and error bars. \textbf{Yes}, recall@$k$/nDCG@10/completion with paired bootstrap $95\%$ CIs over query-grouped resamples.
+    \item A description of the computing infrastructure used. \textbf{Yes}, retrieval runs on CPU, LLM judgments via the OpenAI API (gpt-4o-mini), total spend $<\$25$.
   \end{enumerate}
   \item If you are using existing assets or curating/releasing new assets, check if you include:
   \begin{enumerate}
-    \item Citations of the creator. \textbf{Yes} (HotpotQA, 2WikiMultiHopQA, MuSiQue; BAGEL).
+    \item Citations of the creator. \textbf{Yes} (HotpotQA, 2WikiMultiHopQA, MuSiQue, and BAGEL).
     \item The license information of the assets. \textbf{Not Applicable} (public research benchmarks, standard research use).
     \item New assets either in the supplemental material or as a URL. \textbf{Yes} (cached judgments, scripts).
     \item Information about consent from data providers/curators. \textbf{Not Applicable}.
@@ -385,24 +386,24 @@ budget.
 \emph{(i)} The one-hop surrogate has $K_{ij}=\beta A_{ij}$ for $i\neq j$. By the \emph{exact} surfacing condition
 (Lemma~\ref{lem:surface}), the bridge surfaces iff $\beta(A_{ba}-A_{da})>(m_d-m_b)/c$ for every $d$. If some
 distractor is anchor-connected ($A_{da}=1$) it receives the same lift as the bridge ($K_{da}=\beta=K_{ba}$) while
-$m_d>m_b$, so the bridge cannot overtake it; surfacing therefore requires $A_{da}=0\ \forall d$. If instead
+$m_d>m_b$, so the bridge cannot overtake it, and surfacing therefore requires $A_{da}=0\ \forall d$. If instead
 $A_{ba}=1$ and all $A_{da}=0$, then $\beta(1-0)=\beta>\tau\ge(m_d-m_b)/c$ for every $d$ (using $0<\tau<\beta$), so
 the bridge clears them all. Hence the bridge surfaces iff $A_{ba}=1$ and $A_{da}=0\ \forall d$ (the corrected
 lemma leaves the one-hop count intact). Independence of the edges gives
-$\Pr(\text{surface})=\Pr(A_{ba}=1)\prod_d\Pr(A_{da}=0)=p(1-q)^{|D|}$. The density-matched unaligned graph replaces $p$ by $q$, giving $q(1-q)^{|D|}$; subtracting yields
+$\Pr(\text{surface})=\Pr(A_{ba}=1)\prod_d\Pr(A_{da}=0)=p(1-q)^{|D|}$. The density-matched unaligned graph replaces $p$ by $q$, giving $q(1-q)^{|D|}$, and subtracting yields
 $\Delta_{\mathrm{align}}=(p-q)(1-q)^{|D|}$, which is $0$ at $p=q$, positive iff $p>q$, and linear in $p-q$ at fixed
 $q$. \emph{(ii)} $(I+\lambda L)^{-1}=I-\lambda L+O(\lambda^2)$ with $L=D-A$, so the off-diagonal is
-$K_{ij}=\lambda A_{ij}+O(\lambda^2)$; correlation normalization divides by $\sqrt{K_{ii}K_{jj}}=1+O(\lambda)$ and
+$K_{ij}=\lambda A_{ij}+O(\lambda^2)$. Correlation normalization divides by $\sqrt{K_{ii}K_{jj}}=1+O(\lambda)$ and
 preserves the first-order term, whence $\E[K_{ba}-K_{da}]=\lambda(p-q)+O(\lambda^2)$. \emph{(iii)} Immediate from
 $\Delta_{\mathrm{align}}=(p-q)(1-q)^{|D|}$: maximal at $q{=}0,p{=}1$, zero at $p=q$. \hfill$\square$
 
 \section{PER-DATASET BREAKDOWN}\label{app:perds}
 The pooled headline (Table~\ref{tab:main}) is significant in \emph{each} dataset separately (Table~\ref{tab:perds}).
 HotpotQA, whose chained graph is more chain-assortative ($\hat p-\hat q=0.75$ vs.\ $0.59$ for 2Wiki), shows the
-larger gain at every budget and metric---the same dose-response ordering as Figure~\ref{fig:align}B, now
+larger gain at every budget and metric, the same dose-response ordering as Figure~\ref{fig:align}B, now
 \emph{across} standard corpora.
 \begin{table}[h]\caption{Graph$-$cosine margin per dataset (correlation-form kernel). Both individually significant
-at $B{=}1,2$; the more assortative corpus (HotpotQA) gains more.}\label{tab:perds}
+at $B{=}1,2$, and the more assortative corpus (HotpotQA) gains more.}\label{tab:perds}
 \begin{center}\small
 \begin{tabular}{llccc}
 \toprule
@@ -417,7 +418,7 @@ $2$ & 2Wiki    & $+0.051\,[.028,.077]$ & $+0.025\,[.008,.041]$ & $+0.120\,[.077,
 \end{table}
 
 \section{BAGEL RECONSTRUCTION}\label{app:bagel}
-BAGEL's code is unreleased; we follow its published specification \citep{bagel2026}. Table~\ref{tab:bagel-spec}
+BAGEL's code is unreleased, so we follow its published specification \citep{bagel2026}. Table~\ref{tab:bagel-spec}
 tabulates the correspondence component by component. The covariance advantage is isolated by also giving the
 reconstruction our calibrated prior mean (the ``$+$prior'' curve), so the gap in Figure~\ref{fig:bagel}B cannot be
 an artifact of BAGEL's missing cross-query prior.
@@ -426,7 +427,7 @@ an artifact of BAGEL's missing cross-query prior.
 \begin{tabular}{lll}
 \toprule
 Component & Published BAGEL & Our reconstruction \\ \midrule
-GP mean & zero-mean & zero-mean (matched); ``$+$prior'' variant adds our calibrated mean \\
+GP mean & zero-mean & zero-mean (matched), ``$+$prior'' variant adds our calibrated mean \\
 kernel & embedding RBF & same \\
 lengthscale & per-query marginal likelihood & same \\
 query seed & max-relevance pseudo-obs. & same \\
