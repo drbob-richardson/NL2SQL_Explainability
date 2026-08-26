@@ -49,20 +49,19 @@ Retrieval-augmented generation \citep{lewis2020rag} increasingly relies on an LL
 passages, at a real per-call cost. When the budget is a handful of judgments per query, retrieval becomes active
 learning: which candidates should we spend judgments on, and how should a judgment reshape our beliefs about the
 rest? The hard case is multi-hop: a question whose answer requires chaining facts across passages, where one gold
-passage---the \emph{bridge}, supplying a linking entity rather than the answer itself---has low retriever
+passage (the \emph{bridge}, supplying a linking entity rather than the answer itself) has low retriever
 similarity to the query and sits buried among distractors. A bridge is exactly what an embedding retriever misses
 and what a dependency structure could recover, if a judgment on a findable passage could \emph{propagate} to it.
 
 \paragraph{Thesis: semantics sets the mean, structure sets the dependence.} We model latent relevance as a
 Gaussian process \citep{williams2006gpml} whose \emph{mean} is a calibrated retriever score and whose
-\emph{covariance} is a corpus graph. The graph is a poor \emph{standalone} ranking signal---ranking by structure alone
-(PageRank/degree) buries the bridge under diffusion (\S\ref{sec:exp})---but an excellent covariance: ``connected
-passages have correlated relevance,'' so
-conditioning on a judged anchor lifts the posterior mean of a connected bridge, and even smoothing the prior over
-the graph with no judgment at all denoises the ranking. The same graph that fails as a standalone ranker is
-load-bearing as a dependence. This resolves a tension in graph-based retrieval and, we argue, is the reason a
-Bayesian treatment earns its keep here: the graph enters the \emph{decision / experimental-design} layer
-\citep{chaloner1995bed,lindley1956voi}, not the ranking layer.
+\emph{covariance} is a corpus graph. On its own the graph is a poor ranking signal: rank by structure alone (PageRank or degree) and diffusion buries
+the bridge (\S\ref{sec:exp}). As a covariance it is a different story. Because connected passages have correlated
+relevance, conditioning on a judged anchor lifts the posterior mean of a connected bridge; even smoothing the prior
+over the graph, with no judgment at all, denoises the ranking. The same graph that fails as a ranker does the real
+work as a dependence, which resolves a standing tension in graph-based retrieval. It is also why a Bayesian
+treatment pays off here: the graph belongs in the \emph{decision} layer \citep{chaloner1995bed,lindley1956voi},
+not the ranking layer.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=*,itemsep=1pt,topsep=2pt]
@@ -73,7 +72,7 @@ exploration reaches the propagating anchors.
 \item \textbf{The alignment law} (\S\ref{sec:law}): a surfacing lemma and a stochastic-block-model theorem---the
 \emph{alignment excess} (gain over a density-matched unaligned graph) is $0$ at zero alignment, positive iff the
 graph is chain-assortative ($p>q$), and monotone in $p-q$; the oracle ceiling and the adversarial failure are the
-two ends of one axis, measured retrospectively (on labeled data) by the empirical assortativity $\hat p-\hat q$. The same surfacing analysis gives a mechanism for why optimistic acquisition suits
+opposite ends of this axis, measured retrospectively (on labeled data) by the empirical assortativity $\hat p-\hat q$. The same surfacing analysis gives a mechanism for why optimistic acquisition suits
 this problem, though the full superiority of UCB over multi-step lookahead we leave as an empirical finding
 (\S\ref{sec:acq}).
 \item \textbf{An honest empirical characterization} (\S\ref{sec:exp}) under a real hop-aware judge: a low-budget
@@ -83,8 +82,8 @@ reconstruction; a partial rescue of adversarial MuSiQue via an LLM hop-assignmen
 routing does not deploy, so that within the deep multi-hop regime studied a global graph policy is better
 supported than per-query routing.
 \end{enumerate}
-We do not claim large gains: effects are modest. We claim a principled account---\emph{when} structure helps and
-\emph{why}---and a method that did not significantly hurt in the regimes we tested, and is simple.
+We do not claim large gains; the effects are modest. What we claim is an account of when structure helps and why,
+and a method that is simple and did not significantly hurt in any regime we tested.
 
 \section{RELATED WORK}\label{sec:rel}
 \paragraph{Active / Bayesian retrieval.} Our nearest neighbour is BAGEL \citep{bagel2026}, a query-specific
@@ -111,7 +110,7 @@ label) under Gaussian noise $\sigma^2$. Ranking is by posterior mean; recall@$k$
 are measured against gold.
 
 \paragraph{Two kernels.} The embedding kernel $K^E_{ij}=\exp(-(1-v_i^\top v_j)/\ell)$ encodes ``similar
-embeddings, similar relevance''---but the bridge is dissimilar to everything, so $K^E$ cannot reach it. The graph
+embeddings, similar relevance.'' But the bridge is dissimilar to everything, so $K^E$ cannot reach it. The graph
 kernel is a GMRF/CAR covariance $K^G=(I+\lambda \mathcal L)^{-1}$ on a corpus graph $A$ (Laplacian
 $\mathcal L=D-A$), encoding ``connected passages, correlated relevance.''
 
@@ -129,10 +128,10 @@ We rank by $\mu$ (soft) rather than hard-pinning judged labels; with an imperfec
 label is catastrophic (a mislabeled gold is sunk), while the soft update degrades gracefully.
 
 \section{ACQUISITION: EXPLORATION, NOT INFORMATION}\label{sec:acq}
-We select judgments by UCB, $\arg\max_i \mu_i+\beta\,\mathrm{sd}_i$. Against principled alternatives---one-step
-value of information for chain completion ($1-\prod_j(1-p_j)$), two-step lookahead, pure information gain (maximum
-variance reduction), and pure exploration (maximum variance)---UCB wins across the board on the graph kernel
-(chain-completion $-0.08$ to $-0.11$ at one judgment; two-step lookahead does not help either). We separate the
+We select judgments by UCB, $\arg\max_i \mu_i+\beta\,\mathrm{sd}_i$. We compare it against four principled
+alternatives: one-step value of information for chain completion ($1-\prod_j(1-p_j)$), two-step lookahead,
+information gain (maximum variance reduction), and pure exploration (maximum variance). UCB wins across the board
+on the graph kernel (chain-completion $-0.08$ to $-0.11$ at one judgment; two-step lookahead does not help either). We separate the
 mechanism from the empirical finding. \emph{Mechanism:} the value of judging a high-prior anchor is not its own
 label but the \emph{downstream} surfacing of a connected bridge (Lemma~\ref{lem:surface})---a delayed value that a
 myopic one-step completion objective structurally undervalues, which explains why one-step VOI loses. \emph{Open:}
@@ -231,7 +230,7 @@ $B=3$ & $+0.063\,[.044,.082]$ & $+0.033\,[.022,.045]$ & $+0.127\,[.093,.162]$ \\
 \paragraph{Structure ranks nothing on its own; as a covariance it ranks well, and beats a strong free baseline.}
 Ranking by graph structure alone (PageRank/degree, ignoring semantics) \emph{buries} the answer (recall $0.209$
 vs.\ $0.646$ for the semantic prior; Table~\ref{tab:ablate})---a diffusion to hubs, as expected. But used as a
-\emph{covariance} the graph is load-bearing even for \emph{free}: label-propagation / GMRF smoothing of the
+\emph{covariance} the graph does real work even for \emph{free}: label-propagation / GMRF smoothing of the
 calibrated prior, $(I+\lambda\mathcal L)^{-1}m$, with \emph{no} judgments, is a strong baseline (recall $0.707$,
 completion $0.488$) because the graph is chain-assortative. The active method must beat that, and it does
 \emph{from $B{=}2$}: graph-GP overtakes the free smoother by two judgments and leads it by $+0.043$ completion
@@ -272,8 +271,8 @@ hop-aware judge, isolating the retrieval algorithm from judge quality. We match 
 BAGEL's \emph{exact native configuration} ($B{=}50=25$ warm $+\,25$ active, half the $N{=}100$ pool). For $B<50$
 the budget splits as $\lceil B/2\rceil$ warm-start (top-cosine) $+\lfloor B/2\rfloor$ active judgments, with the
 query pseudo-observation free; the conclusion is unchanged under a maximally-active split (warm$=1$: covariance gap
-$+0.13$ at $B{=}3,5$). The graph method beats the reconstruction at every budget (Figure~\ref{fig:bagel}A), and---the load-bearing fairness check---the
-gap decomposes into a budget-\emph{sensitive} mean effect and a budget-\emph{invariant} covariance effect
+$+0.13$ at $B{=}3,5$). The graph method beats the reconstruction at every budget (Figure~\ref{fig:bagel}A), and, in the fairness check
+that matters, the gap decomposes into a budget-\emph{sensitive} mean effect and a budget-\emph{invariant} covariance effect
 (Figure~\ref{fig:bagel}B). \emph{(i) Semantics-in-the-mean:} BAGEL's zero-mean GP has no cross-query prior and is
 starved at tiny budget; giving BAGEL's own kernel our calibrated prior mean recovers this part, and it is the
 \emph{only} part that shrinks ($\Delta$ falls from $+0.25$ at $B{=}1$ toward $+0.12$). \emph{(ii)
@@ -335,7 +334,7 @@ is neither feasible nor needed here.
 Effects are modest and low-budget; the BAGEL comparison is a faithful reconstruction (their code is unreleased),
 though we control for its prior and lengthscale-fitting so the covariance advantage is not an implementation
 artifact; two of three benchmarks are standard multi-hop. The contribution is the account: a mean/dependence
-decomposition---structure fails as a standalone ranker but is load-bearing as a covariance, beating even a free
+decomposition---structure fails as a standalone ranker but pulls its weight as a covariance, beating even a free
 graph-smoothing baseline past one judgment---a proved alignment law that unifies the oracle ceiling and the
 adversarial boundary, an exploration mechanism, and an honest map of where the method helps (deep multi-hop with a chain-assortative graph), is neutral
 (independent evidence), and is only partially recoverable (adversarial corpora, via inferred structure). The
