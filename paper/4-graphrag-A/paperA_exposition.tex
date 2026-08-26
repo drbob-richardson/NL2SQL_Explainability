@@ -44,9 +44,9 @@ distractors. We are allowed to pay for a small number of expensive ``relevance j
 call) and must decide \emph{which} passages to spend them on, and how each judgment should update our beliefs about
 the others. That is a sequential experimental-design problem on a latent relevance surface. Our thesis is a
 decomposition: the \emph{mean} of that surface should come from cheap semantic similarity, but its \emph{covariance}
-should come from a graph on the corpus. The graph is a bad way to \emph{rank} passages but an excellent way to
-\emph{propagate a judgment}: judging one passage lifts our belief about its graph-neighbours, and that is exactly
-how a buried bridge gets surfaced. The rest of this document makes each italicized word precise.
+should come from a graph on the corpus. The graph is a bad \emph{standalone} ranker (ranking by structure alone
+buries the answer) but an excellent \emph{covariance}: judging one passage lifts our belief about its
+graph-neighbours, and that is exactly how a buried bridge gets surfaced. The rest of this document makes each italicized word precise.
 
 \section{The applied setting, explained from scratch}\label{sec:setting}
 You can skip this section if the words ``retrieval-augmented generation,'' ``embedding,'' and ``LLM-as-judge'' are
@@ -445,8 +445,9 @@ identifies.
 Each query gives a pool of $N=100$ passages retrieved from the full development corpus (so the bridge is genuinely
 buried; a small distractor set would make the problem artificially easy). The judge is a graded $0$--$2$ hop-aware
 LLM (gpt-4o-mini) as in \S\ref{sec:setting}. We compare, all sharing the same judgment budget $B$: the no-judge
-prior; passive ``verify the top $B$''; the embedding-kernel GP; a faithful re-implementation of BAGEL
-\citep{bagel2026}; and two ceilings (an oracle judge that never errs, and an oracle gold-clique graph). Metrics are
+prior; passive ``verify the top $B$''; a free graph-smoothed prior (label propagation); the embedding-kernel GP;
+a faithful reconstruction of BAGEL \citep{bagel2026}; and two ceilings (an oracle judge that never errs, and an
+oracle gold-clique graph). Metrics are
 recall@$k$, chain-completion (all gold in the top $k=|\text{gold}|$), and nDCG@10, each with paired bootstrap $95\%$
 confidence intervals resampled over queries (so the eight candidates of one query move together---a cluster
 bootstrap). Datasets: HotpotQA \citep{yang2018hotpotqa}, 2WikiMultiHopQA \citep{ho2020twowiki}, and the adversarial
@@ -507,7 +508,7 @@ is not that we forgot the embedding covariance; it is that, for surfacing bridge
 Our nearest competitor, BAGEL \citep{bagel2026}, is a query-specific \emph{zero-mean} GP over passage embeddings
 with a radial-basis kernel whose lengthscale is fit per query by marginal likelihood, using the LLM relevance scores
 as standardized observations, a max-relevance query-seed, a dense warm-start, and UCB acquisition. Because their
-code is unreleased we reimplement it faithfully and, to be scrupulously fair, we \emph{control for two things at
+code is unreleased we reconstruct it faithfully and, to be scrupulously fair, we \emph{control for two things at
 once}: we can give BAGEL our calibrated prior mean (isolating the effect of the mean) and we keep its own
 marginal-likelihood-tuned kernel (isolating the effect of the covariance). All methods score with the \emph{same}
 hop-aware judge, so the comparison isolates the retrieval algorithm from judge quality. We match total judgment budgets and sweep
@@ -608,7 +609,7 @@ reliability, the wrong sign for an error-amplification story), and confidence-ga
 high-confidence labels \emph{hurts} by $0.030$ (the ``related,'' grade-$1$ labels carry useful propagation signal).
 On the mixed stream the learned gate only \emph{ties} an always-on-graph policy ($+0.003$, not significant), while
 the per-query \emph{oracle} gate has a real $+0.027$ of headroom that is simply not reachable from gold-free
-features. The conclusion is a clean dichotomy: the structural gain is a \emph{distributional} property---a reliable
+features. The conclusion is a clean dichotomy: the graph's advantage is a \emph{distributional} property---a reliable
 average over the deep-multi-hop regime, which is exactly what the alignment law describes---and \emph{not} a
 per-query-predictable signal. Within the deep multi-hop regime studied, the evidence therefore favors a simple
 global graph policy over per-query routing---the latter is neither feasible nor needed here.
@@ -627,7 +628,8 @@ same discipline one would apply before claiming an interaction that the data can
 \section{Discussion, and what a statistician should take away}\label{sec:disc}
 The numbers are modest by design; the contribution is an \emph{account}. Four pieces fit together. (1)~A
 mean/dependence decomposition: cheap semantics belong in the GP mean, corpus structure in the covariance, and
-conflating them---using the graph to rank---is the mistake the field keeps making. (2)~A methodological detail with
+conflating them---using the graph as a \emph{standalone} ranker, which buries the answer (\S\ref{sec:main})---is
+the mistake the field keeps making. (2)~A methodological detail with
 real teeth: the graph covariance must be used in correlation form, or a variance-based sampler ignores exactly the
 nodes that propagate. (3)~A proved alignment law that unifies, on a single axis $p-q$ estimated by assortativity,
 the oracle ceiling and the adversarial failure, and predicts the neutral boundary. (4)~An honest map of where the
