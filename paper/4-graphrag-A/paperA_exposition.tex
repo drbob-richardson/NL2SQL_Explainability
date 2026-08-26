@@ -181,9 +181,9 @@ propagation we want to exploit.
 
 \begin{intuition}
 Why does a bad ranker make a good covariance? If you \emph{ranked} passages by graph diffusion (e.g.\ personalized
-PageRank), mass would spread to high-degree hubs and \emph{can bury} the bridge---so the graph need not be a good
-ranking signal even where it is an excellent covariance. But as a \emph{covariance} the graph is not asked to rank
-anything; it is asked to say ``if this
+PageRank), mass would spread to high-degree hubs and \emph{bury} the bridge: ranking by structure alone drops recall to
+$0.21$ (vs.\ $0.65$ for the semantic prior, \S\ref{sec:main}), so the graph is a poor \emph{standalone} ranker. But
+as a \emph{covariance} the graph is not asked to rank anything; it is asked to say ``if this
 passage turned out relevant, which others become more plausible?'' For that, connectivity is exactly right, and it
 reaches passages that are embedding-distant. The same object fails as a mean and succeeds as a dependence.
 \end{intuition}
@@ -345,9 +345,10 @@ $K_{ba}-K_{da}\ge K_{ba}-\max_{d'}K_{d'a}>\tau\ge(m_d-m_b)/c$ for every $d$.
 
 The lemma isolates the mechanism in one inequality. A judgment surfaces the bridge only through a kernel that
 couples $b$ to the anchor \emph{more strongly than} it couples the distractors to the anchor. Now contrast the two
-kernels. For the embedding kernel, the buried bridge has $K^E_{ba}\le\max_d K^E_{da}$---it is farther in embedding
-space from the anchor than the distractors are, that is what ``buried'' means---so the differential is
-$\le 0<\tau$ and the bridge \emph{never} surfaces. For the graph kernel the differential can be large and positive:
+kernels. Being buried in the \emph{mean} ($m_b<m_d$) says nothing directly about the covariance differential; but
+the bridges that matter here are also \emph{embedding-isolated}---$K^E_{ba}\le K^E_{da}$ for some higher-prior
+distractor $d$, since being embedding-far from the anchor is what makes a bridge hard---so the embedding
+differential is nonpositive and the bridge \emph{never} surfaces through $K^E$. For the graph kernel the differential can be large and positive:
 if $b$ is graph-connected to $a$ and the distractors are not, $K^G_{ba}\gg\max_d K^G_{da}$. The graph can surface
 the bridge; the embedding kernel cannot. What remains is to ask how often the graph has this property. That is a
 question about the graph's alignment with the reasoning chain, and it has a clean answer.
@@ -421,8 +422,9 @@ excess is linear through the origin while the raw surfacing probability stays po
 \end{remark}
 
 \section{Estimating alignment in practice: assortativity}\label{sec:assort}
-The theorem is stated in terms of unobservable block probabilities $p,q$. In practice we estimate the alignment
-$p-q$ by the empirical \emph{assortativity} of the graph with respect to the gold/distractor labels,
+The theorem is stated in terms of unobservable block probabilities $p,q$. We measure the alignment $p-q$
+\emph{retrospectively}, on labeled evaluation data (computing it needs the gold labels), by the empirical
+\emph{assortativity} of the graph with respect to the gold/distractor labels,
 \begin{equation}
 \widehat A=\hat p-\hat q=\underbrace{\Pr(\text{edge}\mid\text{both gold})}_{\hat p}-\underbrace{\Pr(\text{edge}\mid\text{gold--distractor})}_{\hat q},
 \end{equation}
@@ -459,6 +461,39 @@ the gain. The effect is individually significant in each corpus and larger on th
 $\widehat A=0.75$, beats 2Wiki, $\widehat A=0.59$)---the alignment law playing out \emph{across} corpora, not just
 within one.
 
+\paragraph{Structure ranks nothing on its own; as a covariance it ranks well, and beats a strong free baseline.}
+This is the crux of the mean/covariance thesis, so it is worth pinning down with a direct ablation. Ranking by
+graph structure \emph{alone}---PageRank or node degree, ignoring the semantic scores---\emph{buries} the answer:
+recall collapses to $0.209$ (completion $0.038$), far below the semantic prior's $0.646$ (Table~\ref{tab:ablate}).
+A diffusion flows to high-degree hubs, not to the low-degree bridge; the graph is a genuinely poor \emph{standalone}
+ranker. Used as a \emph{covariance}, though, it is load-bearing even for \emph{free}: label-propagation / GMRF
+smoothing of the calibrated prior, $(I+\lambda\mathcal L)^{-1}m$ with no judgments, lifts recall to $0.707$ and
+completion to $0.488$, because the graph is chain-assortative---the same denoising a spatial statistician applies to
+a noisy field on a lattice. That free graph-smoothing is a strong baseline, stronger than passive or the
+embedding-kernel GP, and the honest question is whether spending active judgments beats it. It does, but only
+\emph{from the second judgment}: graph-GP ties the free smoother at $B{=}2$ and pulls ahead to $+0.043$ completion
+$[.002,.087]$ by $B{=}10$, while at a \emph{single} judgment the free smoother is marginally ahead ($-0.043$
+completion). The reading is not that active retrieval is pointless---it wins once the budget exceeds one---but that
+the graph's value lives in the \emph{covariance} (smoothing or propagation), never as a standalone ranker, and that
+a free graph-smoothing baseline belongs in any honest comparison. This is a humbler thesis than ``the graph helps
+only with judgments,'' and a more defensible one.
+\begin{table}[h]\centering\small
+\caption{Structure alone buries; as a covariance it ranks well and, actively, beats even a free graph-smoothing
+baseline from $B{=}2$. Chained, $n{=}600$; recall@$k$ / completion.}\label{tab:ablate}
+\begin{tabular}{lcc}
+\toprule
+ranker & recall@$k$ & completion \\ \midrule
+semantic prior ($B{=}0$) & $0.646$ & $0.337$ \\
+pure graph ranking (PageRank / degree) & $0.209$ & $0.038$ \\
+graph-smoothed prior ($B{=}0$, free) & $0.707$ & $0.488$ \\
+cosine-GP ($B{=}1$) & $0.634$ & $0.323$ \\
+graph-GP, ours ($B{=}1$) & $0.692$ & $0.445$ \\
+graph-GP, ours ($B{=}2$) & $0.714$ & $0.493$ \\
+graph-GP, ours ($B{=}3$) & $0.720$ & $0.513$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Is the graph merely a proxy the embedding covariance could have supplied?} A natural objection: by using
 a graph covariance we \emph{discard} the embedding covariance; maybe that is a loss. We test it directly with a
 convex family of covariances $K_\alpha=(1-\alpha)\widetilde K^E+\alpha\widetilde K^G$ (both correlation-form, the
@@ -474,7 +509,8 @@ with a radial-basis kernel whose lengthscale is fit per query by marginal likeli
 as standardized observations, a max-relevance query-seed, a dense warm-start, and UCB acquisition. Because their
 code is unreleased we reimplement it faithfully and, to be scrupulously fair, we \emph{control for two things at
 once}: we can give BAGEL our calibrated prior mean (isolating the effect of the mean) and we keep its own
-marginal-likelihood-tuned kernel (isolating the effect of the covariance). We match total judgment budgets and sweep
+marginal-likelihood-tuned kernel (isolating the effect of the covariance). All methods score with the \emph{same}
+hop-aware judge, so the comparison isolates the retrieval algorithm from judge quality. We match total judgment budgets and sweep
 $B$ from $1$ to BAGEL's exact native configuration ($B=50$: $25$ warm-start $+$ $25$ active, half the $N=100$ pool).
 For $B<50$ we split the budget as $\lceil B/2\rceil$ warm-start (top-cosine) $+\lfloor B/2\rfloor$ active judgments,
 the query pseudo-observation being free; the head-to-head is unchanged under a maximally-active split.

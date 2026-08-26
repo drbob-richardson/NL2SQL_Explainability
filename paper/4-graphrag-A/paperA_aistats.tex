@@ -23,18 +23,19 @@
 
 \begin{abstract}
 In multi-hop retrieval-augmented generation, relevance judgments are expensive LLM calls, so retrieval under a
-judgment budget is a problem of Bayesian experimental design. We show that the corpus graph---which \emph{need
-not} help as a ranking signal, since using it to re-score can bury the answer under diffusion---becomes
-load-bearing as the \emph{covariance} of a latent relevance field with a semantic (retriever) mean: a judgment of
+judgment budget is a problem of Bayesian experimental design. We show that the corpus graph---a poor
+\emph{standalone} ranking signal, since ranking by structure alone buries the answer under diffusion (recall
+$0.21$ vs.\ $0.65$)---is load-bearing as the \emph{covariance} of a latent relevance field with a semantic
+(retriever) mean: a judgment of
 one candidate
 propagates belief to graph-connected candidates, surfacing a buried ``bridge'' passage that no single embedding
 neighbour reveals. We make three contributions. (i)~A model---a Gaussian process with a semantic mean and a
 graph covariance---together with the initially surprising finding that the graph kernel must be used in
 \emph{correlation} (unit-diagonal) form, which roughly doubles its effect by equalizing hub variance so that
 optimistic exploration reaches the propagating anchors. (ii)~An \emph{alignment law}: we prove, under a
-stochastic block model, that the structural gain is zero when the graph is unaligned with the reasoning chain,
-positive iff the graph is chain-\emph{assortative}, and monotone in a scalar alignment $p-q$ estimated in practice
-by the empirical \emph{assortativity} $\hat p-\hat q$; the oracle-graph ceiling and the failure on adversarial
+stochastic block model, that the \emph{alignment excess} (gain over a density-matched unaligned graph) is zero
+when the graph is unaligned with the reasoning chain and grows linearly in a scalar alignment $p-q$, measured
+retrospectively on labeled data by the empirical \emph{assortativity} $\hat p-\hat q$; the oracle-graph ceiling and the failure on adversarial
 corpora are the two ends of this one axis. The same analysis gives a \emph{mechanism} for why optimistic
 exploration suits this problem---the value of a judgment is the downstream surfacing it enables, a delayed quantity
 that one-step value-of-information undervalues---while the full superiority of UCB over multi-step lookahead we
@@ -59,8 +60,9 @@ and what a dependency structure could recover, if a judgment on a findable passa
 
 \paragraph{Thesis: semantics sets the mean, structure sets the dependence.} We model latent relevance as a
 Gaussian process \citep{williams2006gpml} whose \emph{mean} is a calibrated retriever score and whose
-\emph{covariance} is a corpus graph. The graph is a poor ranking signal---using it to re-score \emph{can bury} the
-bridge under diffusion---but an excellent covariance: ``connected passages have correlated relevance,'' so
+\emph{covariance} is a corpus graph. The graph is a poor \emph{standalone} ranking signal---ranking by structure alone
+(PageRank/degree) buries the bridge under diffusion (\S\ref{sec:exp})---but an excellent covariance: ``connected
+passages have correlated relevance,'' so
 conditioning on a judged anchor lifts the posterior mean of a connected bridge. The same object that hurts as a
 mean helps as a dependence. This resolves a tension in graph-based retrieval and, we argue, is the reason a
 Bayesian treatment earns its keep here: the graph enters the \emph{decision / experimental-design} layer
@@ -73,9 +75,9 @@ covariance, and the finding that the graph kernel must be in correlation (unit-d
 $1.8\times$s its effect (chain-completion margin $+0.068\to+0.122$) by equalizing hub variance so optimistic
 exploration reaches the propagating anchors.
 \item \textbf{The alignment law} (\S\ref{sec:law}): a surfacing lemma and a stochastic-block-model theorem---the
-structural gain is $0$ at zero alignment, positive iff the graph is chain-assortative ($p>q$), and monotone in
-$p-q$; the oracle ceiling and the adversarial failure are the two ends of one axis, measured by the empirical
-assortativity $\hat p-\hat q$. The same surfacing analysis gives a mechanism for why optimistic acquisition suits
+\emph{alignment excess} (gain over a density-matched unaligned graph) is $0$ at zero alignment, positive iff the
+graph is chain-assortative ($p>q$), and monotone in $p-q$; the oracle ceiling and the adversarial failure are the
+two ends of one axis, measured retrospectively (on labeled data) by the empirical assortativity $\hat p-\hat q$. The same surfacing analysis gives a mechanism for why optimistic acquisition suits
 this problem, though the full superiority of UCB over multi-step lookahead we leave as an empirical finding
 (\S\ref{sec:acq}).
 \item \textbf{An honest empirical characterization} (\S\ref{sec:exp}) under a real hop-aware judge: a significant
@@ -157,8 +159,11 @@ $K_{ba}>\max_{d\in D}[K_{da}+(m_d-m_b)/c]$, equivalently $K_{ba}-K_{da}>(m_d-m_b
 $\tau:=\frac{(1+\sigma^2)(\max_d m_d-m_b)}{y_a-m_a}$.
 \end{lemma}
 The mechanism is isolated: a judgment surfaces the bridge only through a kernel that couples it to the findable
-anchor \emph{more} than it couples distractors. The embedding kernel has this differential $\le 0$ for a buried
-bridge, so it never surfaces it; the graph kernel can.
+anchor \emph{more} than it couples distractors. Being buried in the \emph{mean} ($m_b<m_d$) does not by itself
+bound this covariance differential; but the bridges that matter here are also \emph{embedding-isolated}
+($K^E_{ba}\le K^E_{da}$ for some higher-prior distractor $d$---being embedding-far from the anchor is what makes a
+bridge hard, \S\ref{sec:exp}), and for such a bridge the embedding differential is nonpositive, so $K^E$ cannot
+surface it. The graph kernel can.
 
 \begin{theorem}[Alignment law]\label{thm:align}
 Let the graph be a stochastic block model with within-chain edge probability $p$, off-chain $q$ (alignment
@@ -189,9 +194,11 @@ adversarial-MuSiQue cheap graphs (null) up to the oracle clique (max). Bars are 
 \label{fig:align}
 \end{figure}
 \begin{remark}[Measurable alignment]
-In practice $p-q$ is estimated by the empirical graph--chain assortativity $\widehat A=\hat p-\hat q$ (the
-gold--gold edge rate minus the gold--distractor edge rate). Theorem~\ref{thm:align} explains why $\widehat A$
-predicts the gain, why the oracle ceiling and the adversarial failure are one axis, and why the effect saturates.
+The alignment $p-q$ is measured \emph{retrospectively}, on labeled evaluation data, by the empirical graph--chain
+assortativity $\widehat A=\hat p-\hat q$ (gold--gold minus gold--distractor edge rate). It is an \emph{explanatory
+diagnostic}, not a deployment-time statistic---computing it needs the gold labels, and per-query alignment is not
+gold-free-recoverable (\S\ref{sec:exp}). Theorem~\ref{thm:align} explains why $\widehat A$ predicts the gain, why
+the oracle ceiling and the adversarial failure are one axis, and why the effect saturates.
 \end{remark}
 
 \section{EXPERIMENTS}\label{sec:exp}
@@ -224,6 +231,32 @@ $B=3$ & $+0.063\,[.044,.082]$ & $+0.033\,[.022,.045]$ & $+0.127\,[.093,.162]$ \\
 \end{center}
 \end{table}
 
+\paragraph{Structure ranks nothing on its own; as a covariance it ranks well, and beats a strong free baseline.}
+Ranking by graph structure alone (PageRank/degree, ignoring semantics) \emph{buries} the answer (recall $0.209$
+vs.\ $0.646$ for the semantic prior; Table~\ref{tab:ablate})---a diffusion to hubs, as expected. But used as a
+\emph{covariance} the graph is load-bearing even for \emph{free}: label-propagation / GMRF smoothing of the
+calibrated prior, $(I+\lambda\mathcal L)^{-1}m$, with \emph{no} judgments, is a strong baseline (recall $0.707$,
+completion $0.488$) because the graph is chain-assortative. The active method must beat that, and it does
+\emph{from $B{=}2$}: graph-GP overtakes the free smoother by two judgments and leads it by $+0.043$ completion
+$[.002,.087]$ at $B{=}10$, while at a \emph{single} judgment the two are a wash ($-0.043$ completion). So the
+active covariance earns its keep beyond a strong free graph baseline once more than one judgment is spent, and the
+graph's role is squarely in the covariance, not as a standalone ranker.
+\begin{table}[t]\caption{Structure alone buries; structure as a covariance ranks well and beats a free graph
+baseline from $B{=}2$. Chained, $n{=}600$.}\label{tab:ablate}
+\begin{center}\small
+\begin{tabular}{lcc}
+\toprule
+ranker & recall@$k$ & completion \\ \midrule
+semantic prior ($B{=}0$) & $0.646$ & $0.337$ \\
+pure graph ranking (PageRank/degree) & $0.209$ & $0.038$ \\
+graph-smoothed prior ($B{=}0$, free) & $0.707$ & $0.488$ \\
+graph-GP, ours ($B{=}2$) & $0.714$ & $0.493$ \\
+graph-GP, ours ($B{=}3$) & $0.720$ & $0.513$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
 \paragraph{Is the graph a proxy the embedding covariance could supply? No: the mixture picks pure graph.} We test
 the fixed convex family $K_\alpha=(1-\alpha)\widetilde K^E+\alpha\widetilde K^G$ (both correlation-form,
 \emph{same} calibrated mean), sweeping a single global $\alpha$ on the chained set. Recall rises
@@ -233,11 +266,12 @@ graph is the better covariance and the embedding covariance adds nothing on top-
 the embedding covariance.''
 
 \paragraph{Head-to-head with a faithful BAGEL reconstruction.} BAGEL's code is unreleased, so we reconstruct it
-from its published specification \citep{bagel2026} (Appendix~\ref{app:bagel} tabulates the correspondence); (code
-unreleased): a query-specific \emph{zero-mean} GP over passage embeddings with an RBF kernel whose lengthscale is
-fit \emph{per query} by marginal likelihood, LLM relevance scores as standardized labels, the query embedding
-seeded as a maximum-relevance pseudo-observation, a top-$M$ dense warm-start, UCB acquisition ($\beta{=}2$), and
-ranking by posterior mean; we match its total judgment budget to ours and sweep $B$ from $1$ to $50$---up to
+from its published specification \citep{bagel2026} (Appendix~\ref{app:bagel} tabulates the correspondence): a
+query-specific \emph{zero-mean} GP over passage embeddings with an RBF kernel whose lengthscale is fit \emph{per
+query} by marginal likelihood, LLM relevance scores as standardized labels, the query embedding seeded as a
+maximum-relevance pseudo-observation, a top-$M$ dense warm-start, UCB acquisition ($\beta{=}2$), and ranking by
+posterior mean. We reproduce BAGEL's inference and acquisition while scoring \emph{all} methods with the same
+hop-aware judge, isolating the retrieval algorithm from judge quality. We match its total judgment budget to ours and sweep $B$ from $1$ to $50$---up to
 BAGEL's \emph{exact native configuration} ($B{=}50=25$ warm $+\,25$ active, half the $N{=}100$ pool). For $B<50$
 the budget splits as $\lceil B/2\rceil$ warm-start (top-cosine) $+\lfloor B/2\rfloor$ active judgments, with the
 query pseudo-observation free; the conclusion is unchanged under a maximally-active split (warm$=1$: covariance gap
