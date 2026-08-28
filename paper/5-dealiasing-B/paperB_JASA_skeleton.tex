@@ -218,10 +218,46 @@ covariate $\mathcal I_G$ is large and structure recovers the grader's missed bri
 covariate is present it is nearly sufficient for relevance, $\mathcal I_G\!\to\!0$, and \emph{no} structural
 procedure can materially help---the observed null is the theorem's predicted corner, not a failure of method.
 
+\section{Numerical evidence}\label{sec:num}
+Every result is checked by Monte-Carlo simulation (no tuning). Table~\ref{tab:num} collects the confirmations and,
+where the theory leaves a constant, the value the simulation pins.
+\begin{table}[h]\small
+\caption{Simulation checks of each result.}\label{tab:num}
+\begin{center}
+\begin{tabular}{@{}p{0.31\textwidth}p{0.62\textwidth}@{}}
+\toprule
+Result & What the simulation shows \\ \midrule
+Near-aliasing rate (Thm~\ref{thm:rate}) & shared-tilt exponent $0.845$ at $s^\star{=}0.57$; the separate-max $0.878$ is a strict over-estimate; near-alias boundary $\delta_E^2+d\delta_G^2$ exact \\[2pt]
+Branching de-aliasing (Prop~\ref{prop:branch}) & per-measurement Chernoff $0$, joint rate $\gamma{=}0.089>0$ ($\Lstr{=}2$): dependence alone de-aliases \\[2pt]
+Field rate (Thms~\ref{thm:forest},\ref{thm:sandwich}) & measurement- and structure-dominated regimes de-alias, aliased-$T$ floors at chance; on a disjoint-neighborhood antichain the field rate equals the local Chernoff rate \\[2pt]
+Deep-subtree information & $C_G^{(\ell)}$ grows with depth and saturates to $C_G^{(\infty)}\approx0.122$ (star $C_G^{(1)}\approx0.116$); the forest/gadget class makes the star exponent \emph{exactly} minimax \\[2pt]
+Connected-tree lower bound & Assouad on a distance-$2L$ antichain matches the oracle upper bound at the \emph{rate} level (exact constant open) \\[2pt]
+Singular local regime (Prop~\ref{prop:singular}) & $\lambda=\sqrt n\,\delta_G^2$ is the invariant index; $\Pf(\mathrm{sign}\,\eta{=}{+})$ moves $0.50\!\to\!0.97$ as anchors go $0\!\to\!10$ \\[2pt]
+Boundary posterior (Prop~\ref{prop:boundary}) & an $n$-stable truncated Gaussian set by $\lambda$: half-normal at $\lambda{=}0$, Bernstein--von Mises as $\lambda\to\infty$ \\[2pt]
+Plug-in remainder (\S\ref{sec:singular}) & excess risk vanishes as $\lambda\to\infty$ and stays flat while $\sqrt n\,\delta_G$ doubles, confirming $\lambda=\sqrt n\,\delta_G^2$ ($\delta_G\sim n^{-1/4}$) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+Two points deserve emphasis. The deep-subtree simulation shows per-node structural information grows with depth and
+saturates to a finite $C_G^{(\infty)}$ just above the radius-1 value, so the star rate is a conservative bound on a
+general tree, while on the forest/gadget class (radius-1, independent neighborhoods) the star Chernoff exponent is
+\emph{exactly} minimax. And the unknown-parameter simulation refines the invariant weak-identification index to
+$\lambda=\sqrt n\,\delta_G^2$, unifying the field-minimax estimation remainder with the singular local-Bayes regime.
+
+\paragraph{A limitation the simulations make concrete.} Estimating the channel $(T,O)$ from \emph{short} dependency
+chains is hard: a chain-EM estimator separates the aliased emission cleanly only as chain length grows, so in the
+retrieval instance (chains of $2$--$4$ hops) finite-structure channel identification is weak, even though the
+\emph{oracle-channel} de-aliasing rate is unaffected. The theory bites hardest, then, when the channel is known or
+estimable; the residual hard problem is joint channel-and-state learning from short structures, governed by the
+singular local regime (\S\ref{sec:singular}).
+
 \section{Discussion}
 Aliasing turns latent-state recovery into a genuinely two-dimensional problem---local structure versus population
 information---with a singular local regime at its boundary. The open items are constants rather than existence:
-the exact within-$\Theta$ field constant, and the general-tree extension of the boundary-posterior scale
+the exact within-$\Theta$ field constant, the exact constant in the connected-tree lower bound (the rate is
+already matched, \S\ref{sec:num}), and the general-tree extension of the boundary-posterior scale
 $I_\psi(0)^{-1/2}$ (its shape is proved for the independent-star experiment). The framework is not specific to
 language models; it applies wherever an automated or weak measurement channel aliases scientifically distinct
 states that behave differently in a known dependency structure.
@@ -242,7 +278,7 @@ see.\quad
 \emph{Proposition~\ref{prop:boundary}.} LAN in $\psi$ with score $S=a/p_0$ and information $I_\psi$; Le~Cam's third
 lemma shifts the local score; a locally flat prior yields the truncated-Gaussian posterior for $h=\sqrt n\psi\ge0$.
 
-\smallskip\noindent\footnotesize\emph{Note.} This skeleton states the results in submission order; the companion
-working document records the derivations, numerical verification of every claim, and the empirical provenance.
+\smallskip\noindent\footnotesize\emph{Note.} Full proofs are collected in the companion \texttt{paperB\_JASA\_proofs.tex}; a working document
+records the empirical provenance and the extended derivations.
 \normalsize
 \end{document}
